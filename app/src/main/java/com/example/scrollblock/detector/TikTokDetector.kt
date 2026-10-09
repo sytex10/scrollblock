@@ -34,6 +34,8 @@ class TikTokDetector(
             return DetectionResult.notDetected(platformName)
         }
 
+        val targetInboxKeywords = listOf("gelen kutusu", "inbox")
+
         // 1. VİDEO AKIŞI BELİRTİLERİ:
         // Üst sekmeler (Sizin İçin, Takip Edilenler, Arkadaşlar vb.)
         val hasFeedTabs = NodeUtils.hasTextOrDescContaining(
@@ -105,32 +107,45 @@ class TikTokDetector(
             return DetectionResult.notDetected(platformName)
         }
 
-        // 3. VİDEO AKIŞI VEYA AÇILAN VİDEO TESPİTİ (HER DURUMDA GLOBAL_ACTION_BACK İLE KAPAT):
-        // A) 'Sizin İçin' / 'Takip Edilenler' üst sekmeleri varsa
+        // 3. VİDEO AKIŞI VEYA AÇILAN VİDEO TESPİTİ:
+        // A) 'Sizin İçin' / 'Takip Edilenler' üst sekmeleri varsa -> Gelen Kutusu'na yönlendir
         if (hasFeedTabs) {
             return DetectionResult.detected(
                 platform = platformName,
-                reason = "TikTok 'Sizin İçin' / 'Takip Edilenler' video akışı aktif",
-                preferTabSwitch = false
+                reason = "TikTok 'Sizin İçin' / 'Takip Edilenler' video akışı aktif -> Gelen Kutusu'na yönlendiriliyor",
+                preferTabSwitch = true,
+                targetHomeTabKeywords = targetInboxKeywords
             )
         }
 
-        // B) Alt barda Ana Sayfa seçiliyse
+        // B) Alt barda Ana Sayfa seçiliyse -> Gelen Kutusu'na yönlendir
         if (isHomeTabSelected) {
             return DetectionResult.detected(
                 platform = platformName,
-                reason = "TikTok Ana Sayfa video akışı aktif",
-                preferTabSwitch = false
+                reason = "TikTok Ana Sayfa video akışı aktif -> Gelen Kutusu'na yönlendiriliyor",
+                preferTabSwitch = true,
+                targetHomeTabKeywords = targetInboxKeywords
             )
         }
 
-        // C) Video etkileşim butonları veya video taşıyıcısı varsa (DM'den açılan videolar dahil)
+        // C) Video etkileşim butonları veya video taşıyıcısı varsa
         if (hasVideoActions || hasVideoContainer) {
-            return DetectionResult.detected(
-                platform = platformName,
-                reason = "TikTok video oynatıcı aktif (DM arkadaş videosu dahil)",
-                preferTabSwitch = false
-            )
+            if (isHomeTabSelected || hasFeedTabs) {
+                // Ana akıştaysa -> Gelen Kutusu'na yönlendir
+                return DetectionResult.detected(
+                    platform = platformName,
+                    reason = "TikTok video akışı aktif -> Gelen Kutusu'na yönlendiriliyor",
+                    preferTabSwitch = true,
+                    targetHomeTabKeywords = targetInboxKeywords
+                )
+            } else {
+                // DM / Sohbet içinden açılan arkadaş videosu -> Geri çık (Sohbete geri dön)
+                return DetectionResult.detected(
+                    platform = platformName,
+                    reason = "TikTok videosu açıldı (DM arkadaş videosu) -> Kapatılıyor",
+                    preferTabSwitch = false
+                )
+            }
         }
 
         return DetectionResult.notDetected(platformName)

@@ -1,7 +1,7 @@
 {
-  "versionCode": 10,
-  "versionName": "1.9",
-  "minRequiredVersionCode": 10,
-  "changelog": "TikTok video akışı anında engelleme düzeltmesi ve DM video engelleme.",
+  "versionCode": 11,
+  "versionName": "2.0",
+  "minRequiredVersionCode": 11,
+  "changelog": "TikTok'ta video akışı açıldığında donanımsal dokunma hareketiyle (gesture) anında Gelen Kutusu'na otomatik geçiş desteği.",
   "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
 }

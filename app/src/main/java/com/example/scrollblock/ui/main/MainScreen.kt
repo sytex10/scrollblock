@@ -211,7 +211,7 @@ fun MainScreen(
                         if (info != null && info.versionCode > currentVersionCode) {
                             remoteUpdateInfo = info
                         } else {
-                            Toast.makeText(context, "Uygulamanız güncel (v1.9)", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Uygulamanız güncel (v2.0)", Toast.LENGTH_SHORT).show()
                         }
                     }
                 },
@@ -444,7 +444,7 @@ private fun HeaderSection(isServiceActive: Boolean) {
                     letterSpacing = (-0.5).sp
                 )
                 Text(
-                    text = "Kısa Video Engelleyici • v1.9",
+                    text = "Kısa Video Engelleyici • v2.0",
                     fontSize = 12.sp,
                     color = ElectricBlueGlow
                 )

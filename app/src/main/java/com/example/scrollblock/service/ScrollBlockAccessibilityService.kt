@@ -1,6 +1,9 @@
 package com.example.scrollblock.service
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.GestureDescription
+import android.graphics.Path
+import android.os.Build
 import android.os.SystemClock
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
@@ -44,6 +47,20 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
         Log.i(TAG, "ScrollBlock Accessibility Service connected and active")
     }
 
+    /**
+     * Dispatches an exact touch tap gesture on screen at (x, y).
+     * Works across any view type, custom framework, or obfuscated UI.
+     */
+    private fun clickAtPoint(x: Float, y: Float): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return false
+        val path = Path().apply {
+            moveTo(x, y)
+        }
+        val stroke = GestureDescription.StrokeDescription(path, 0, 50L)
+        val gesture = GestureDescription.Builder().addStroke(stroke).build()
+        return dispatchGesture(gesture, null, null)
+    }
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
 
@@ -75,16 +92,37 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
                 lastActionTime = now
 
                 var redirected = false
-                // If tab switch is preferred (e.g. user tapped Reels/Shorts bottom tab),
-                // click the Home tab instead of pressing BACK to avoid "Press again to exit" app crash
+                // If tab switch is preferred (e.g. Reels/Shorts to Home, or TikTok to Gelen Kutusu)
                 if (result.preferTabSwitch && result.targetHomeTabKeywords.isNotEmpty()) {
-                    redirected = NodeUtils.clickNodeMatching(
+                    // 1. Accessibility ACTION_CLICK dene
+                    val actionClicked = NodeUtils.clickNodeMatching(
                         rootNode,
                         *result.targetHomeTabKeywords.toTypedArray()
                     )
+
+                    // 2. Ekrandaki koordinatları bulup gerçek dokunma hareketi (touch tap) yap
+                    val coords = NodeUtils.getCoordinatesForNodeMatching(
+                        rootNode,
+                        *result.targetHomeTabKeywords.toTypedArray()
+                    )
+
+                    if (coords != null) {
+                        clickAtPoint(coords.first, coords.second)
+                        redirected = true
+                    } else if (detector.platformName == "TikTok") {
+                        // TikTok'ta Tab 4 (Gelen Kutusu) kesin olarak ekran genişliğinin %70'indedir
+                        val dm = resources.displayMetrics
+                        val tab4X = dm.widthPixels * 0.70f
+                        val tab4Y = dm.heightPixels - (32f * dm.density)
+                        clickAtPoint(tab4X, tab4Y)
+                        redirected = true
+                    } else if (actionClicked) {
+                        redirected = true
+                    }
+
                     if (redirected) {
                         preferences.recordBlock(detector.platformName)
-                        Log.i(TAG, "Redirected to Home tab on ${detector.platformName} [Reason: ${result.reason}]")
+                        Log.i(TAG, "Redirected to tab on ${detector.platformName} [Reason: ${result.reason}]")
                     }
                 }
 

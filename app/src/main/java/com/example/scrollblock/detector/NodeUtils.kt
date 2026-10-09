@@ -144,4 +144,34 @@ object NodeUtils {
         }
         return clicked
     }
+
+    /**
+     * Finds the on-screen center coordinates of a node matching [targetKeywords].
+     */
+    fun getCoordinatesForNodeMatching(root: AccessibilityNodeInfo?, vararg targetKeywords: String): Pair<Float, Float>? {
+        if (root == null) return null
+        var foundPoint: Pair<Float, Float>? = null
+
+        anyNodeMatches(root) { node ->
+            val text = node.text?.toString()?.lowercase() ?: ""
+            val desc = node.contentDescription?.toString()?.lowercase() ?: ""
+            val viewId = node.viewIdResourceName?.lowercase() ?: ""
+
+            val matches = targetKeywords.any { kw ->
+                val k = kw.lowercase()
+                text.contains(k) || desc.contains(k) || viewId.contains(k)
+            }
+
+            if (matches) {
+                val rect = android.graphics.Rect()
+                node.getBoundsInScreen(rect)
+                if (rect.width() > 0 && rect.height() > 0) {
+                    foundPoint = Pair(rect.exactCenterX(), rect.exactCenterY())
+                    return@anyNodeMatches true
+                }
+            }
+            false
+        }
+        return foundPoint
+    }
 }
