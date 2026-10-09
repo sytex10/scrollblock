@@ -256,7 +256,7 @@ private fun HeaderSection(isServiceActive: Boolean) {
                     letterSpacing = (-0.5).sp
                 )
                 Text(
-                    text = "Kısa Video Engelleyici • v1.6",
+                    text = "Kısa Video Engelleyici • v1.7",
                     fontSize = 12.sp,
                     color = ElectricBlueGlow
                 )
@@ -495,7 +495,7 @@ private fun PlatformTogglesSection(
 
         PlatformItem(
             name = "TikTok Akışı",
-            subtitle = "'Sizin İçin' ve ana video akışını kapatır. Gelen Kutusu (mesajlar/sohbet) ve Profil ekranı açık kalır.",
+            subtitle = "Video akışı başladığı an anında Gelen Kutusu'na yönlendirir. Mesajlar, sohbetler ve Profil açık kalır.",
             icon = Icons.Default.PlayArrow,
             iconTint = Color(0xFF00F2FE),
             isEnabled = isTikTokEnabled,

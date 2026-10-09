@@ -107,20 +107,37 @@ class TikTokDetector(
             "like", "comment", "share", "original sound"
         )
 
-        // Video akışı koşulları:
-        // A) 'Sizin İçin' / 'Takip Edilenler' üst sekmeleri varsa
+        val targetTabKeywords = listOf("gelen kutusu", "inbox", "notice")
+
+        // Video akışı algılandığında:
+        // A) 'Sizin İçin' / 'Takip Edilenler' üst sekmeleri varsa -> Gelen Kutusu'na yönlendir
         if (hasFeedTabs) {
-            return DetectionResult.detected(platformName, "TikTok 'Sizin İçin' / 'Takip Edilenler' akışı aktif")
+            return DetectionResult.detected(
+                platform = platformName,
+                reason = "TikTok 'Sizin İçin' / 'Takip Edilenler' akışı aktif -> Gelen Kutusu'na yönlendiriliyor",
+                preferTabSwitch = true,
+                targetHomeTabKeywords = targetTabKeywords
+            )
         }
 
-        // B) Alt barda Ana Sayfa seçili ve video oynatıcı veya etkileşim butonları varsa
+        // B) Alt barda Ana Sayfa seçili ve video oynatıcı veya etkileşim butonları varsa -> Gelen Kutusu'na yönlendir
         if (isHomeTabSelected && (hasVideoContainer || hasVideoActions)) {
-            return DetectionResult.detected(platformName, "TikTok Ana Sayfa video akışı aktif")
+            return DetectionResult.detected(
+                platform = platformName,
+                reason = "TikTok Ana Sayfa video akışı aktif -> Gelen Kutusu'na yönlendiriliyor",
+                preferTabSwitch = true,
+                targetHomeTabKeywords = targetTabKeywords
+            )
         }
 
-        // C) Video oynatıcı taşıyıcısı ve aksiyon butonları ekrandaysa
+        // C) Video oynatıcı taşıyıcısı ve aksiyon butonları ekrandaysa -> Gelen Kutusu'na yönlendir
         if (hasVideoContainer && hasVideoActions) {
-            return DetectionResult.detected(platformName, "TikTok dikey video oynatıcı aktif")
+            return DetectionResult.detected(
+                platform = platformName,
+                reason = "TikTok dikey video oynatıcı aktif -> Gelen Kutusu'na yönlendiriliyor",
+                preferTabSwitch = true,
+                targetHomeTabKeywords = targetTabKeywords
+            )
         }
 
         return DetectionResult.notDetected(platformName)
