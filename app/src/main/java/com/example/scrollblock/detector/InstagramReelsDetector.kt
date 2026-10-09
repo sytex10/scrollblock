@@ -81,7 +81,7 @@ class InstagramReelsDetector(
         }
 
         // 2. YALNIZCA GERÇEK REELS TESPİTİ:
-        // A) Alt bardaki özel Reels sekmesi seçildiyse
+        // A) Alt bardaki özel Reels sekmesi seçildiyse -> Ana Sayfa sekmesine tıkla (uygulamadan atmaz!)
         val isReelsTabSelected = NodeUtils.isTabSelected(
             rootNode,
             "clips_tab",
@@ -89,12 +89,21 @@ class InstagramReelsDetector(
             "reels"
         )
         if (isReelsTabSelected) {
-            return DetectionResult.detected(platformName, "Instagram alt bardaki Reels sekmesi seçildi")
+            return DetectionResult.detected(
+                platform = platformName,
+                reason = "Instagram alt bardaki Reels sekmesi seçildi",
+                preferTabSwitch = true,
+                targetHomeTabKeywords = listOf("feed_tab", "ana sayfa", "home", "akış")
+            )
         }
 
-        // B) Tam ekran dikey Reels oynatıcı ViewPager'ı (Home feed'de asla bulunmaz)
+        // B) Tam ekran dikey Reels oynatıcı ViewPager'ı (Home feed'de asla bulunmaz) -> Geri çık
         if (isClipsViewPager && !hasMainFeed) {
-            return DetectionResult.detected(platformName, "Tam ekran Instagram Reels izleyicisi aktif")
+            return DetectionResult.detected(
+                platform = platformName,
+                reason = "Tam ekran Instagram Reels izleyicisi aktif",
+                preferTabSwitch = false
+            )
         }
 
         // C) ClipsViewer Activity veya Fragment sınıfı kontrolü
@@ -103,7 +112,11 @@ class InstagramReelsDetector(
             className.contains("ClipsViewerFragment", ignoreCase = true)) &&
             !hasMainFeed
         ) {
-            return DetectionResult.detected(platformName, "Matched ClipsViewer: $className")
+            return DetectionResult.detected(
+                platform = platformName,
+                reason = "Matched ClipsViewer: $className",
+                preferTabSwitch = false
+            )
         }
 
         return DetectionResult.notDetected(platformName)

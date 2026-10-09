@@ -27,8 +27,6 @@ class YouTubeShortsDetector(
         }
 
         // 1. ÖNCELİKLİ GÜVENLİK KONTROLÜ (Normal uzun video izleme ekranı):
-        // Standart video oynatıcı kontrolleri varsa ASLA engelleme.
-        // NOT: watch_while_layout gibi tüm uygulamayı kapsayan ana taşıyıcılar buraya konulmamalıdır!
         val hasNormalPlayerControls = NodeUtils.hasViewIdContaining(
             rootNode,
             "time_bar",                     // Video ilerleme çubuğu
@@ -54,15 +52,24 @@ class YouTubeShortsDetector(
             return DetectionResult.notDetected(platformName)
         }
 
-        // 2. ALT BARDAKİ SHORTS SEKMESİ SEÇİLDİYSE:
+        // 2. ALT BARDAKİ SHORTS SEKMESİ SEÇİLDİYSE -> Ana Sayfa sekmesine tıkla
         val isShortsTabSelected = NodeUtils.isTabSelected(rootNode, "shorts")
         if (isShortsTabSelected) {
-            return DetectionResult.detected(platformName, "YouTube alt bardaki Shorts sekmesi seçildi")
+            return DetectionResult.detected(
+                platform = platformName,
+                reason = "YouTube alt bardaki Shorts sekmesi seçildi",
+                preferTabSwitch = true,
+                targetHomeTabKeywords = listOf("ana sayfa", "home", "tab_home")
+            )
         }
 
-        // 3. TAM EKRAN SHORTS İZLEYİCİSİ İMZALARI:
+        // 3. TAM EKRAN SHORTS İZLEYİCİSİ İMZALARI -> Geri çık
         if (hasShortsContainer) {
-            return DetectionResult.detected(platformName, "Tam ekran YouTube Shorts oynatıcısı tespit edildi")
+            return DetectionResult.detected(
+                platform = platformName,
+                reason = "Tam ekran YouTube Shorts oynatıcısı tespit edildi",
+                preferTabSwitch = false
+            )
         }
 
         // 4. Shorts'a özel etkileşim öğeleri
@@ -73,7 +80,11 @@ class YouTubeShortsDetector(
             NodeUtils.hasTextOrDescContaining(rootNode, "use this sound", "bu sesi kullan")
 
         if (hasRemixButton || hasShortsSound) {
-            return DetectionResult.detected(platformName, "Shorts Remix / Ses kontrolleri eşleşti")
+            return DetectionResult.detected(
+                platform = platformName,
+                reason = "Shorts Remix / Ses kontrolleri eşleşti",
+                preferTabSwitch = false
+            )
         }
 
         // 5. Aktivite sınıfı kontrolü
@@ -82,7 +93,11 @@ class YouTubeShortsDetector(
             className.contains("ShortsActivity", ignoreCase = true) ||
             className.contains("ReelPlayer", ignoreCase = true)
         ) {
-            return DetectionResult.detected(platformName, "Matched Shorts Activity class: $className")
+            return DetectionResult.detected(
+                platform = platformName,
+                reason = "Matched Shorts Activity class: $className",
+                preferTabSwitch = false
+            )
         }
 
         return DetectionResult.notDetected(platformName)

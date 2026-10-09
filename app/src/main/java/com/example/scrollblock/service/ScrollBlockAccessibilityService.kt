@@ -5,6 +5,7 @@ import android.os.SystemClock
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import com.example.scrollblock.detector.InstagramReelsDetector
+import com.example.scrollblock.detector.NodeUtils
 import com.example.scrollblock.detector.PlatformDetector
 import com.example.scrollblock.detector.TikTokDetector
 import com.example.scrollblock.detector.YouTubeShortsDetector
@@ -19,12 +20,12 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
     private lateinit var detectors: List<PlatformDetector>
 
     // Loop prevention & debouncing
-    private var lastBackActionTime: Long = 0L
+    private var lastActionTime: Long = 0L
 
     companion object {
         private const val TAG = "ScrollBlockService"
-        // Cooldown between back actions to prevent animation bounce and recursive loops
-        private const val DEBOUNCE_INTERVAL_MS = 650L
+        // Cooldown between actions to prevent double-back app exit and recursive loops
+        private const val DEBOUNCE_INTERVAL_MS = 900L
 
         private val _isServiceRunning = MutableStateFlow(false)
         val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
@@ -52,9 +53,9 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
         val detector = detectors.firstOrNull { it.matchesPackage(packageName) } ?: return
         if (!detector.isEnabled()) return
 
-        // Anti-loop / debounce guard: ignore events fired immediately after a back action
+        // Anti-loop / debounce guard: ignore events fired immediately after an action
         val now = SystemClock.uptimeMillis()
-        if (now - lastBackActionTime < DEBOUNCE_INTERVAL_MS) {
+        if (now - lastActionTime < DEBOUNCE_INTERVAL_MS) {
             return
         }
 
@@ -71,15 +72,31 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
         try {
             val result = detector.detectShortFeed(rootNode, event)
             if (result.isShortFeed) {
-                // Instantly execute BACK action without delay, timer, or dialog
-                lastBackActionTime = now
-                val success = performGlobalAction(GLOBAL_ACTION_BACK)
+                lastActionTime = now
 
-                if (success) {
-                    preferences.recordBlock(detector.platformName)
-                    Log.i(TAG, "BLOCKED short-form feed on ${detector.platformName} [Reason: ${result.reason}]")
-                } else {
-                    Log.w(TAG, "GLOBAL_ACTION_BACK failed to execute for ${detector.platformName}")
+                var redirected = false
+                // If tab switch is preferred (e.g. user tapped Reels/Shorts bottom tab),
+                // click the Home tab instead of pressing BACK to avoid "Press again to exit" app crash
+                if (result.preferTabSwitch && result.targetHomeTabKeywords.isNotEmpty()) {
+                    redirected = NodeUtils.clickNodeMatching(
+                        rootNode,
+                        *result.targetHomeTabKeywords.toTypedArray()
+                    )
+                    if (redirected) {
+                        preferences.recordBlock(detector.platformName)
+                        Log.i(TAG, "Redirected to Home tab on ${detector.platformName} [Reason: ${result.reason}]")
+                    }
+                }
+
+                // If tab redirect wasn't requested or didn't succeed, execute GLOBAL_ACTION_BACK
+                if (!redirected) {
+                    val success = performGlobalAction(GLOBAL_ACTION_BACK)
+                    if (success) {
+                        preferences.recordBlock(detector.platformName)
+                        Log.i(TAG, "BLOCKED short-form feed on ${detector.platformName} [Reason: ${result.reason}]")
+                    } else {
+                        Log.w(TAG, "GLOBAL_ACTION_BACK failed to execute for ${detector.platformName}")
+                    }
                 }
             }
         } catch (e: Exception) {

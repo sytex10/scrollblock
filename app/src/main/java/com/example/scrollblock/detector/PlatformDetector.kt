@@ -6,11 +6,25 @@ import android.view.accessibility.AccessibilityNodeInfo
 data class DetectionResult(
     val isShortFeed: Boolean,
     val platform: String,
-    val reason: String = ""
+    val reason: String = "",
+    val preferTabSwitch: Boolean = false,
+    val targetHomeTabKeywords: List<String> = emptyList()
 ) {
     companion object {
         fun notDetected(platform: String) = DetectionResult(false, platform)
-        fun detected(platform: String, reason: String) = DetectionResult(true, platform, reason)
+        
+        fun detected(
+            platform: String,
+            reason: String,
+            preferTabSwitch: Boolean = false,
+            targetHomeTabKeywords: List<String> = emptyList()
+        ) = DetectionResult(
+            isShortFeed = true,
+            platform = platform,
+            reason = reason,
+            preferTabSwitch = preferTabSwitch,
+            targetHomeTabKeywords = targetHomeTabKeywords
+        )
     }
 }
 

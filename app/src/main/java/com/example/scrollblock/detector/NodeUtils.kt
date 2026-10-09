@@ -107,4 +107,41 @@ object NodeUtils {
             isDirectlySelected || isParentSelected || hasSelectionText
         }
     }
+
+    /**
+     * Finds a clickable node matching [targetKeywords] (by id, text, or contentDescription)
+     * and performs ACTION_CLICK. Traverses up to parent if needed.
+     */
+    fun clickNodeMatching(root: AccessibilityNodeInfo?, vararg targetKeywords: String): Boolean {
+        if (root == null) return false
+
+        var clicked = false
+        anyNodeMatches(root) { node ->
+            val text = node.text?.toString()?.lowercase() ?: ""
+            val desc = node.contentDescription?.toString()?.lowercase() ?: ""
+            val viewId = node.viewIdResourceName?.lowercase() ?: ""
+
+            val matches = targetKeywords.any { kw ->
+                val k = kw.lowercase()
+                text.contains(k) || desc.contains(k) || viewId.contains(k)
+            }
+
+            if (matches) {
+                if (node.isClickable && node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                    clicked = true
+                    return@anyNodeMatches true
+                }
+                var p = node.parent
+                while (p != null) {
+                    if (p.isClickable && p.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                        clicked = true
+                        return@anyNodeMatches true
+                    }
+                    p = p.parent
+                }
+            }
+            false
+        }
+        return clicked
+    }
 }
