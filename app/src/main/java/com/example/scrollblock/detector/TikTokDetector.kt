@@ -34,6 +34,25 @@ class TikTokDetector(
             return DetectionResult.notDetected(platformName)
         }
 
+        // 1. VİDEO AKIŞI BELİRTİLERİ:
+        // Üst sekmeler (Sizin İçin, Takip Edilenler, Arkadaşlar vb.)
+        val hasFeedTabs = NodeUtils.hasTextOrDescContaining(
+            rootNode,
+            "sizin için",       // TR
+            "takip edilenler",  // TR
+            "for you",          // EN
+            "following",
+            "arkadaşlar",
+            "friends"
+        )
+
+        // Dikey video etkileşim düğmeleri (Beğen, Yorum, Paylaş, Ses)
+        val hasVideoActions = NodeUtils.hasTextOrDescContaining(
+            rootNode,
+            "beğen", "yorum yap", "paylaş", "orijinal ses",
+            "like", "comment", "share", "original sound"
+        )
+
         // Video oynatıcı taşıyıcıları
         val hasVideoContainer = NodeUtils.hasViewIdContaining(
             rootNode,
@@ -46,56 +65,15 @@ class TikTokDetector(
             "disk_cover"
         )
 
-        // Dikey video etkileşim düğmeleri (Beğen, Yorum, Paylaş, Ses)
-        val hasVideoActions = NodeUtils.hasTextOrDescContaining(
+        // Alt barda 'Ana Sayfa' seçiliyse
+        val isHomeTabSelected = NodeUtils.isTabSelected(
             rootNode,
-            "beğen", "yorum yap", "paylaş", "orijinal ses",
-            "like", "comment", "share", "original sound"
+            "ana sayfa",
+            "home"
         )
 
-        val isVideoPlaying = hasVideoContainer && hasVideoActions
-        val isHomeTabSelected = NodeUtils.isTabSelected(rootNode, "ana sayfa", "home")
-        val targetInboxKeywords = listOf("gelen kutusu", "inbox", "notice")
-
-        // 1. EĞER TAM EKRAN VİDEO OYNATILIYORSA (DM / Sohbet içinden tıklanmış olsa dahi engelle):
-        if (isVideoPlaying) {
-            if (isHomeTabSelected) {
-                // Ana akıştaysa -> Gelen Kutusu'na yönlendir
-                return DetectionResult.detected(
-                    platform = platformName,
-                    reason = "TikTok Ana Sayfa video akışı aktif -> Gelen Kutusu'na yönlendiriliyor",
-                    preferTabSwitch = true,
-                    targetHomeTabKeywords = targetInboxKeywords
-                )
-            } else {
-                // DM / Sohbet içinden veya başka bir yerden açılan video -> Anında kapat, sohbete geri dön
-                return DetectionResult.detected(
-                    platform = platformName,
-                    reason = "TikTok videosu açıldı (DM/arkadaş videosu dahil) -> Kapatılıyor",
-                    preferTabSwitch = false
-                )
-            }
-        }
-
-        // Üst sekmeler (Sizin İçin, Takip Edilenler) varsa -> Gelen Kutusu'na yönlendir
-        val hasFeedTabs = NodeUtils.hasTextOrDescContaining(
-            rootNode,
-            "sizin için",       // TR
-            "takip edilenler",  // TR
-            "for you",          // EN
-            "following"
-        )
-        if (hasFeedTabs) {
-            return DetectionResult.detected(
-                platform = platformName,
-                reason = "TikTok 'Sizin İçin' / 'Takip Edilenler' akışı aktif -> Gelen Kutusu'na yönlendiriliyor",
-                preferTabSwitch = true,
-                targetHomeTabKeywords = targetInboxKeywords
-            )
-        }
-
-        // 2. KESİN GÜVENLİ ALANLAR (Video oynatılmıyorken):
-        // Kullanıcı alt bardan Gelen Kutusu veya Profil sekmesini SEÇTİYSE asla engelleme
+        // 2. KESİN GÜVENLİ ALANLAR (YALNIZCA VİDEO AÇIK DEĞİLKEN):
+        // Kullanıcı alt bardan Gelen Kutusu veya Profil sekmesini SEÇTİYSE ve video oynatılmıyorsa:
         val isSafeTabSelected = NodeUtils.isTabSelected(
             rootNode,
             "gelen kutusu",
@@ -103,11 +81,6 @@ class TikTokDetector(
             "profil",
             "profile"
         )
-        if (isSafeTabSelected) {
-            return DetectionResult.notDetected(platformName)
-        }
-
-        // Sohbet / Mesaj yazma ekranındaysa veya Ayarlardaysa engelleme (video açık değilken yazışabilir)
         val isChatOrSettings = NodeUtils.hasViewIdContaining(
             rootNode,
             "chat_input",
@@ -127,8 +100,37 @@ class TikTokDetector(
             "settings and privacy"
         )
 
-        if (isChatOrSettings) {
+        // Eğer kullanıcı Gelen Kutusunda, Profilde veya Mesajlaşma ekranındaysa VE video izlemiyorsa izin ver:
+        if ((isSafeTabSelected || isChatOrSettings) && !hasFeedTabs && !hasVideoActions && !isHomeTabSelected) {
             return DetectionResult.notDetected(platformName)
+        }
+
+        // 3. VİDEO AKIŞI VEYA AÇILAN VİDEO TESPİTİ (HER DURUMDA GLOBAL_ACTION_BACK İLE KAPAT):
+        // A) 'Sizin İçin' / 'Takip Edilenler' üst sekmeleri varsa
+        if (hasFeedTabs) {
+            return DetectionResult.detected(
+                platform = platformName,
+                reason = "TikTok 'Sizin İçin' / 'Takip Edilenler' video akışı aktif",
+                preferTabSwitch = false
+            )
+        }
+
+        // B) Alt barda Ana Sayfa seçiliyse
+        if (isHomeTabSelected) {
+            return DetectionResult.detected(
+                platform = platformName,
+                reason = "TikTok Ana Sayfa video akışı aktif",
+                preferTabSwitch = false
+            )
+        }
+
+        // C) Video etkileşim butonları veya video taşıyıcısı varsa (DM'den açılan videolar dahil)
+        if (hasVideoActions || hasVideoContainer) {
+            return DetectionResult.detected(
+                platform = platformName,
+                reason = "TikTok video oynatıcı aktif (DM arkadaş videosu dahil)",
+                preferTabSwitch = false
+            )
         }
 
         return DetectionResult.notDetected(platformName)

@@ -211,7 +211,7 @@ fun MainScreen(
                         if (info != null && info.versionCode > currentVersionCode) {
                             remoteUpdateInfo = info
                         } else {
-                            Toast.makeText(context, "Uygulamanız güncel (v1.8)", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Uygulamanız güncel (v1.9)", Toast.LENGTH_SHORT).show()
                         }
                     }
                 },
@@ -444,7 +444,7 @@ private fun HeaderSection(isServiceActive: Boolean) {
                     letterSpacing = (-0.5).sp
                 )
                 Text(
-                    text = "Kısa Video Engelleyici • v1.8",
+                    text = "Kısa Video Engelleyici • v1.9",
                     fontSize = 12.sp,
                     color = ElectricBlueGlow
                 )
@@ -683,7 +683,7 @@ private fun PlatformTogglesSection(
 
         PlatformItem(
             name = "TikTok Akışı",
-            subtitle = "Video akışı başladığı an anında Gelen Kutusu'na yönlendirir. Mesajlar, sohbetler ve Profil açık kalır.",
+            subtitle = "'Sizin İçin' ve ana video akışını kapatır (DM videoları dahil). Gelen Kutusu ve Profil açık kalır.",
             icon = Icons.Default.PlayArrow,
             iconTint = Color(0xFF00F2FE),
             isEnabled = isTikTokEnabled,
