@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Outer Shield Glow -->
+    <path
+        android:fillColor="#152B44"
+        android:pathData="M54,18 L82,31 C82,62 54,86 54,86 C54,86 26,62 26,31 Z" />
+
+    <!-- Main Shield Body -->
+    <path
+        android:fillColor="#0D192B"
+        android:strokeColor="#00D2FF"
+        android:strokeWidth="3"
+        android:strokeLineJoin="round"
+        android:pathData="M54,22 L78,33 C78,59 54,80 54,80 C54,80 30,59 30,33 Z" />
+
+    <!-- Inner Shield Accent Line -->
+    <path
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="1.2"
+        android:pathData="M54,27 L73,36 C73,56 54,73 54,73 C54,73 35,56 35,36 Z" />
+
+    <!-- Vertical Feed Symbol (Phone / Short Card) -->
+    <path
+        android:fillColor="#00D2FF"
+        android:pathData="M46,38 h16 c2.2,0 4,1.8 4,4 v22 c0,2.2 -1.8,4 -4,4 h-16 c-2.2,0 -4,-1.8 -4,-4 v-22 c0,-2.2 1.8,-4 4,-4 z" />
+
+    <!-- Play/Pause & Cut Barrier in Phone Screen -->
+    <path
+        android:fillColor="#0A0D14"
+        android:pathData="M51,45 L60,51 L51,57 Z" />
+
+    <!-- Diagonal Restriction Slash / Instant Barrier -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M40,65 L68,37" />
+
+</vector>

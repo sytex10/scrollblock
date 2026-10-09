@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">ScrollBlock</string>
+    <string name="accessibility_service_description">ScrollBlock, kısa video akışlarını (YouTube Shorts, Instagram Reels, TikTok) anında algılayıp geri tuşuyla kapatmak için bu servisi yalnızca cihaz üzerinde çalıştırır. Hiçbir ekran görüntüsü veya veri kaydedilmez ya da iletilmez.</string>
+</resources>
