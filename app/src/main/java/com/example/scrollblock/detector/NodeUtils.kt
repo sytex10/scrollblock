@@ -5,7 +5,7 @@ import java.util.ArrayDeque
 
 object NodeUtils {
 
-    private const val MAX_NODES_TO_VISIT = 180
+    private const val MAX_NODES_TO_VISIT = 500
 
     /**
      * Traverses the node tree up to MAX_NODES_TO_VISIT nodes and executes [predicate].
@@ -75,6 +75,36 @@ object NodeUtils {
                 viewId.equals(name, ignoreCase = true) ||
                     viewId.endsWith(":id/$name", ignoreCase = true)
             }
+        }
+    }
+
+    /**
+     * Checks if a tab or button matching [tabKeywords] is currently SELECTED or active.
+     */
+    fun isTabSelected(root: AccessibilityNodeInfo?, vararg tabKeywords: String): Boolean {
+        return anyNodeMatches(root) { node ->
+            val text = node.text?.toString()?.lowercase() ?: ""
+            val desc = node.contentDescription?.toString()?.lowercase() ?: ""
+            val viewId = node.viewIdResourceName?.lowercase() ?: ""
+
+            val matches = tabKeywords.any { kw ->
+                val k = kw.lowercase()
+                text.contains(k) || desc.contains(k) || viewId.contains(k)
+            }
+
+            if (!matches) return@anyNodeMatches false
+
+            val isDirectlySelected = node.isSelected
+            val isParentSelected = try {
+                node.parent?.isSelected == true
+            } catch (_: Exception) {
+                false
+            }
+            val hasSelectionText = desc.contains("seçildi") ||
+                desc.contains("seçili") ||
+                desc.contains("selected")
+
+            isDirectlySelected || isParentSelected || hasSelectionText
         }
     }
 }

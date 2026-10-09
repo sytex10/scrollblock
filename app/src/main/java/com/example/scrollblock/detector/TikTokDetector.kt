@@ -34,59 +34,70 @@ class TikTokDetector(
             return DetectionResult.notDetected(platformName)
         }
 
-        // 1. KESİN GÜVENLİ ALANLAR (Bu ekranlarda ASLA engelleme yapılmaz):
-        // Gelen Kutusu, Mesajlar, Bildirimler, Profil, Ayarlar
-        val isSafeNonFeedScreen = NodeUtils.hasTextOrDescContaining(
+        // 1. KESİN GÜVENLİ ALANLAR (Gelen Kutusu, Mesajlar, Profil):
+        // Kullanıcı alt bardan Gelen Kutusu veya Profil sekmesini SEÇTİYSE asla engelleme
+        val isSafeTabSelected = NodeUtils.isTabSelected(
             rootNode,
-            // Gelen Kutusu & Mesajlar (TR & EN)
             "gelen kutusu",
             "inbox",
-            "sohbetler",
-            "sohbet",
-            "mesajlar",
-            "mesaj gönder",
-            "direkt mesaj",
-            "etkinlik",
-            "bildirimler",
-            "yeni takipçiler",
-            "sistem bildirimleri",
-            "direct messages",
-            "messages",
-            "notifications",
-            // Profil & Ayarlar
-            "profili düzenle",
-            "edit profile",
             "profil",
-            "ayarlar ve gizlilik",
-            "settings and privacy",
-            "ayarlar",
-            "hesap",
-            "gizlilik"
-        ) || NodeUtils.hasViewIdContaining(
-            rootNode,
-            "inbox",
-            "chat",
-            "message",
-            "notice",
-            "notification",
-            "profile",
-            "setting_item",
-            "detail_setting",
-            "chat_input"
+            "profile"
         )
-
-        if (isSafeNonFeedScreen) {
+        if (isSafeTabSelected) {
             return DetectionResult.notDetected(platformName)
         }
 
-        // 2. KISA VİDEO AKIŞI GÖSTERGELERİ:
-        // Yalnızca Ana Sayfa'daki video oynatıcı veya "Sizin İçin" / "Takip Edilenler" sekmeleri
+        // Sohbet / Mesaj yazma ekranındaysa veya Ayarlardaysa engelleme
+        val isChatOrSettings = NodeUtils.hasViewIdContaining(
+            rootNode,
+            "chat_input",
+            "msg_box",
+            "message_edit_text",
+            "et_message",
+            "im_title_bar",
+            "im_conversation_list",
+            "notice_list",
+            "setting_item",
+            "detail_setting"
+        ) || NodeUtils.hasTextOrDescContaining(
+            rootNode,
+            "profili düzenle",
+            "edit profile",
+            "ayarlar ve gizlilik",
+            "settings and privacy"
+        )
+
+        if (isChatOrSettings) {
+            return DetectionResult.notDetected(platformName)
+        }
+
+        // 2. KISA VİDEO AKIŞI (Sizin İçin / Takip Edilenler / Ana Sayfa Akışı):
+        // Üst sekmeler (Sizin İçin, Takip Edilenler, Arkadaşlar vb.)
         val hasFeedTabs = NodeUtils.hasTextOrDescContaining(
             rootNode,
-            "sizin için",       // Türkçe For You
-            "takip edilenler",  // Türkçe Following
-            "for you",          // İngilizce
+            "sizin için",       // TR
+            "takip edilenler",  // TR
+            "for you",          // EN
             "following"
+        )
+
+        // Alt barda 'Ana Sayfa' seçiliyse
+        val isHomeTabSelected = NodeUtils.isTabSelected(
+            rootNode,
+            "ana sayfa",
+            "home"
+        )
+
+        // Video oynatıcı taşıyıcıları
+        val hasVideoContainer = NodeUtils.hasViewIdContaining(
+            rootNode,
+            "aweme_player",
+            "video_post_page",
+            "vertical_viewpager",
+            "aweme_vertical_view_pager",
+            "feed_view",
+            "play_view",
+            "disk_cover"
         )
 
         // Dikey video etkileşim düğmeleri (Beğen, Yorum, Paylaş, Ses)
@@ -96,24 +107,20 @@ class TikTokDetector(
             "like", "comment", "share", "original sound"
         )
 
-        // TikTok video akışı kapayıcısı / View ID'leri
-        val hasFeedContainer = NodeUtils.hasViewIdContaining(
-            rootNode,
-            "aweme_player",
-            "video_post_page",
-            "vertical_viewpager",
-            "feed_view",
-            "disk_cover"
-        )
-
-        // Video akışında olduğumuzu doğrulayan kesin koşul:
-        if (hasFeedTabs || (hasVideoActions && hasFeedContainer)) {
-            return DetectionResult.detected(platformName, "TikTok video akışı tespit edildi (Sizin İçin / Ana Akış)")
+        // Video akışı koşulları:
+        // A) 'Sizin İçin' / 'Takip Edilenler' üst sekmeleri varsa
+        if (hasFeedTabs) {
+            return DetectionResult.detected(platformName, "TikTok 'Sizin İçin' / 'Takip Edilenler' akışı aktif")
         }
 
-        // Ek güvence: Eğer üstte 'Sizin İçin' sekmesi görülüyorsa hemen yakala
-        if (NodeUtils.hasTextOrDescContaining(rootNode, "sizin için", "for you")) {
-            return DetectionResult.detected(platformName, "TikTok 'Sizin İçin' akışı aktif")
+        // B) Alt barda Ana Sayfa seçili ve video oynatıcı veya etkileşim butonları varsa
+        if (isHomeTabSelected && (hasVideoContainer || hasVideoActions)) {
+            return DetectionResult.detected(platformName, "TikTok Ana Sayfa video akışı aktif")
+        }
+
+        // C) Video oynatıcı taşıyıcısı ve aksiyon butonları ekrandaysa
+        if (hasVideoContainer && hasVideoActions) {
+            return DetectionResult.detected(platformName, "TikTok dikey video oynatıcı aktif")
         }
 
         return DetectionResult.notDetected(platformName)

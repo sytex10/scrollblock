@@ -11,6 +11,10 @@ class InstagramReelsDetector(
     override val platformName: String = "Instagram Reels"
     override val packageNames: Set<String> = setOf("com.instagram.android")
 
+    override fun matchesPackage(packageName: String): Boolean {
+        return packageName.lowercase().contains("instagram")
+    }
+
     override fun isEnabled(): Boolean = preferences.isInstagramEnabledSync()
 
     override fun detectShortFeed(
@@ -22,16 +26,14 @@ class InstagramReelsDetector(
         }
 
         // 1. KESİN GÜVENLİ ALANLAR (Bu durumlarda ASLA engelleme yapılmaz):
-        // Ana sayfa: Üstteki hikayeler tepsisi veya sağ üst DM butonu ekrandaysa normal akıştır.
-        val isHomeFeed = NodeUtils.hasViewIdContaining(
+        // Hikayeler (Stories) izleyicisi normal geçici içeriktir, Reels değildir
+        val isStoryViewer = NodeUtils.hasViewIdContaining(
             rootNode,
-            "stories_tray",             // Ana sayfa hikayeler tepsisi
-            "reel_tray",                // Hikaye listesi
-            "action_bar_inbox_button",  // Sağ üst DM butonu
-            "action_bar_inbox_stub",
-            "action_bar_notification_button"
+            "reel_viewer",
+            "story_viewer",
+            "stories_tray"
         )
-        if (isHomeFeed) {
+        if (isStoryViewer && !NodeUtils.hasViewIdContaining(rootNode, "clips_viewer_view_pager")) {
             return DetectionResult.notDetected(platformName)
         }
 
@@ -41,38 +43,67 @@ class InstagramReelsDetector(
             "direct_message_thread",
             "message_list",
             "thread_list",
-            "message_composer"
+            "message_composer",
+            "direct_thread"
         ) || NodeUtils.hasTextOrDescContaining(rootNode, "mesaj gönder", "sohbet")
         if (isDirectMessage) {
             return DetectionResult.notDetected(platformName)
         }
 
-        // 2. YALNIZCA TAM EKRAN DİKEY REELS İZLEYİCİSİ TESPİTİ:
+        // Ana Sayfa veya Arama / Profil sekmesi aktifse ve tam ekran Reels izleyicisi yoksa ASLA engelleme
+        val isHomeOrOtherTab = NodeUtils.isTabSelected(
+            rootNode,
+            "feed_tab",
+            "search_tab",
+            "profile_tab",
+            "news_tab",
+            "ana sayfa",
+            "home",
+            "ara",
+            "arama",
+            "profil"
+        )
+        val hasMainFeed = NodeUtils.hasViewIdContaining(
+            rootNode,
+            "feed_recycler_view",
+            "main_feed",
+            "newsfeed"
+        )
         val isClipsViewPager = NodeUtils.hasViewIdContaining(
             rootNode,
             "clips_viewer_view_pager",
-            "clips_viewer_fragment",
-            "clips_swipe_refresh_layout"
+            "clips_viewer_fragment"
         )
-        if (isClipsViewPager) {
-            return DetectionResult.detected(platformName, "Tam ekran Instagram Reels izleyicisi tespit edildi")
+
+        // Eğer kullanıcı ana akışta dolaşıyorsa ve tam ekran Reels açılmamışsa engelleme
+        if ((isHomeOrOtherTab || hasMainFeed) && !isClipsViewPager) {
+            return DetectionResult.notDetected(platformName)
         }
 
-        // 3. Aktivite / Fragment kontrolü (Ana sayfa öğeleri yokken)
+        // 2. YALNIZCA GERÇEK REELS TESPİTİ:
+        // A) Alt bardaki özel Reels sekmesi seçildiyse
+        val isReelsTabSelected = NodeUtils.isTabSelected(
+            rootNode,
+            "clips_tab",
+            "reels_tab",
+            "reels"
+        )
+        if (isReelsTabSelected) {
+            return DetectionResult.detected(platformName, "Instagram alt bardaki Reels sekmesi seçildi")
+        }
+
+        // B) Tam ekran dikey Reels oynatıcı ViewPager'ı (Home feed'de asla bulunmaz)
+        if (isClipsViewPager && !hasMainFeed) {
+            return DetectionResult.detected(platformName, "Tam ekran Instagram Reels izleyicisi aktif")
+        }
+
+        // C) ClipsViewer Activity veya Fragment sınıfı kontrolü
         val className = event?.className?.toString() ?: ""
-        if (className.contains("ClipsViewerActivity", ignoreCase = true) ||
-            className.contains("ClipsViewerFragment", ignoreCase = true)
+        if ((className.contains("ClipsViewerActivity", ignoreCase = true) ||
+            className.contains("ClipsViewerFragment", ignoreCase = true)) &&
+            !hasMainFeed
         ) {
             return DetectionResult.detected(platformName, "Matched ClipsViewer: $className")
-        }
-
-        // 4. Dikey Reels aksiyon çubuğu ve ses hapı (Yalnızca tam ekrandayken)
-        val hasReelsAudio = NodeUtils.hasViewIdContaining(rootNode, "clips_audio_mix_pill")
-        val hasReelsActionBar = NodeUtils.hasViewIdContaining(rootNode, "clips_action_bar_container")
-        val hasReelsRemix = NodeUtils.hasViewIdContaining(rootNode, "clips_remix_button")
-
-        if ((hasReelsAudio || hasReelsRemix) && hasReelsActionBar) {
-            return DetectionResult.detected(platformName, "Dikey Reels aksiyon çubuğu eşleşti")
         }
 
         return DetectionResult.notDetected(platformName)

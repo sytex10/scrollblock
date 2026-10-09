@@ -256,7 +256,7 @@ private fun HeaderSection(isServiceActive: Boolean) {
                     letterSpacing = (-0.5).sp
                 )
                 Text(
-                    text = "Kısa Video Engelleyici • v1.1",
+                    text = "Kısa Video Engelleyici • v1.5",
                     fontSize = 12.sp,
                     color = ElectricBlueGlow
                 )
