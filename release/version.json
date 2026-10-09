@@ -1,0 +1,7 @@
+{
+  "versionCode": 9,
+  "versionName": "1.8",
+  "minRequiredVersionCode": 9,
+  "changelog": "DM'den gönderilen Reels ve TikTok videolarını engelleme ve zorunlu güncelleme desteği.",
+  "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
+}

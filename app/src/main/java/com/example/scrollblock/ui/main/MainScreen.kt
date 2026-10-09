@@ -1,6 +1,7 @@
 package com.example.scrollblock.ui.main
 
 import android.net.Uri
+import android.os.Build
 import android.text.format.DateUtils
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -47,6 +48,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -58,6 +60,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -106,6 +111,30 @@ fun MainScreen(
     val lastBlockedTimestamp by viewModel.lastBlockedTimestamp.collectAsStateWithLifecycle()
 
     val scrollState = rememberScrollState()
+
+    var remoteUpdateInfo by remember { mutableStateOf<UpdateManager.RemoteVersionInfo?>(null) }
+    var isCheckingUpdate by remember { mutableStateOf(false) }
+
+    val currentVersionCode = remember {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                context.packageManager.getPackageInfo(context.packageName, 0).longVersionCode.toInt()
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getPackageInfo(context.packageName, 0).versionCode
+            }
+        } catch (_: Exception) {
+            8
+        }
+    }
+
+    // Uygulama açılışında otomatik güncelleme kontrolü
+    LaunchedEffect(Unit) {
+        val info = UpdateManager.checkRemoteVersion()
+        if (info != null && info.versionCode > currentVersionCode) {
+            remoteUpdateInfo = info
+        }
+    }
 
     // APK Dosya Seçici (İndirilen APK ile Doğrudan Güncelleme)
     val apkPickerLauncher = rememberLauncherForActivityResult(
@@ -173,13 +202,172 @@ fun MainScreen(
             AutoUpdateCard(
                 onPickLocalApk = {
                     apkPickerLauncher.launch("application/vnd.android.package-archive")
-                }
+                },
+                onCheckUpdate = {
+                    isCheckingUpdate = true
+                    coroutineScope.launch {
+                        val info = UpdateManager.checkRemoteVersion()
+                        isCheckingUpdate = false
+                        if (info != null && info.versionCode > currentVersionCode) {
+                            remoteUpdateInfo = info
+                        } else {
+                            Toast.makeText(context, "Uygulamanız güncel (v1.8)", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
+                isCheckingUpdate = isCheckingUpdate
             )
 
             // 6. Test ve Sorun Giderme Rehberi
             TestingAndTroubleshootingCard()
 
             Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // ZORUNLU GÜNCELLEME EKRANI (Diyalog dışına tıklanamaz veya geri tuşuyla kapatılamaz)
+        if (remoteUpdateInfo != null && remoteUpdateInfo!!.versionCode > currentVersionCode) {
+            val info = remoteUpdateInfo!!
+            var isDownloadingMandatory by remember { mutableStateOf(false) }
+            var mandatoryProgress by remember { mutableFloatStateOf(0f) }
+
+            Dialog(
+                onDismissRequest = { /* Zorunlu güncelleme: kapatılamaz */ },
+                properties = DialogProperties(
+                    dismissOnBackPress = false,
+                    dismissOnClickOutside = false
+                )
+            ) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = CardBackgroundElevated),
+                    border = CardDefaults.outlinedCardBorder().copy(
+                        brush = Brush.linearGradient(listOf(ElectricBlue, ElectricBlueVariant))
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(22.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(ElectricBlueSubtle),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SystemUpdate,
+                                contentDescription = null,
+                                tint = ElectricBlue,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+
+                        Text(
+                            text = "Zorunlu Güncelleme Mevcut",
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+
+                        Text(
+                            text = "ScrollBlock'un kısa videoları eksiksiz engellemeye devam edebilmesi için yeni sürüme (v${info.versionName}) güncellenmesi zorunludur.",
+                            fontSize = 13.sp,
+                            color = TextSecondary,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 18.sp
+                        )
+
+                        if (info.changelog.isNotEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(NearBlack)
+                                    .padding(12.dp)
+                            ) {
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(
+                                        text = "YENİLİKLER:",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = ElectricBlueGlow
+                                    )
+                                    Text(
+                                        text = info.changelog,
+                                        fontSize = 12.sp,
+                                        color = TextPrimary,
+                                        lineHeight = 16.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        if (isDownloadingMandatory) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                LinearProgressIndicator(
+                                    progress = { mandatoryProgress },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = ElectricBlue
+                                )
+                                Text(
+                                    text = "İndiriliyor: %${(mandatoryProgress * 100).toInt()}",
+                                    fontSize = 11.sp,
+                                    color = TextMuted,
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                )
+                            }
+                        } else {
+                            Button(
+                                onClick = {
+                                    if (!UpdateManager.canRequestPackageInstalls(context)) {
+                                        Toast.makeText(context, "Lütfen bilinmeyen uygulama yükleme izni verin", Toast.LENGTH_SHORT).show()
+                                        UpdateManager.openInstallPermissionSettings(context)
+                                    } else {
+                                        isDownloadingMandatory = true
+                                        coroutineScope.launch {
+                                            UpdateManager.downloadAndInstall(
+                                                context = context,
+                                                urlString = info.apkUrl,
+                                                onProgress = { p -> mandatoryProgress = p / 100f },
+                                                onError = { err ->
+                                                    isDownloadingMandatory = false
+                                                    Toast.makeText(context, err, Toast.LENGTH_LONG).show()
+                                                }
+                                            )
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = ElectricBlue,
+                                    contentColor = NearBlack
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Download,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Şimdi Güncelle ve Kur",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -256,7 +444,7 @@ private fun HeaderSection(isServiceActive: Boolean) {
                     letterSpacing = (-0.5).sp
                 )
                 Text(
-                    text = "Kısa Video Engelleyici • v1.7",
+                    text = "Kısa Video Engelleyici • v1.8",
                     fontSize = 12.sp,
                     color = ElectricBlueGlow
                 )
@@ -681,7 +869,9 @@ private fun StatisticsCard(
 
 @Composable
 private fun AutoUpdateCard(
-    onPickLocalApk: () -> Unit
+    onPickLocalApk: () -> Unit,
+    onCheckUpdate: () -> Unit,
+    isCheckingUpdate: Boolean
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -728,6 +918,27 @@ private fun AutoUpdateCard(
                 color = TextSecondary,
                 lineHeight = 16.sp
             )
+
+            // Güncellemeleri Denetle Butonu
+            OutlinedButton(
+                onClick = onCheckUpdate,
+                enabled = !isCheckingUpdate,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = ElectricBlueGlow)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (isCheckingUpdate) "Kontrol Ediliyor..." else "Güncellemeleri Şimdi Kontrol Et",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.sp
+                )
+            }
 
             // Yöntem 1: GitHub'dan Doğrudan Tek Tıkla Güncelle
             Button(
