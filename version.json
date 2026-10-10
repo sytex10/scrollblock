@@ -1,7 +1,7 @@
 {
-  "versionCode": 11,
-  "versionName": "2.0",
-  "minRequiredVersionCode": 11,
-  "changelog": "TikTok'ta video akışı açıldığında donanımsal dokunma hareketiyle (gesture) anında Gelen Kutusu'na otomatik geçiş desteği.",
+  "versionCode": 12,
+  "versionName": "2.1",
+  "minRequiredVersionCode": 12,
+  "changelog": "v2.1: TikTok ve Instagram'daki tüm alt bar tıklama/hayalet dokunma ve sayfa başa atma sorunları tamamen giderildi. TikTok mesajlar, gelen kutusu, aktiviteler, hikayeler ve profil korundu; Instagram ana akış kaydırması korundu.",
   "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
 }

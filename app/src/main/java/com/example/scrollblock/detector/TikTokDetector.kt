@@ -34,120 +34,169 @@ class TikTokDetector(
             return DetectionResult.notDetected(platformName)
         }
 
-        val targetInboxKeywords = listOf("gelen kutusu", "inbox")
+        // 1. KESİN GÜVENLİ ALANLAR (ÖNCELİKLE KORUNACAK):
+        // Kullanıcı bu ekranlardayken kesinlikle engellenmemeli, tıklanmamalı ve kaydırması engellenmemeli!
 
-        // 1. VİDEO AKIŞI BELİRTİLERİ:
-        // Üst sekmeler (Sizin İçin, Takip Edilenler, Arkadaşlar vb.)
-        val hasFeedTabs = NodeUtils.hasTextOrDescContaining(
-            rootNode,
-            "sizin için",       // TR
-            "takip edilenler",  // TR
-            "for you",          // EN
-            "following",
-            "arkadaşlar",
-            "friends"
-        )
-
-        // Dikey video etkileşim düğmeleri (Beğen, Yorum, Paylaş, Ses)
-        val hasVideoActions = NodeUtils.hasTextOrDescContaining(
-            rootNode,
-            "beğen", "yorum yap", "paylaş", "orijinal ses",
-            "like", "comment", "share", "original sound"
-        )
-
-        // Video oynatıcı taşıyıcıları
-        val hasVideoContainer = NodeUtils.hasViewIdContaining(
-            rootNode,
-            "aweme_player",
-            "video_post_page",
-            "vertical_viewpager",
-            "aweme_vertical_view_pager",
-            "feed_view",
-            "play_view",
-            "disk_cover"
-        )
-
-        // Alt barda 'Ana Sayfa' seçiliyse
-        val isHomeTabSelected = NodeUtils.isTabSelected(
-            rootNode,
-            "ana sayfa",
-            "home"
-        )
-
-        // 2. KESİN GÜVENLİ ALANLAR (YALNIZCA VİDEO AÇIK DEĞİLKEN):
-        // Kullanıcı alt bardan Gelen Kutusu veya Profil sekmesini SEÇTİYSE ve video oynatılmıyorsa:
-        val isSafeTabSelected = NodeUtils.isTabSelected(
-            rootNode,
-            "gelen kutusu",
-            "inbox",
-            "profil",
-            "profile"
-        )
-        val isChatOrSettings = NodeUtils.hasViewIdContaining(
+        // A) Mesajlar / DM / Sohbet ekranı:
+        val isChat = NodeUtils.hasViewIdContaining(
             rootNode,
             "chat_input",
             "msg_box",
             "message_edit_text",
             "et_message",
             "im_title_bar",
-            "im_conversation_list",
+            "chat_room",
+            "send_btn",
+            "emoji_btn",
+            "input_layout"
+        ) || NodeUtils.hasTextOrDescContaining(
+            rootNode,
+            "mesaj gönder",
+            "mesaj yaz",
+            "type a message",
+            "send message"
+        )
+        if (isChat) {
+            return DetectionResult.notDetected(platformName)
+        }
+
+        // B) Gelen Kutusu (Inbox) / Aktiviteler / Bildirimler:
+        // Tab 4 seçiliyse VEYA bildirim/aktivite/sohbet listesi açıksa
+        val isInboxTab = NodeUtils.isTabSelected(
+            rootNode,
+            "gelen kutusu",
+            "inbox",
+            "bildirimler"
+        )
+        val isInboxOrActivityList = NodeUtils.hasViewIdContaining(
+            rootNode,
             "notice_list",
+            "notification_list",
+            "inbox_list",
+            "im_conversation_list",
+            "activity_list",
+            "notice_root",
+            "im_root_view",
+            "notification_page"
+        ) || NodeUtils.hasTextOrDescContaining(
+            rootNode,
+            "gelen kutusu",
+            "tüm aktiviteler",
+            "aktiviteler",
+            "etkinlik",
+            "yeni takipçiler",
+            "sistem bildirimleri",
+            "direkt mesajlar"
+        )
+
+        // Eğer kullanıcı Gelen Kutusu veya Aktiviteler ekranındaysa (ve ana akışta değilse):
+        if (isInboxTab || isInboxOrActivityList) {
+            // Ana akışın 'Sizin İçin' sekmesi görünmüyorsa kesinlikle Gelen Kutusudur
+            val hasFeedTabs = NodeUtils.hasTextOrDescContaining(
+                rootNode,
+                "sizin için",
+                "for you",
+                "takip edilenler",
+                "following"
+            )
+            if (!hasFeedTabs) {
+                return DetectionResult.notDetected(platformName)
+            }
+        }
+
+        // C) Profil & Ayarlar:
+        val isProfileTab = NodeUtils.isTabSelected(
+            rootNode,
+            "profil",
+            "profile"
+        )
+        val isProfileOrSettings = NodeUtils.hasViewIdContaining(
+            rootNode,
+            "profile_header",
+            "user_avatar",
+            "edit_profile_btn",
+            "profile_tab",
             "setting_item",
             "detail_setting"
         ) || NodeUtils.hasTextOrDescContaining(
             rootNode,
             "profili düzenle",
             "edit profile",
+            "taslaklar",
+            "favoriler",
             "ayarlar ve gizlilik",
-            "settings and privacy"
+            "settings and privacy",
+            "hesabı yönet"
         )
+        if (isProfileTab || isProfileOrSettings) {
+            val hasFeedTabs = NodeUtils.hasTextOrDescContaining(
+                rootNode,
+                "sizin için",
+                "for you"
+            )
+            if (!hasFeedTabs) {
+                return DetectionResult.notDetected(platformName)
+            }
+        }
 
-        // Eğer kullanıcı Gelen Kutusunda, Profilde veya Mesajlaşma ekranındaysa VE video izlemiyorsa izin ver:
-        if ((isSafeTabSelected || isChatOrSettings) && !hasFeedTabs && !hasVideoActions && !isHomeTabSelected) {
+        // D) Hikayeler (Stories) izleyicisi:
+        val isStoryViewer = NodeUtils.hasViewIdContaining(
+            rootNode,
+            "story_viewer",
+            "story_surface",
+            "story_progress",
+            "story_container"
+        )
+        if (isStoryViewer) {
             return DetectionResult.notDetected(platformName)
         }
 
-        // 3. VİDEO AKIŞI VEYA AÇILAN VİDEO TESPİTİ:
-        // A) 'Sizin İçin' / 'Takip Edilenler' üst sekmeleri varsa -> Gelen Kutusu'na yönlendir
-        if (hasFeedTabs) {
-            return DetectionResult.detected(
-                platform = platformName,
-                reason = "TikTok 'Sizin İçin' / 'Takip Edilenler' video akışı aktif -> Gelen Kutusu'na yönlendiriliyor",
-                preferTabSwitch = true,
-                targetHomeTabKeywords = targetInboxKeywords
-            )
+        // E) Arama / Keşfet:
+        val isSearch = NodeUtils.hasViewIdContaining(
+            rootNode,
+            "search_input",
+            "search_edit_text",
+            "et_search_kw"
+        )
+        if (isSearch) {
+            return DetectionResult.notDetected(platformName)
         }
 
-        // B) Alt barda Ana Sayfa seçiliyse -> Gelen Kutusu'na yönlendir
-        if (isHomeTabSelected) {
+        // 2. VİDEO AKIŞI TESPİTİ (Yalnızca gerçek dikey video akışı):
+        // A) Üstteki 'Sizin İçin' / 'Takip Edilenler' sekmeleri
+        val hasFeedTabs = NodeUtils.hasTextOrDescContaining(
+            rootNode,
+            "sizin için",
+            "for you",
+            "takip edilenler",
+            "following"
+        )
+
+        // B) Alt barda 'Ana Sayfa' sekmesi seçiliyse (TikTok'ta Ana Sayfa sekmesi video akışıdır)
+        val isHomeTabSelected = NodeUtils.isTabSelected(
+            rootNode,
+            "ana sayfa",
+            "home"
+        )
+
+        // C) Tam ekran video oynatıcı konteynerleri
+        val hasVideoContainer = NodeUtils.hasViewIdContaining(
+            rootNode,
+            "aweme_player",
+            "vertical_viewpager",
+            "aweme_vertical_view_pager",
+            "video_post_page"
+        )
+
+        if (hasFeedTabs || isHomeTabSelected || hasVideoContainer) {
             return DetectionResult.detected(
                 platform = platformName,
-                reason = "TikTok Ana Sayfa video akışı aktif -> Gelen Kutusu'na yönlendiriliyor",
-                preferTabSwitch = true,
-                targetHomeTabKeywords = targetInboxKeywords
+                reason = "TikTok dikey video akışı tespit edildi",
+                preferTabSwitch = false
             )
-        }
-
-        // C) Video etkileşim butonları veya video taşıyıcısı varsa
-        if (hasVideoActions || hasVideoContainer) {
-            if (isHomeTabSelected || hasFeedTabs) {
-                // Ana akıştaysa -> Gelen Kutusu'na yönlendir
-                return DetectionResult.detected(
-                    platform = platformName,
-                    reason = "TikTok video akışı aktif -> Gelen Kutusu'na yönlendiriliyor",
-                    preferTabSwitch = true,
-                    targetHomeTabKeywords = targetInboxKeywords
-                )
-            } else {
-                // DM / Sohbet içinden açılan arkadaş videosu -> Geri çık (Sohbete geri dön)
-                return DetectionResult.detected(
-                    platform = platformName,
-                    reason = "TikTok videosu açıldı (DM arkadaş videosu) -> Kapatılıyor",
-                    preferTabSwitch = false
-                )
-            }
         }
 
         return DetectionResult.notDetected(platformName)
     }
 }
+

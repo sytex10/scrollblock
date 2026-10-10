@@ -25,91 +25,84 @@ class InstagramReelsDetector(
             return DetectionResult.notDetected(platformName)
         }
 
-        // 1. TAM EKRAN DİKEY REELS İZLEYİCİSİ TESPİTİ (DM veya sohbet içinden tıklananlar dahil):
-        val isClipsViewPager = NodeUtils.hasViewIdContaining(
-            rootNode,
-            "clips_viewer_view_pager",
-            "clips_viewer_fragment"
-        )
-        val className = event?.className?.toString() ?: ""
-        val isClipsActivity = className.contains("ClipsViewerActivity", ignoreCase = true) ||
-            className.contains("ClipsViewerFragment", ignoreCase = true)
-
+        // 1. KESİN GÜVENLİ ALANLAR - ÖNCELİKLİ KONTROL:
+        // A) Ana Sayfa Akışı (Home Feed): Kullanıcı ana sayfada kaydırırken ASLA engelleme / başa atma
         val hasMainFeed = NodeUtils.hasViewIdContaining(
             rootNode,
             "feed_recycler_view",
             "main_feed",
-            "newsfeed"
+            "newsfeed",
+            "feed_carousel",
+            "row_feed_photo_imageview",
+            "row_feed_view_group"
         )
-
-        // Eğer kullanıcı bir Reel açtıysa (arkadaşın DM'den attığı video dahil), anında kapat!
-        if ((isClipsViewPager || isClipsActivity) && !hasMainFeed) {
-            return DetectionResult.detected(
-                platform = platformName,
-                reason = "Instagram Reel izleyicisi aktif (DM/arkadaş videosu veya keşfet)",
-                preferTabSwitch = false
-            )
+        if (hasMainFeed) {
+            return DetectionResult.notDetected(platformName)
         }
 
-        // 2. KESİN GÜVENLİ ALANLAR (Reel izlemiyorken):
-        // Hikayeler (Stories) izleyicisi normal geçici içeriktir
+        // B) Hikayeler (Stories) izleyicisi
         val isStoryViewer = NodeUtils.hasViewIdContaining(
             rootNode,
             "reel_viewer",
             "story_viewer",
-            "stories_tray"
+            "stories_tray",
+            "story_progress_bar",
+            "reel_viewer_tall_media_container"
         )
         if (isStoryViewer) {
             return DetectionResult.notDetected(platformName)
         }
 
-        // Direkt Mesajlar / Sohbet: Kullanıcı mesajlaşırken ve yazışırken izin ver
+        // C) Direkt Mesajlar / Sohbet (DM):
         val isDirectMessage = NodeUtils.hasViewIdContaining(
             rootNode,
             "direct_message_thread",
             "message_list",
             "thread_list",
             "message_composer",
-            "direct_thread"
-        ) || NodeUtils.hasTextOrDescContaining(rootNode, "mesaj gönder", "sohbet")
+            "direct_thread",
+            "direct_chat",
+            "row_thread",
+            "action_bar_title"
+        ) || NodeUtils.hasTextOrDescContaining(rootNode, "mesaj gönder", "sohbet", "mesaj yaz", "send message")
         if (isDirectMessage) {
             return DetectionResult.notDetected(platformName)
         }
 
-        // Ana Sayfa veya Arama / Profil sekmesi aktifse engelleme
-        val isHomeOrOtherTab = NodeUtils.isTabSelected(
+        // D) Arama / Keşfet Izgarası / Profil / Bildirimler:
+        val isOtherSafeTab = NodeUtils.hasViewIdContaining(
             rootNode,
-            "feed_tab",
+            "action_bar_search_edit_text",
             "search_tab",
             "profile_tab",
             "news_tab",
-            "ana sayfa",
-            "home",
-            "ara",
-            "arama",
-            "profil"
+            "profile_header",
+            "row_profile_header"
         )
-
-        if ((isHomeOrOtherTab || hasMainFeed) && !isClipsViewPager) {
+        if (isOtherSafeTab) {
             return DetectionResult.notDetected(platformName)
         }
 
-        // 3. ALT BARDAKİ ÖZEL REELS SEKMESİ SEÇİLDİYSE -> Ana Sayfa sekmesine tıkla
-        val isReelsTabSelected = NodeUtils.isTabSelected(
+        // 2. TAM EKRAN DİKEY REELS İZLEYİCİSİ TESPİTİ (DM veya arama içinden açılanlar dahil):
+        val isClipsViewPager = NodeUtils.hasViewIdContaining(
             rootNode,
-            "clips_tab",
-            "reels_tab",
-            "reels"
+            "clips_viewer_view_pager",
+            "clips_viewer_fragment",
+            "clips_video_container"
         )
-        if (isReelsTabSelected) {
+        val className = event?.className?.toString() ?: ""
+        val isClipsActivity = className.contains("ClipsViewerActivity", ignoreCase = true) ||
+            className.contains("ClipsViewerFragment", ignoreCase = true)
+
+        if (isClipsViewPager || isClipsActivity) {
             return DetectionResult.detected(
                 platform = platformName,
-                reason = "Instagram alt bardaki Reels sekmesi seçildi",
-                preferTabSwitch = true,
-                targetHomeTabKeywords = listOf("feed_tab", "ana sayfa", "home", "akış")
+                reason = "Instagram Reel izleyicisi aktif",
+                preferTabSwitch = false
             )
         }
 
         return DetectionResult.notDetected(platformName)
     }
 }
+
