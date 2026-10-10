@@ -58,10 +58,11 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
             return
         }
 
-        // Only inspect window state transitions and significant content changes
+        // Only inspect window state transitions, content changes, and scrolling
         val eventType = event.eventType
         if (eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
-            eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+            eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
+            eventType != AccessibilityEvent.TYPE_VIEW_SCROLLED
         ) {
             return
         }

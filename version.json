@@ -1,7 +1,7 @@
 {
-  "versionCode": 12,
-  "versionName": "2.1",
-  "minRequiredVersionCode": 12,
-  "changelog": "v2.1: TikTok ve Instagram'daki tüm alt bar tıklama/hayalet dokunma ve sayfa başa atma sorunları tamamen giderildi. TikTok mesajlar, gelen kutusu, aktiviteler, hikayeler ve profil korundu; Instagram ana akış kaydırması korundu.",
+  "versionCode": 13,
+  "versionName": "2.2",
+  "minRequiredVersionCode": 13,
+  "changelog": "v2.2: Instagram Reels ve TikTok video akışı tespiti yeniden optimize edildi ve tam olarak devreye alındı. Ana akış, mesajlar, gelen kutusu ve profil serbest bırakıldı.",
   "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
 }
