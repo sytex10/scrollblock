@@ -1,7 +1,7 @@
 {
-  "versionCode": 13,
-  "versionName": "2.2",
-  "minRequiredVersionCode": 13,
-  "changelog": "v2.2: Instagram Reels ve TikTok video akışı tespiti yeniden optimize edildi ve tam olarak devreye alındı. Ana akış, mesajlar, gelen kutusu ve profil serbest bırakıldı.",
+  "versionCode": 14,
+  "versionName": "2.3",
+  "minRequiredVersionCode": 14,
+  "changelog": "v2.3: TikTok Ana Sayfa akışı artık uygulamadan atmak yerine Gelen Kutusu'na yönlendirir. Instagram Reels sekmesi Ana Sayfa'ya yönlendirir. Gelen kutusunda kaydırma, profil düzenleme ve hikayeler tamamen serbest. Hayalet dokunma koruması eklendi.",
   "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
 }

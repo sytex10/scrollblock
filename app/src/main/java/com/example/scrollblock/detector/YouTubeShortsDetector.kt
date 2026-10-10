@@ -52,13 +52,14 @@ class YouTubeShortsDetector(
             return DetectionResult.notDetected(platformName)
         }
 
-        // 2. ALT BARDAKİ SHORTS SEKMESİ SEÇİLDİYSE -> Geri çık
-        val isShortsTabSelected = NodeUtils.isTabSelected(rootNode, "shorts")
-        if (isShortsTabSelected) {
+        // 2. ALT BARDAKİ SHORTS SEKMESİ SEÇİLDİYSE -> Ana Sayfa sekmesine geç
+        val shortsTab = NodeUtils.findBottomNavTab(rootNode, emptyList(), listOf("shorts"))
+        if (NodeUtils.isNodeSelected(shortsTab)) {
             return DetectionResult.detected(
                 platform = platformName,
-                reason = "YouTube alt bardaki Shorts sekmesi seçildi",
-                preferTabSwitch = false
+                reason = "YouTube alt bardaki Shorts sekmesi -> Ana Sayfa",
+                preferTabSwitch = true,
+                targetHomeTabKeywords = listOf("ana sayfa", "home")
             )
         }
 

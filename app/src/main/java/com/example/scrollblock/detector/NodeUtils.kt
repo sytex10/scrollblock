@@ -1,11 +1,15 @@
 package com.example.scrollblock.detector
 
+import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
 import java.util.ArrayDeque
 
 object NodeUtils {
 
-    private const val MAX_NODES_TO_VISIT = 500
+    private const val MAX_NODES_TO_VISIT = 1500
+
+    /** Bottom navigation bar region: lower part of the screen. */
+    private const val BOTTOM_NAV_MIN_Y_FRACTION = 0.82f
 
     /**
      * Traverses the node tree up to MAX_NODES_TO_VISIT nodes and executes [predicate].
@@ -14,8 +18,16 @@ object NodeUtils {
     fun anyNodeMatches(
         root: AccessibilityNodeInfo?,
         predicate: (AccessibilityNodeInfo) -> Boolean
-    ): Boolean {
-        if (root == null) return false
+    ): Boolean = findNode(root, predicate) != null
+
+    /**
+     * Breadth-first search returning the first node that satisfies [predicate].
+     */
+    fun findNode(
+        root: AccessibilityNodeInfo?,
+        predicate: (AccessibilityNodeInfo) -> Boolean
+    ): AccessibilityNodeInfo? {
+        if (root == null) return null
 
         val queue = ArrayDeque<AccessibilityNodeInfo>()
         queue.add(root)
@@ -26,7 +38,7 @@ object NodeUtils {
             visitedCount++
 
             if (predicate(current)) {
-                return true
+                return current
             }
 
             val childCount = current.childCount
@@ -37,12 +49,37 @@ object NodeUtils {
                 }
             }
         }
+        return null
+    }
 
-        return false
+    /** Height of the active window (used to compute screen regions). */
+    fun windowHeight(root: AccessibilityNodeInfo?): Int {
+        if (root == null) return 0
+        val r = Rect()
+        root.getBoundsInScreen(r)
+        return r.bottom
+    }
+
+    private fun matchesKeywords(node: AccessibilityNodeInfo, keywords: Array<out String>): Boolean {
+        val text = node.text?.toString()?.lowercase() ?: ""
+        val desc = node.contentDescription?.toString()?.lowercase() ?: ""
+        return keywords.any { kw ->
+            val k = kw.lowercase()
+            text.contains(k) || desc.contains(k)
+        }
+    }
+
+    private fun matchesViewId(node: AccessibilityNodeInfo, ids: Array<out String>): Boolean {
+        val viewId = node.viewIdResourceName ?: return false
+        return ids.any { name ->
+            viewId.equals(name, ignoreCase = true) ||
+                viewId.endsWith(":id/$name", ignoreCase = true)
+        }
     }
 
     /**
      * Checks if any node's viewIdResourceName contains any of the provided identifiers.
+     * NOTE: includes hidden nodes. Prefer [hasVisibleViewId] for screen detection.
      */
     fun hasViewIdContaining(root: AccessibilityNodeInfo?, vararg idSubstrings: String): Boolean {
         return anyNodeMatches(root) { node ->
@@ -52,16 +89,43 @@ object NodeUtils {
     }
 
     /**
+     * Like [hasViewIdContaining] but only counts nodes actually VISIBLE to the user.
+     * Hidden fragments kept in memory (e.g. Reels after switching tab) are ignored.
+     */
+    fun hasVisibleViewId(root: AccessibilityNodeInfo?, vararg idSubstrings: String): Boolean {
+        return anyNodeMatches(root) { node ->
+            if (!node.isVisibleToUser) return@anyNodeMatches false
+            val viewId = node.viewIdResourceName?.lowercase() ?: return@anyNodeMatches false
+            idSubstrings.any { sub -> viewId.contains(sub.lowercase()) }
+        }
+    }
+
+    /**
      * Checks if any node's text or contentDescription contains any of the provided words/phrases.
      */
     fun hasTextOrDescContaining(root: AccessibilityNodeInfo?, vararg phrases: String): Boolean {
+        return anyNodeMatches(root) { node -> matchesKeywords(node, phrases) }
+    }
+
+    /**
+     * Visible text/description match restricted to a vertical screen band
+     * [minYFraction, maxYFraction] (0 = top, 1 = bottom).
+     */
+    fun hasVisibleTextInRegion(
+        root: AccessibilityNodeInfo?,
+        minYFraction: Float,
+        maxYFraction: Float,
+        vararg phrases: String
+    ): Boolean {
+        val h = windowHeight(root)
+        if (h <= 0) return false
+        val rect = Rect()
         return anyNodeMatches(root) { node ->
-            val text = node.text?.toString()?.lowercase()
-            val desc = node.contentDescription?.toString()?.lowercase()
-            phrases.any { phrase ->
-                val p = phrase.lowercase()
-                (text != null && text.contains(p)) || (desc != null && desc.contains(p))
-            }
+            if (!node.isVisibleToUser) return@anyNodeMatches false
+            if (!matchesKeywords(node, phrases)) return@anyNodeMatches false
+            node.getBoundsInScreen(rect)
+            val cy = rect.exactCenterY()
+            cy >= h * minYFraction && cy <= h * maxYFraction
         }
     }
 
@@ -69,109 +133,100 @@ object NodeUtils {
      * Finds whether a specific view id exists exactly or ends with ":id/$idName"
      */
     fun hasExactViewId(root: AccessibilityNodeInfo?, vararg idNames: String): Boolean {
-        return anyNodeMatches(root) { node ->
-            val viewId = node.viewIdResourceName ?: return@anyNodeMatches false
-            idNames.any { name ->
-                viewId.equals(name, ignoreCase = true) ||
-                    viewId.endsWith(":id/$name", ignoreCase = true)
-            }
+        return anyNodeMatches(root) { node -> matchesViewId(node, idNames) }
+    }
+
+    /**
+     * Finds a VISIBLE tab inside the bottom navigation bar region, matched by exact
+     * view id (preferred) or by text / contentDescription keywords.
+     */
+    fun findBottomNavTab(
+        root: AccessibilityNodeInfo?,
+        ids: List<String>,
+        keywords: List<String>
+    ): AccessibilityNodeInfo? {
+        val h = windowHeight(root)
+        if (h <= 0) return null
+        val rect = Rect()
+        val idArr = ids.toTypedArray()
+        val kwArr = keywords.toTypedArray()
+
+        fun inBottomBar(node: AccessibilityNodeInfo): Boolean {
+            if (!node.isVisibleToUser) return false
+            node.getBoundsInScreen(rect)
+            if (rect.width() <= 0 || rect.height() <= 0) return false
+            return rect.exactCenterY() >= h * BOTTOM_NAV_MIN_Y_FRACTION
         }
+
+        if (idArr.isNotEmpty()) {
+            findNode(root) { n -> matchesViewId(n, idArr) && inBottomBar(n) }?.let { return it }
+        }
+        if (kwArr.isNotEmpty()) {
+            findNode(root) { n -> matchesKeywords(n, kwArr) && inBottomBar(n) }?.let { return it }
+        }
+        return null
+    }
+
+    /**
+     * Returns true if [node] (or its direct parent / children) is in selected state.
+     * Handles "seçili değil" / "not selected" descriptions correctly.
+     */
+    fun isNodeSelected(node: AccessibilityNodeInfo?): Boolean {
+        if (node == null) return false
+        if (node.isSelected) return true
+
+        val desc = node.contentDescription?.toString()?.lowercase() ?: ""
+        val negative = desc.contains("seçili değil") || desc.contains("not selected")
+        if (!negative && (desc.contains("seçildi") || desc.contains("seçili") || desc.contains("selected"))) {
+            return true
+        }
+
+        try {
+            if (node.parent?.isSelected == true) return true
+        } catch (_: Exception) { }
+
+        for (i in 0 until node.childCount) {
+            val c = node.getChild(i) ?: continue
+            if (c.isSelected) return true
+        }
+        return false
     }
 
     /**
      * Checks if a tab or button matching [tabKeywords] is currently SELECTED or active.
+     * (Legacy: searches the whole screen.)
      */
     fun isTabSelected(root: AccessibilityNodeInfo?, vararg tabKeywords: String): Boolean {
         return anyNodeMatches(root) { node ->
-            val text = node.text?.toString()?.lowercase() ?: ""
-            val desc = node.contentDescription?.toString()?.lowercase() ?: ""
             val viewId = node.viewIdResourceName?.lowercase() ?: ""
-
-            val matches = tabKeywords.any { kw ->
-                val k = kw.lowercase()
-                text.contains(k) || desc.contains(k) || viewId.contains(k)
-            }
-
-            if (!matches) return@anyNodeMatches false
-
-            val isDirectlySelected = node.isSelected
-            val isParentSelected = try {
-                node.parent?.isSelected == true
-            } catch (_: Exception) {
-                false
-            }
-            val hasSelectionText = desc.contains("seçildi") ||
-                desc.contains("seçili") ||
-                desc.contains("selected")
-
-            isDirectlySelected || isParentSelected || hasSelectionText
+            val matches = matchesKeywords(node, tabKeywords) ||
+                tabKeywords.any { viewId.contains(it.lowercase()) }
+            matches && isNodeSelected(node)
         }
     }
 
     /**
-     * Finds a clickable node matching [targetKeywords] (by id, text, or contentDescription)
-     * and performs ACTION_CLICK. Traverses up to parent if needed.
+     * Performs ACTION_CLICK on [node] or its nearest clickable ancestor.
      */
-    fun clickNodeMatching(root: AccessibilityNodeInfo?, vararg targetKeywords: String): Boolean {
-        if (root == null) return false
-
-        var clicked = false
-        anyNodeMatches(root) { node ->
-            val text = node.text?.toString()?.lowercase() ?: ""
-            val desc = node.contentDescription?.toString()?.lowercase() ?: ""
-            val viewId = node.viewIdResourceName?.lowercase() ?: ""
-
-            val matches = targetKeywords.any { kw ->
-                val k = kw.lowercase()
-                text.contains(k) || desc.contains(k) || viewId.contains(k)
+    fun clickNode(node: AccessibilityNodeInfo?): Boolean {
+        var p = node
+        var depth = 0
+        while (p != null && depth < 6) {
+            if (p.isClickable && p.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                return true
             }
-
-            if (matches) {
-                if (node.isClickable && node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-                    clicked = true
-                    return@anyNodeMatches true
-                }
-                var p = node.parent
-                while (p != null) {
-                    if (p.isClickable && p.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-                        clicked = true
-                        return@anyNodeMatches true
-                    }
-                    p = p.parent
-                }
-            }
-            false
+            p = try { p.parent } catch (_: Exception) { null }
+            depth++
         }
-        return clicked
+        return false
     }
 
-    /**
-     * Finds the on-screen center coordinates of a node matching [targetKeywords].
-     */
-    fun getCoordinatesForNodeMatching(root: AccessibilityNodeInfo?, vararg targetKeywords: String): Pair<Float, Float>? {
-        if (root == null) return null
-        var foundPoint: Pair<Float, Float>? = null
-
-        anyNodeMatches(root) { node ->
-            val text = node.text?.toString()?.lowercase() ?: ""
-            val desc = node.contentDescription?.toString()?.lowercase() ?: ""
-            val viewId = node.viewIdResourceName?.lowercase() ?: ""
-
-            val matches = targetKeywords.any { kw ->
-                val k = kw.lowercase()
-                text.contains(k) || desc.contains(k) || viewId.contains(k)
-            }
-
-            if (matches) {
-                val rect = android.graphics.Rect()
-                node.getBoundsInScreen(rect)
-                if (rect.width() > 0 && rect.height() > 0) {
-                    foundPoint = Pair(rect.exactCenterX(), rect.exactCenterY())
-                    return@anyNodeMatches true
-                }
-            }
-            false
-        }
-        return foundPoint
+    /** Center point of [node] on screen, or null if it has no bounds. */
+    fun centerOf(node: AccessibilityNodeInfo?): Pair<Float, Float>? {
+        if (node == null) return null
+        val rect = Rect()
+        node.getBoundsInScreen(rect)
+        if (rect.width() <= 0 || rect.height() <= 0) return null
+        return Pair(rect.exactCenterX(), rect.exactCenterY())
     }
 }

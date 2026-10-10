@@ -7,23 +7,29 @@ data class DetectionResult(
     val isShortFeed: Boolean,
     val platform: String,
     val reason: String = "",
+    /** true -> switch to a safe tab instead of pressing BACK (prevents app exit). */
     val preferTabSwitch: Boolean = false,
-    val targetHomeTabKeywords: List<String> = emptyList()
+    /** Text / contentDescription keywords of the safe target tab. */
+    val targetHomeTabKeywords: List<String> = emptyList(),
+    /** Exact view ids of the safe target tab (preferred over keywords). */
+    val targetTabIds: List<String> = emptyList()
 ) {
     companion object {
         fun notDetected(platform: String) = DetectionResult(false, platform)
-        
+
         fun detected(
             platform: String,
             reason: String,
             preferTabSwitch: Boolean = false,
-            targetHomeTabKeywords: List<String> = emptyList()
+            targetHomeTabKeywords: List<String> = emptyList(),
+            targetTabIds: List<String> = emptyList()
         ) = DetectionResult(
             isShortFeed = true,
             platform = platform,
             reason = reason,
             preferTabSwitch = preferTabSwitch,
-            targetHomeTabKeywords = targetHomeTabKeywords
+            targetHomeTabKeywords = targetHomeTabKeywords,
+            targetTabIds = targetTabIds
         )
     }
 }

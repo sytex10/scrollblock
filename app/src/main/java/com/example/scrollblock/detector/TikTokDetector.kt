@@ -4,6 +4,15 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.example.scrollblock.preferences.BlockPreferences
 
+/**
+ * TikTok:
+ *  - Ana Sayfa (Sizin İçin) video akışı  -> Gelen Kutusu sekmesine geçiş (uygulamadan ATMAZ)
+ *  - Sohbetten açılan tam ekran video     -> GERİ (sohbete döner)
+ *  - Gelen Kutusu, Sohbet, Profil, Profil düzenleme, Ayarlar, Hikayeler, Arama -> ASLA dokunulmaz
+ *
+ * Önemli: Sadece EKRANDA GÖRÜNEN düğümler dikkate alınır. "Takip edilen", "Arkadaşlar" gibi
+ * profilde/gelen kutusunda da geçen kelimeler artık tetikleyici DEĞİLDİR.
+ */
 class TikTokDetector(
     private val preferences: BlockPreferences
 ) : PlatformDetector {
@@ -15,6 +24,10 @@ class TikTokDetector(
         "com.ss.android.ugc.trill",
         "com.ss.android.ugc.aweme"
     )
+
+    private val inboxKeywords = listOf("gelen kutusu", "inbox")
+    private val homeKeywords = listOf("ana sayfa", "home")
+    private val profileKeywords = listOf("profil", "profile")
 
     override fun matchesPackage(packageName: String): Boolean {
         val p = packageName.lowercase()
@@ -30,108 +43,75 @@ class TikTokDetector(
         rootNode: AccessibilityNodeInfo?,
         event: AccessibilityEvent?
     ): DetectionResult {
-        if (rootNode == null) {
+        if (rootNode == null) return DetectionResult.notDetected(platformName)
+
+        // ---- 1. ALT BAR DURUMU ----
+        val inboxTab = NodeUtils.findBottomNavTab(rootNode, emptyList(), inboxKeywords)
+        val homeTab = NodeUtils.findBottomNavTab(rootNode, emptyList(), homeKeywords)
+        val profileTab = NodeUtils.findBottomNavTab(rootNode, emptyList(), profileKeywords)
+
+        val inboxSelected = NodeUtils.isNodeSelected(inboxTab)
+        val profileSelected = NodeUtils.isNodeSelected(profileTab)
+        val homeSelected = NodeUtils.isNodeSelected(homeTab)
+
+        // Ekranın üst kısmında görünen "Sizin İçin" sekmesi = kesin ana video akışı
+        val forYouVisibleAtTop = NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0f, 0.22f,
+            "sizin için", "for you"
+        )
+
+        // ---- 2. KESİN GÜVENLİ EKRANLAR ----
+        // Gelen Kutusu veya Profil sekmesi seçiliyse (kaydırma, düzenleme serbest)
+        if ((inboxSelected || profileSelected) && !forYouVisibleAtTop) {
             return DetectionResult.notDetected(platformName)
         }
 
-        // 1. KESİN GÜVENLİ ALANLAR - ÖNCELİKLİ KONTROL:
-
-        // A) Mesajlar / Sohbet Ekranı:
-        val isChat = NodeUtils.hasViewIdContaining(
+        // Sohbet ekranı (mesaj yazma kutusu görünüyor)
+        val isChat = NodeUtils.hasVisibleViewId(
             rootNode,
-            "chat_input",
-            "msg_box",
-            "message_edit_text",
-            "et_message",
-            "im_title_bar",
-            "chat_room"
-        ) || NodeUtils.hasTextOrDescContaining(rootNode, "mesaj gönder", "type a message")
-        if (isChat) {
-            return DetectionResult.notDetected(platformName)
-        }
-
-        // B) Hikayeler (Stories) izleyicisi:
-        val isStoryViewer = NodeUtils.hasViewIdContaining(
-            rootNode,
-            "story_viewer",
-            "story_surface",
-            "story_progress"
-        )
-        if (isStoryViewer) {
-            return DetectionResult.notDetected(platformName)
-        }
-
-        // C) Arama / Keşfet arama kutusu:
-        val isSearch = NodeUtils.hasViewIdContaining(
-            rootNode,
-            "search_input",
-            "search_edit_text",
-            "et_search_kw"
-        )
-        if (isSearch) {
-            return DetectionResult.notDetected(platformName)
-        }
-
-        // 2. VİDEO AKIŞI İMZALARI:
-        // Üst sekmeler (Sizin İçin, Takip Edilenler, Arkadaşlar vb.)
-        val hasFeedTabs = NodeUtils.hasTextOrDescContaining(
-            rootNode,
-            "sizin için",
-            "takip edilenler",
-            "arkadaşlar",
-            "for you",
-            "following",
-            "friends"
+            "chat_input", "msg_box", "message_edit_text", "et_message", "chat_room"
+        ) || NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0.6f, 1f,
+            "mesaj gönder", "mesaj yaz", "send a message", "type a message", "message..."
         )
 
-        // Alt barda 'Ana Sayfa' seçiliyse
-        val isHomeTabSelected = NodeUtils.isTabSelected(
+        // Profil düzenleme / ayarlar / arama / hikaye ekranları
+        val isEditOrSettings = NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0f, 1f,
+            "profili düzenle", "edit profile", "ayarlar ve gizlilik", "settings and privacy",
+            "kullanıcı adı", "username", "biyografi", "bio"
+        )
+        val isSearchOrStory = NodeUtils.hasVisibleViewId(
             rootNode,
-            "ana sayfa",
-            "home"
+            "search_input", "search_edit_text", "et_search_kw",
+            "story_viewer", "story_surface", "story_progress"
         )
 
-        // Tam ekran dikey video oynatıcı konteynerleri
-        val hasVideoContainer = NodeUtils.hasViewIdContaining(
-            rootNode,
-            "aweme_player",
-            "aweme_vertical_view_pager",
-            "vertical_viewpager",
-            "feed_view",
-            "video_post_page"
-        )
-
-        // D) Gelen Kutusu (Inbox) / Aktiviteler kontrolü:
-        val isInboxTab = NodeUtils.isTabSelected(rootNode, "gelen kutusu", "inbox")
-        val hasInboxList = NodeUtils.hasViewIdContaining(
-            rootNode,
-            "notice_list",
-            "notification_list",
-            "inbox_list",
-            "im_conversation_list",
-            "activity_list"
-        )
-        // Eğer kullanıcı Gelen Kutusu sekmesinde veya bildirim listesindeyse VE video akışı açık değilse izin ver:
-        if ((isInboxTab || hasInboxList) && !hasFeedTabs) {
-            return DetectionResult.notDetected(platformName)
-        }
-
-        // E) Profil & Ayarlar kontrolü:
-        val isProfileTab = NodeUtils.isTabSelected(rootNode, "profil", "profile")
-        val hasProfileHeader = NodeUtils.hasViewIdContaining(
-            rootNode,
-            "profile_header",
-            "edit_profile_btn"
-        ) || NodeUtils.hasTextOrDescContaining(rootNode, "profili düzenle", "edit profile")
-        if ((isProfileTab || hasProfileHeader) && !hasFeedTabs) {
-            return DetectionResult.notDetected(platformName)
-        }
-
-        // 3. VİDEO AKIŞI TESPİTİ:
-        if (hasFeedTabs || isHomeTabSelected || hasVideoContainer) {
+        // ---- 3. ANA SAYFA VİDEO AKIŞI -> GELEN KUTUSUNA GEÇ ----
+        if (forYouVisibleAtTop || (homeSelected && !isChat && !isEditOrSettings && !isSearchOrStory)) {
             return DetectionResult.detected(
                 platform = platformName,
-                reason = "TikTok video akışı tespit edildi",
+                reason = "TikTok Ana Sayfa video akışı -> Gelen Kutusu",
+                preferTabSwitch = true,
+                targetHomeTabKeywords = inboxKeywords
+            )
+        }
+
+        if (isChat || isEditOrSettings || isSearchOrStory) {
+            return DetectionResult.notDetected(platformName)
+        }
+
+        // ---- 4. SOHBETTEN/PROFİLDEN AÇILAN TAM EKRAN VİDEO -> GERİ ----
+        // Alt bar görünmüyorsa (tam ekran oynatıcı) ve dikey video oynatıcı görünüyorsa
+        val bottomBarVisible = inboxTab != null || homeTab != null || profileTab != null
+        val hasVisiblePlayer = NodeUtils.hasVisibleViewId(
+            rootNode,
+            "aweme_player", "aweme_vertical_view_pager", "video_post_page"
+        )
+        if (!bottomBarVisible && hasVisiblePlayer) {
+            return DetectionResult.detected(
+                platform = platformName,
+                reason = "TikTok tam ekran video (sohbet/arkadaş) -> Geri",
                 preferTabSwitch = false
             )
         }
@@ -139,4 +119,3 @@ class TikTokDetector(
         return DetectionResult.notDetected(platformName)
     }
 }
-
