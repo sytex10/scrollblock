@@ -1,7 +1,7 @@
 {
-  "versionCode": 18,
-  "versionName": "2.7",
-  "minRequiredVersionCode": 18,
-  "changelog": "v2.7: Instagram'dan tamamen atma sorunu giderildi (yalnızca Ana Sayfa'ya yönlendirir). Anti-spam koruması eklendi (art arda basarak engeli aşma kapatıldı). Mola Ver ve Güncellemeyi Kontrol Et butonlarındaki kayma düzeltildi. 4 adımlı detaylı ve etkileşimli kurulum/kullanım rehberi eklendi.",
+  "versionCode": 19,
+  "versionName": "2.8",
+  "minRequiredVersionCode": 19,
+  "changelog": "v2.8: Instagram Ana Sayfa normal kaydırma, gönderi/Reels paylaşma ve TikTok Gelen Kutusu/Sohbet normal kaydırma sırasında yanlış tetikleme sorunu tamamen giderildi.",
   "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
 }

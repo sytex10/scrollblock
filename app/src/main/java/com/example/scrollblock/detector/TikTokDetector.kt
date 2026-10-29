@@ -8,12 +8,11 @@ import com.example.scrollblock.preferences.BlockPreferences
 
 /**
  * TikTok Engelleyici:
- *  - Ana Sayfa (Sizin İçin / Takip Edilenler) video akışı -> Gelen Kutusu sekmesine geçiş (uygulamadan ASLA ATMAZ).
- *  - DM / Sohbetten açılan tam ekran video:
- *      * "DM İzni (Tek Video)" AÇIK ise: İlk video izlenebilir. Kullanıcı bir sonraki videoya
- *        kaydırdığı (scroll) veya video değiştiği anda anında GERİ atılır (sohbete döner).
- *      * "DM İzni" KAPALI ise: Video açıldığı an doğrudan GERİ atılır (sohbete döner).
- *  - Gelen Kutusu, Sohbet mesajlaşma ekranı, Profil, Ayarlar, Hikayeler, Arama -> serbesttir.
+ *  - Ana Sayfa (Sizin İçin) video akışı -> Gelen Kutusu sekmesine geçiş (uygulamadan ATMAZ).
+ *  - Gelen Kutusu, Sohbet, Profil, Profil düzenleme, Ayarlar, Hikayeler, Arama -> %100 SERBESTTİR (kaydırma engellenmez).
+ *  - Sohbetten açılan tam ekran video (aweme_player / aweme_vertical_view_pager):
+ *      * "DM İzni (Tek Video)" AÇIK ise: İlk video izlenebilir; bir sonraki videoya kaydırılınca GERİ atar.
+ *      * "DM İzni" KAPALI ise: Açıldığı an GERİ atarak sohbete döndürür.
  */
 class TikTokDetector(
     private val preferences: BlockPreferences,
@@ -58,7 +57,6 @@ class TikTokDetector(
         val inboxSelected = NodeUtils.isNodeSelected(inboxTab)
         val profileSelected = NodeUtils.isNodeSelected(profileTab)
         val homeSelected = NodeUtils.isNodeSelected(homeTab)
-        val bottomBarVisible = inboxTab != null || homeTab != null || profileTab != null
 
         // Ekranın üst kısmında görünen "Sizin İçin" sekmesi = kesin ana video akışı
         val forYouVisibleAtTop = NodeUtils.hasVisibleTextInRegion(
@@ -66,14 +64,23 @@ class TikTokDetector(
             "sizin için", "for you"
         )
 
-        // ---- 2. KESİN GÜVENLİ SEKME EKRANLARI ----
-        // Gelen Kutusu veya Profil sekmesi seçiliyse (ve Sizin İçin akışı aktif değilse)
+        // ---- 2. KESİN GÜVENLİ EKRANLAR ----
+        // Gelen Kutusu veya Profil sekmesi seçiliyse (kaydırma, düzenleme tamamen serbest)
         if ((inboxSelected || profileSelected) && !forYouVisibleAtTop) {
             singleVideoGuard.onViewerGone()
             return DetectionResult.notDetected(platformName)
         }
 
-        // Profil düzenleme / ayarlar / arama / hikaye ekranları
+        // Sohbet ekranı (mesaj yazma kutusu görünüyor)
+        val isChat = NodeUtils.hasVisibleViewId(
+            rootNode,
+            "chat_input", "msg_box", "message_edit_text", "et_message", "chat_room"
+        ) || NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0.6f, 1f,
+            "mesaj gönder", "mesaj yaz", "send a message", "type a message", "message..."
+        )
+
+        // Profil düzenleme / ayarlar / arama / hikaye / paylaşım ekranları
         val isEditOrSettings = NodeUtils.hasVisibleTextInRegion(
             rootNode, 0f, 1f,
             "profili düzenle", "edit profile", "ayarlar ve gizlilik", "settings and privacy",
@@ -82,11 +89,12 @@ class TikTokDetector(
         val isSearchOrStory = NodeUtils.hasVisibleViewId(
             rootNode,
             "search_input", "search_edit_text", "et_search_kw",
-            "story_viewer", "story_surface", "story_progress"
+            "story_viewer", "story_surface", "story_progress",
+            "share_panel", "share_sheet"
         )
 
         // ---- 3. ANA SAYFA VİDEO AKIŞI -> GELEN KUTUSUNA GEÇ ----
-        if (forYouVisibleAtTop || (homeSelected && !isEditOrSettings && !isSearchOrStory)) {
+        if (forYouVisibleAtTop || (homeSelected && !isChat && !isEditOrSettings && !isSearchOrStory)) {
             singleVideoGuard.reset()
             return DetectionResult.detected(
                 platform = platformName,
@@ -96,23 +104,26 @@ class TikTokDetector(
             )
         }
 
-        if (isEditOrSettings || isSearchOrStory) {
+        if (isChat || isEditOrSettings || isSearchOrStory) {
             singleVideoGuard.onViewerGone()
             return DetectionResult.notDetected(platformName)
         }
 
-        // ---- 4. SOHBETTEN / DM'DEN AÇILAN TAM EKRAN VİDEO ----
-        val isFullScreenVideo = !bottomBarVisible && hasFullScreenVideoPlayer(rootNode)
+        // ---- 4. SOHBETTEN AÇILAN TAM EKRAN VİDEO ----
+        val bottomBarVisible = inboxTab != null || homeTab != null || profileTab != null
+        val hasVisiblePlayer = NodeUtils.hasVisibleViewId(
+            rootNode,
+            "aweme_player", "aweme_vertical_view_pager", "video_post_page"
+        )
 
-        if (isFullScreenVideo) {
+        if (!bottomBarVisible && hasVisiblePlayer) {
             val isDmVideoAllowed = preferences.isTikTokDmVideosAllowedSync()
 
-            // DM İzni (Tek Video) modu KAPALIYSA -> Video açıldığı an direkt kapat (sohbete dön)
             if (!isDmVideoAllowed) {
                 singleVideoGuard.reset()
                 return DetectionResult.detected(
                     platform = platformName,
-                    reason = "TikTok tam ekran video (DM izni kapalı) -> Geri",
+                    reason = "TikTok tam ekran video -> Geri",
                     preferTabSwitch = false
                 )
             }
@@ -145,7 +156,6 @@ class TikTokDetector(
                 )
             }
 
-            // İlk video serbest
             return DetectionResult.notDetected(platformName)
         } else {
             singleVideoGuard.onViewerGone()
@@ -154,44 +164,6 @@ class TikTokDetector(
         return DetectionResult.notDetected(platformName)
     }
 
-    /**
-     * Tam ekran TikTok video oynatıcısının aktif olup olmadığını tespit eder.
-     * Hem bilinen viewId'leri hem de tam ekran dikey ViewPager yapısını kontrol eder.
-     */
-    private fun hasFullScreenVideoPlayer(rootNode: AccessibilityNodeInfo): Boolean {
-        if (NodeUtils.hasVisibleViewId(
-                rootNode,
-                "aweme_player",
-                "aweme_vertical_view_pager",
-                "video_post_page",
-                "vertical_view_pager",
-                "feed_viewpager"
-            )
-        ) {
-            return true
-        }
-
-        val rootBounds = Rect()
-        rootNode.getBoundsInScreen(rootBounds)
-        val screenW = rootBounds.width()
-        val screenH = rootBounds.height()
-        if (screenW <= 0 || screenH <= 0) return false
-
-        val nodeRect = Rect()
-        // Tam ekran dikey ViewPager kontrolü (sohbet ekranında RecyclerView vardır, ViewPager yoktur)
-        return NodeUtils.anyNodeMatches(rootNode) { node ->
-            if (!node.isVisibleToUser) return@anyNodeMatches false
-            val cls = node.className?.toString() ?: return@anyNodeMatches false
-            if (!cls.contains("ViewPager", ignoreCase = true)) return@anyNodeMatches false
-            node.getBoundsInScreen(nodeRect)
-            nodeRect.width() >= screenW * 0.8f && nodeRect.height() >= screenH * 0.7f
-        }
-    }
-
-    /**
-     * Ekranda oynatılan videonun içerik üreticisi (@kullanici), açıklama metni veya
-     * görünür overlay metinlerinden parmak izi üretir.
-     */
     private fun extractVideoFingerprint(rootNode: AccessibilityNodeInfo?): String? {
         if (rootNode == null) return null
 
@@ -221,13 +193,11 @@ class TikTokDetector(
         }
         val caption = captionNode?.text?.toString()?.trim()
 
-        val specific = when {
+        return when {
             !author.isNullOrEmpty() && !caption.isNullOrEmpty() -> "$author|$caption"
             !author.isNullOrEmpty() -> author
             !caption.isNullOrEmpty() -> caption
             else -> null
         }
-
-        return specific ?: NodeUtils.extractOverlayFingerprint(rootNode)
     }
 }
