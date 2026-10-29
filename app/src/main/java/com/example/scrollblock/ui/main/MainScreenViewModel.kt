@@ -47,6 +47,9 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
     // PIN Güvenlik Durumu
     val isPinEnabled: StateFlow<Boolean> = pinManager.isPinEnabled
 
+    // Tanıtım (Onboarding) Durumu
+    val hasCompletedOnboarding: StateFlow<Boolean> = preferences.hasCompletedOnboarding
+
     init {
         refreshServiceStatus()
         startBreakCountdownTicker()
@@ -94,6 +97,10 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
 
     fun resetStatistics() {
         preferences.resetStatistics()
+    }
+
+    fun completeOnboarding() {
+        preferences.setOnboardingCompleted(true)
     }
 
     // --- Mola / Cooldown Aksiyonları ---

@@ -1,7 +1,7 @@
 {
-  "versionCode": 16,
-  "versionName": "2.5",
-  "minRequiredVersionCode": 16,
-  "changelog": "v2.5: DM mesajlarından açılan Reels ve TikTok videolarını engelleme ve tek video izin mekanizması düzeltildi. Sayfa kaydırma anında sohbete geri fırlatma hassaslaştırıldı. Arayüz tasarımı tamamen toparlandı ve modernleştirildi.",
+  "versionCode": 17,
+  "versionName": "2.6",
+  "minRequiredVersionCode": 17,
+  "changelog": "v2.6: İlk defa girenlere özel tanıtım rehberi eklendi. Üst durum çubuğu (saat ve pil alanı) karanlık temaya uyarlandı. DM Reels ve TikTok tek video engelleme mekanizması hassaslaştırıldı.",
   "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
 }

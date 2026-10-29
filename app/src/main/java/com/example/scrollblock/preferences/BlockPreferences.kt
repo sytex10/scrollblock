@@ -52,6 +52,9 @@ class BlockPreferences(context: Context) {
     private val _breakUsedToday = MutableStateFlow(getBreakUsedTodaySync())
     val breakUsedToday: StateFlow<Int> = _breakUsedToday.asStateFlow()
 
+    private val _hasCompletedOnboarding = MutableStateFlow(hasCompletedOnboardingSync())
+    val hasCompletedOnboarding: StateFlow<Boolean> = _hasCompletedOnboarding.asStateFlow()
+
     fun isYouTubeEnabledSync(): Boolean =
         prefs.getBoolean(KEY_YOUTUBE_ENABLED, true)
 
@@ -234,8 +237,17 @@ class BlockPreferences(context: Context) {
         _lastBlockedTimestamp.value = 0L
     }
 
+    fun hasCompletedOnboardingSync(): Boolean =
+        prefs.getBoolean(KEY_HAS_COMPLETED_ONBOARDING, false)
+
+    fun setOnboardingCompleted(completed: Boolean) {
+        prefs.edit().putBoolean(KEY_HAS_COMPLETED_ONBOARDING, completed).apply()
+        _hasCompletedOnboarding.value = completed
+    }
+
     companion object {
         private const val PREFS_NAME = "scrollblock_preferences"
+        private const val KEY_HAS_COMPLETED_ONBOARDING = "pref_has_completed_onboarding"
         private const val KEY_YOUTUBE_ENABLED = "pref_youtube_shorts_enabled"
         private const val KEY_INSTAGRAM_ENABLED = "pref_instagram_reels_enabled"
         private const val KEY_TIKTOK_ENABLED = "pref_tiktok_feed_enabled"
