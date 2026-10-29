@@ -4,6 +4,8 @@ import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
@@ -20,42 +22,47 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Engelleme stratejisi:
- *  1. Mola (Cooldown) aktifse servis hiçbir engelleme yapmaz, kullanıcıya geçici serbestlik tanır.
- *  2. Ana akış sekmesindeyse (TikTok Ana Sayfa / Instagram Reels / YouTube Shorts sekmesi)
- *     -> güvenli sekmeye geç (Gelen Kutusu / Ana Sayfa). Uygulamadan ATMAZ.
- *     a) Önce erişilebilirlik ACTION_CLICK
- *     b) Ekran değişmediyse sadece O SEKMENİN koordinatına tek bir dokunma
- *     c) Hâlâ değişmediyse son çare GERİ
- *  3. Tam ekran açılan tekil video (DM / keşfet):
- *     - Instagram DM Reels izni açıkken ilk video serbest; bir sonraki videoya kaydırıldığı an GERİ atılır.
- *     - İzin kapalıyken anında GERİ atılır.
- *
- * Hayalet dokunma koruması:
- *  - Dokunma sadece alt barda bulunan ve görünen hedef sekmenin merkezine yapılır.
- *  - Aynı platformda kısa sürede 3 denemeden sonra 8 sn tüm aksiyonlar durdurulur.
+ * Engelleme ve Spam-Korumalı Yönlendirme Servisi:
+ *  1. Mola (Cooldown) aktifse servis hiçbir engelleme yapmaz, süre bitince otomatik devreye girer.
+ *  2. Ana akış sekmesindeyse (Instagram Reels sekmesi / TikTok Ana Sayfa / YouTube Shorts sekmesi):
+ *     -> Güvenli sekmeye geçiş yapar (Ana Sayfa / Gelen Kutusu). Uygulamadan ASLA ATMAZ.
+ *  3. Anti-Spam & Takip Doğrulaması (Follow-up Verification):
+ *     -> Kullanıcı art arda hızlıca (spam) sekmeye veya videoya bassa bile servis asla 8 sn
+ *        uykuya geçmez; +260ms ve +580ms'de pencereyi tekrar denetleyip anında güvenli sekmeye döndürür.
+ *  4. Tam ekran açılan tekil video (DM / Keşfet):
+ *     -> DM tek video izni açıkken ilk video serbesttir; kaydırıldığı an GERİ ile sohbete döner.
+ *     -> İzin kapalıyken açıldığı an GERİ ile sohbete döner.
  */
 class ScrollBlockAccessibilityService : AccessibilityService() {
 
     private lateinit var preferences: BlockPreferences
     private lateinit var detectors: List<PlatformDetector>
+    private val mainHandler = Handler(Looper.getMainLooper())
 
-    private var lastActionTime: Long = 0L
+    private var lastTabSwitchTime: Long = 0L
+    private var lastBackActionTime: Long = 0L
+    private var lastGestureTapTime: Long = 0L
     private var lastEvalTime: Long = 0L
 
-    // Ardışık deneme sayacı (tab switch başarısız olursa kademeli strateji için)
-    private var attemptPlatform: String = ""
-    private var attemptCount: Int = 0
-    private var lastAttemptTime: Long = 0L
-    private var pausedUntil: Long = 0L
+    private var lastActiveDetector: PlatformDetector? = null
+    private var consecutiveTabAttempts: Int = 0
+
+    private val followUpRunnable = Runnable {
+        val detector = lastActiveDetector ?: return@Runnable
+        if (!detector.isEnabled() || preferences.isBreakActiveSync()) return@Runnable
+        val root = rootInActiveWindow ?: return@Runnable
+        val rootPkg = root.packageName?.toString() ?: ""
+        if (rootPkg.isNotEmpty() && !detector.matchesPackage(rootPkg)) return@Runnable
+        evaluateAndBlock(detector, root, null)
+    }
 
     companion object {
         private const val TAG = "ScrollBlockService"
-        private const val DEBOUNCE_INTERVAL_MS = 900L
-        private const val EVAL_THROTTLE_MS = 250L
-        private const val ATTEMPT_WINDOW_MS = 4000L
-        private const val MAX_ATTEMPTS = 3
-        private const val SAFETY_PAUSE_MS = 8000L
+        private const val TAB_SWITCH_COOLDOWN_MS = 200L
+        private const val BACK_ACTION_COOLDOWN_MS = 550L
+        private const val GESTURE_TAP_COOLDOWN_MS = 500L
+        private const val EVAL_THROTTLE_MS = 80L
+        private const val FOLLOW_UP_DELAY_MS = 260L
 
         private val _isServiceRunning = MutableStateFlow(false)
         val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
@@ -81,7 +88,7 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
         val detector = detectors.firstOrNull { it.matchesPackage(packageName) } ?: return
         if (!detector.isEnabled()) return
 
-        // 1. Mola / Cooldown kontrolü: Mola süresi dolana kadar koruma geçici olarak askıya alınır
+        // Mola / Cooldown kontrolü: Mola süresi dolana kadar koruma geçici olarak askıya alınır
         if (preferences.isBreakActiveSync()) {
             return
         }
@@ -92,95 +99,133 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
             eventType != AccessibilityEvent.TYPE_VIEW_SCROLLED
         ) return
 
+        lastActiveDetector = detector
         val now = SystemClock.uptimeMillis()
-        if (now < pausedUntil) return
-        if (now - lastActionTime < DEBOUNCE_INTERVAL_MS) return
 
-        // Yalnızca yüksek sıklıkta gelen içerik değişikliklerini seyrekleştir;
-        // Kaydırma (TYPE_VIEW_SCROLLED) veya pencere geçişi anında değerlendirilir.
+        // Yüksek sıklıkta gelen içerik olaylarını hafifçe seyrekleştir ama son durumu kaçırmamak için takip planla
         if (eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
             now - lastEvalTime < EVAL_THROTTLE_MS
-        ) return
+        ) {
+            scheduleFollowUp(FOLLOW_UP_DELAY_MS)
+            return
+        }
         lastEvalTime = now
 
         val rootNode = rootInActiveWindow ?: return
+        evaluateAndBlock(detector, rootNode, event)
+    }
 
+    private fun evaluateAndBlock(
+        detector: PlatformDetector,
+        rootNode: AccessibilityNodeInfo,
+        event: AccessibilityEvent?
+    ) {
         try {
+            val now = SystemClock.uptimeMillis()
             val result = detector.detectShortFeed(rootNode, event)
+
             if (!result.isShortFeed) {
-                // Güvenli ekrana ulaşıldı -> sayaç sıfırlansın
-                if (attemptPlatform == detector.platformName && now - lastAttemptTime > 1200L) {
-                    attemptCount = 0
+                consecutiveTabAttempts = 0
+                return
+            }
+
+            if (result.preferTabSwitch) {
+                // Sekme değiştirme (Instagram Ana Sayfa / TikTok Gelen Kutusu)
+                if (now - lastTabSwitchTime < TAB_SWITCH_COOLDOWN_MS) {
+                    scheduleFollowUp(FOLLOW_UP_DELAY_MS)
+                    return
                 }
-                return
-            }
-
-            // Deneme sayacı
-            if (attemptPlatform != detector.platformName || now - lastAttemptTime > ATTEMPT_WINDOW_MS) {
-                attemptPlatform = detector.platformName
-                attemptCount = 0
-            }
-            if (attemptCount >= MAX_ATTEMPTS) {
-                // Bir şeyler ters gidiyor: kullanıcıyı kilitlememek için dur
-                Log.w(TAG, "Safety pause on ${detector.platformName}")
-                pausedUntil = now + SAFETY_PAUSE_MS
-                attemptCount = 0
-                return
-            }
-            attemptCount++
-            lastAttemptTime = now
-            lastActionTime = now
-
-            val handled = if (result.preferTabSwitch) {
-                switchToSafeTab(rootNode, result, attemptCount)
+                consecutiveTabAttempts++
+                val switched = switchToSafeTab(rootNode, result, consecutiveTabAttempts, now)
+                if (switched) {
+                    lastTabSwitchTime = now
+                    preferences.recordBlock(detector.platformName)
+                    Log.i(TAG, "TAB_SWITCH ${detector.platformName} [${result.reason}] attempt=$consecutiveTabAttempts")
+                }
+                // Spam tıklamalara karşı +260ms sonra pencereyi tekrar doğrula
+                scheduleFollowUp(FOLLOW_UP_DELAY_MS)
             } else {
-                performGlobalAction(GLOBAL_ACTION_BACK)
-            }
-
-            if (handled) {
-                preferences.recordBlock(detector.platformName)
-                Log.i(TAG, "BLOCKED ${detector.platformName} [${result.reason}] attempt=$attemptCount")
+                // Tam ekran oynatıcıdan GERİ çıkma (DM Reel / YouTube Shorts)
+                if (now - lastBackActionTime < BACK_ACTION_COOLDOWN_MS) {
+                    scheduleFollowUp(FOLLOW_UP_DELAY_MS)
+                    return
+                }
+                val backed = performGlobalAction(GLOBAL_ACTION_BACK)
+                if (backed) {
+                    lastBackActionTime = now
+                    preferences.recordBlock(detector.platformName)
+                    Log.i(TAG, "BACK_BLOCK ${detector.platformName} [${result.reason}]")
+                }
+                scheduleFollowUp(FOLLOW_UP_DELAY_MS + 150L)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error evaluating short-form feed detection", e)
         }
     }
 
+    private fun scheduleFollowUp(delayMs: Long) {
+        mainHandler.removeCallbacks(followUpRunnable)
+        mainHandler.postDelayed(followUpRunnable, delayMs)
+    }
+
     /**
-     * Güvenli sekmeye geçiş. attempt: 1 -> ACTION_CLICK, 2 -> tek dokunma, 3 -> GERİ.
+     * Güvenli sekmeye geçiş.
+     * Instagram ve TikTok'ta ASLA GLOBAL_ACTION_BACK çağırmaz, böylece uygulamadan atmaz.
      */
     private fun switchToSafeTab(
         root: AccessibilityNodeInfo,
         result: DetectionResult,
-        attempt: Int
+        attempt: Int,
+        now: Long
     ): Boolean {
         val tab = NodeUtils.findBottomNavTab(root, result.targetTabIds, result.targetHomeTabKeywords)
+        if (tab != null) {
+            // 1. Öncelik: Erişilebilirlik ACTION_CLICK (ilk denemede veya her tek sayıda)
+            if (attempt % 2 == 1 && NodeUtils.clickNode(tab)) {
+                return true
+            }
+            // 2. Öncelik: Sekme merkezine tek dokunma (ACTION_CLICK engelleniyorsa veya spam durumunda)
+            if (now - lastGestureTapTime >= GESTURE_TAP_COOLDOWN_MS) {
+                NodeUtils.centerOf(tab)?.let { (x, y) ->
+                    if (tapAt(x, y)) {
+                        lastGestureTapTime = now
+                        return true
+                    }
+                }
+            }
+            // Tekrar ACTION_CLICK dene
+            if (NodeUtils.clickNode(tab)) {
+                return true
+            }
+        }
 
-        if (tab != null && attempt == 1) {
-            if (NodeUtils.clickNode(tab)) return true
-            // ACTION_CLICK desteklenmiyorsa hemen dokunmaya geç
-            NodeUtils.centerOf(tab)?.let { (x, y) -> if (tapAt(x, y)) return true }
+        // Yalnızca YouTube Shorts'ta alt bar bulunamazsa GERİ tuşu kullanılır;
+        // Instagram ve TikTok'ta uygulamadan atmamak için GERİ tuşu KULLANILMAZ.
+        if (result.platform.contains("YouTube", ignoreCase = true) &&
+            now - lastBackActionTime >= BACK_ACTION_COOLDOWN_MS
+        ) {
+            lastBackActionTime = now
+            return performGlobalAction(GLOBAL_ACTION_BACK)
         }
-        if (tab != null && attempt == 2) {
-            NodeUtils.centerOf(tab)?.let { (x, y) -> if (tapAt(x, y)) return true }
-        }
-        // Son çare
-        return performGlobalAction(GLOBAL_ACTION_BACK)
+
+        return false
     }
 
     private fun tapAt(x: Float, y: Float): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return false
         val path = Path().apply { moveTo(x, y) }
-        val stroke = GestureDescription.StrokeDescription(path, 0, 40L)
+        val stroke = GestureDescription.StrokeDescription(path, 0, 45L)
         val gesture = GestureDescription.Builder().addStroke(stroke).build()
         return dispatchGesture(gesture, null, null)
     }
 
     override fun onInterrupt() {
+        mainHandler.removeCallbacks(followUpRunnable)
         Log.w(TAG, "ScrollBlock Accessibility Service interrupted")
     }
 
     override fun onDestroy() {
+        mainHandler.removeCallbacks(followUpRunnable)
         super.onDestroy()
         _isServiceRunning.value = false
         Log.i(TAG, "ScrollBlock Accessibility Service destroyed")

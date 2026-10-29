@@ -1,6 +1,5 @@
 package com.example.scrollblock.detector
 
-import android.graphics.Rect
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -8,12 +7,13 @@ import com.example.scrollblock.preferences.BlockPreferences
 
 /**
  * Instagram Reels Engelleyici:
- *  - Alt bardaki Reels sekmesi seçiliyse -> Ana Sayfa sekmesine geçiş (uygulamadan ATMAZ).
+ *  - Alt bardaki Reels sekmesi seçiliyse -> Ana Sayfa sekmesine geçiş (uygulamadan ASLA ATMAZ).
  *  - DM'den gelen / dış bağlantıdan açılan tam ekran Reels:
- *      * "DM İzni (Tek Video)" AÇIK ise: İlk video izlenebilir. Kullanıcı bir sonraki videoya
- *        kaydırdığı (scroll) veya video değiştiği anda anında GERİ atılır (DM sohbetine döner).
- *      * "DM İzni" KAPALI ise: Reel açıldığı an doğrudan GERİ atılır.
- *  - Ana Sayfa akışı, Hikayeler, DM sohbeti, Profil ve Arama serbesttir.
+ *      * "DM İzni (Tek Video)" AÇIK ise: Yalnızca DM'den açılan ilk video izlenebilir.
+ *        Kullanıcı bir sonraki videoya kaydırdığı (scroll) veya video içeriği değiştiği anda
+ *        anında GERİ atılır (DM sohbetine döner).
+ *      * "DM İzni" KAPALI ise: Reel açıldığı an doğrudan GERİ atılır (DM sohbetine döner).
+ *  - Ana Sayfa akışı, Hikayeler, DM sohbeti, Profil ve Arama tamamen serbesttir.
  */
 class InstagramReelsDetector(
     private val preferences: BlockPreferences,
@@ -22,6 +22,9 @@ class InstagramReelsDetector(
 
     override val platformName: String = "Instagram Reels"
     override val packageNames: Set<String> = setOf("com.instagram.android")
+
+    /** Kullanıcının Reels'ı DM sohbetinden açıp açmadığını takip eder. */
+    private var inDmContext: Boolean = false
 
     override fun matchesPackage(packageName: String): Boolean {
         return packageName.lowercase().contains("instagram")
@@ -37,9 +40,18 @@ class InstagramReelsDetector(
 
         val now = SystemClock.uptimeMillis()
 
-        // ---- 1. ALT BAR REELS SEKMESİ (Her zaman Ana Sayfa'ya yönlendirilir) ----
+        // ---- 1. ALT BAR SEKMELERİ ----
         val reelsTab = NodeUtils.findBottomNavTab(rootNode, listOf("clips_tab"), listOf("reels"))
-        if (NodeUtils.isNodeSelected(reelsTab)) {
+        val feedTab = NodeUtils.findBottomNavTab(rootNode, listOf("feed_tab"), listOf("ana sayfa", "home"))
+        val profileTab = NodeUtils.findBottomNavTab(rootNode, listOf("profile_tab"), listOf("profil", "profile"))
+
+        val reelsTabSelected = NodeUtils.isNodeSelected(reelsTab)
+        val feedTabSelected = NodeUtils.isNodeSelected(feedTab)
+        val profileTabSelected = NodeUtils.isNodeSelected(profileTab)
+
+        // Alt bardaki Reels sekmesi seçiliyse -> Her zaman Ana Sayfa sekmesine yönlendir (GERİ tuşu basılmaz)
+        if (reelsTabSelected) {
+            inDmContext = false
             singleReelGuard.reset()
             return DetectionResult.detected(
                 platform = platformName,
@@ -50,170 +62,137 @@ class InstagramReelsDetector(
             )
         }
 
-        // ---- 2. TAM EKRAN REELS TESPİTİ (DM / Keşfet / Doğrudan Bağlantı) ----
-        val isReelActive = hasVisibleReelsViewer(rootNode, event)
+        // ---- 2. DM SOHBET / MESAJLAŞMA EKRANI TESPİTİ ----
+        val isDmScreen = NodeUtils.hasVisibleViewId(
+            rootNode,
+            "row_thread_composer",
+            "direct_thread",
+            "direct_inbox",
+            "thread_list",
+            "message_list",
+            "row_inbox"
+        ) || NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0.78f, 1.0f,
+            "mesaj...", "message...", "mesaj gönder"
+        )
 
-        // ---- 3. GÜVENLİ HİKAYE (STORY) İZLEYİCİSİ ----
-        // Sadece ve sadece Reels izleyicisi aktif DEĞİLKEN ve üstte hikaye ilerleme çubuğu varsa hikaye kabul edilir.
-        if (!isReelActive && isStoryViewer(rootNode)) {
+        // ---- 3. TAM EKRAN CLIPS (REELS) İZLEYİCİSİ TESPİTİ ----
+        val clipsVisible = NodeUtils.hasVisibleViewId(
+            rootNode,
+            "clips_viewer_view_pager",
+            "clips_viewer_fragment",
+            "clips_video_container",
+            "layout_clips_viewer",
+            "clips_viewer_root",
+            "clips_item_overlay",
+            "clips_ufi_component",
+            "clips_author_info"
+        )
+        val className = event?.className?.toString() ?: ""
+        val clipsActivity = event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
+            className.contains("ClipsViewer", ignoreCase = true)
+
+        val isReelActive = clipsVisible || clipsActivity
+
+        // ---- 4. REEL AKTİF DEĞİLSE: GÜVENLİ EKRANLAR (Ana Sayfa, Hikaye, DM, Profil) ----
+        if (!isReelActive) {
+            if (isDmScreen) {
+                inDmContext = true
+            } else if (feedTabSelected || profileTabSelected) {
+                inDmContext = false
+            }
             singleReelGuard.onViewerGone()
             return DetectionResult.notDetected(platformName)
         }
 
-        if (isReelActive) {
-            val isDmReelAllowed = preferences.isInstagramDmReelsAllowedSync()
+        // ---- 5. REEL AKTİF İKEN KARAR MEKANİZMASI ----
+        // Eğer kullanıcı DM'den gelmediyse ve alt barda Ana Sayfa sekmesi görünüyorsa
+        // (ör. Reels sekmesi veya ana ekran üzerinden açıldıysa) -> Ana Sayfa sekmesine tıkla (uygulamadan atma!)
+        if (!inDmContext && feedTab != null) {
+            singleReelGuard.reset()
+            return DetectionResult.detected(
+                platform = platformName,
+                reason = "Instagram Reels -> Ana Sayfa sekmesine geçiş",
+                preferTabSwitch = true,
+                targetTabIds = listOf("feed_tab"),
+                targetHomeTabKeywords = listOf("ana sayfa", "home")
+            )
+        }
 
-            // DM İzni (Tek Video) modu KAPALIYSA -> Reel açıldığı an direkt kapat (katı koruma)
-            if (!isDmReelAllowed) {
-                singleReelGuard.reset()
-                return DetectionResult.detected(
-                    platform = platformName,
-                    reason = "Instagram Reels (katı koruma: DM izni kapalı) -> Geri",
-                    preferTabSwitch = false
-                )
+        // DM İzni (Tek Video) kapalıysa -> doğrudan GERİ ile sohbete/önceki ekrana dön
+        val isDmReelAllowed = preferences.isInstagramDmReelsAllowedSync()
+        if (!isDmReelAllowed) {
+            singleReelGuard.reset()
+            return DetectionResult.detected(
+                platform = platformName,
+                reason = "Instagram tam ekran Reel (DM izni kapalı) -> Geri",
+                preferTabSwitch = false
+            )
+        }
+
+        // DM İzni (Tek Video) AÇIK:
+        // a) Sayfalayıcıda 2. veya sonraki öğeye geçildiyse (index > 0) veya scroll yapıldıysa
+        if (event?.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
+            val movedPastFirstItem = event.fromIndex > 0 || (event.toIndex > 0 && event.itemCount > 1)
+            val verdict = if (movedPastFirstItem) {
+                SingleReelGuard.Verdict.BLOCK
+            } else {
+                singleReelGuard.onPagerScrolled(now)
             }
-
-            // DM İzni (Tek Video) modu AÇIK:
-            // a) Kaydırma olayı geldiğinde (kullanıcı parmağıyla sonraki videoya kaydırdı)
-            if (event?.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
-                val verdict = singleReelGuard.onPagerScrolled(now)
-                if (verdict == SingleReelGuard.Verdict.BLOCK) {
-                    return DetectionResult.detected(
-                        platform = platformName,
-                        reason = "Instagram DM Reels kaydırma engellendi (tek video sınırı)",
-                        preferTabSwitch = false
-                    )
-                }
-                return DetectionResult.notDetected(platformName)
-            }
-
-            // b) Ekrandaki videonun parmak izi değiştiğinde (yazar veya açıklama değişimi)
-            val fingerprint = extractVideoFingerprint(rootNode)
-            val verdict = singleReelGuard.onViewerVisible(now, fingerprint)
             if (verdict == SingleReelGuard.Verdict.BLOCK) {
                 return DetectionResult.detected(
                     platform = platformName,
-                    reason = "Instagram DM sonraki videoya geçiş engellendi",
+                    reason = "Instagram DM Reels kaydırma engellendi (tek video sınırı)",
                     preferTabSwitch = false
                 )
             }
-
-            // İlk video serbest
             return DetectionResult.notDetected(platformName)
-        } else {
-            // İzleyici ekranda değilse (DM sohbetine dönüldü vb.) oturumu sıfırla
-            singleReelGuard.onViewerGone()
         }
 
+        // b) Parmak izi kontrolü (Litho uyumlu ekran metinleri + bilinen ID'ler)
+        val fingerprint = extractVideoFingerprint(rootNode)
+        val verdict = singleReelGuard.onViewerVisible(now, fingerprint)
+        if (verdict == SingleReelGuard.Verdict.BLOCK) {
+            return DetectionResult.detected(
+                platform = platformName,
+                reason = "Instagram DM sonraki videoya geçiş engellendi",
+                preferTabSwitch = false
+            )
+        }
+
+        // İlk video serbest
         return DetectionResult.notDetected(platformName)
     }
 
     /**
-     * Instagram'da tam ekran Reels oynatıcısını güvenilir şekilde tespit eder.
-     * Hem bilinen view ID'lerini hem de dikey tam ekran ViewPager yapısını inceler.
-     */
-    private fun hasVisibleReelsViewer(
-        rootNode: AccessibilityNodeInfo,
-        event: AccessibilityEvent?
-    ): Boolean {
-        // 1. Bilinen Reels View ID'leri
-        val hasClipsId = NodeUtils.hasVisibleViewId(
-            rootNode,
-            "clips_viewer_view_pager",
-            "clips_video_container",
-            "clips_viewer_fragment",
-            "layout_clips_viewer",
-            "clips_media_component",
-            "clips_swipe_refresh_container",
-            "clips_action_bar_container",
-            "clips_author_name"
-        )
-        if (hasClipsId) return true
-
-        // 2. Pencere sınıf adı kontrolü
-        val className = event?.className?.toString() ?: ""
-        if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
-            (className.contains("ClipsViewer", ignoreCase = true) ||
-             className.contains("ReelViewerFragment", ignoreCase = true))
-        ) {
-            return true
-        }
-
-        // 3. Ekranda Reels sağ menü butonları (Yorum, Ses/Audio, Remix vb.) ve video yapısı
-        val hasCommentButton = NodeUtils.hasVisibleViewId(rootNode, "comment_button", "row_feed_button_comment")
-        val hasAudioOrRemix = NodeUtils.hasVisibleViewId(rootNode, "clips_audio", "remix", "sound_title", "music_title")
-        if (hasCommentButton && hasAudioOrRemix) {
-            return true
-        }
-
-        // 4. Tam ekran dikey ViewPager (ReboundViewPager veya ViewPager2)
-        val rootBounds = Rect()
-        rootNode.getBoundsInScreen(rootBounds)
-        val screenW = rootBounds.width()
-        val screenH = rootBounds.height()
-        if (screenW <= 0 || screenH <= 0) return false
-
-        val nodeRect = Rect()
-        return NodeUtils.anyNodeMatches(rootNode) { node ->
-            if (!node.isVisibleToUser) return@anyNodeMatches false
-            val cls = node.className?.toString() ?: return@anyNodeMatches false
-            if (cls.contains("ViewPager", ignoreCase = true) || cls.contains("ReboundViewPager", ignoreCase = true)) {
-                node.getBoundsInScreen(nodeRect)
-                nodeRect.width() >= screenW * 0.85f && nodeRect.height() >= screenH * 0.75f
-            } else {
-                false
-            }
-        }
-    }
-
-    /**
-     * Sadece gerçek Instagram Hikaye ekranını tespit eder (Reels ile karıştırmaz).
-     */
-    private fun isStoryViewer(rootNode: AccessibilityNodeInfo): Boolean {
-        val hasStoryProgressBar = NodeUtils.hasVisibleViewId(
-            rootNode,
-            "story_progress_bar",
-            "reel_viewer_progress_bar",
-            "indicators_container",
-            "progress_bar_wrapper"
-        )
-        val hasReplyComposer = NodeUtils.hasVisibleViewId(
-            rootNode,
-            "story_reply_composer",
-            "direct_message_edit_text",
-            "message_composer_container"
-        )
-        return hasStoryProgressBar && hasReplyComposer
-    }
-
-    /**
-     * Ekranda oynatılan aktif videonun kullanıcı adı veya açıklamasından parmak izi üretir.
+     * Ekranda görünen aktif videonun kullanıcı adı, açıklaması veya Litho overlay metinlerinden
+     * parmak izi üretir.
      */
     private fun extractVideoFingerprint(rootNode: AccessibilityNodeInfo?): String? {
         if (rootNode == null) return null
 
-        val authorNode = NodeUtils.findNode(rootNode) { node ->
+        val author = NodeUtils.findNode(rootNode) { node ->
             node.isVisibleToUser && (
                 node.viewIdResourceName?.endsWith(":id/row_feed_photo_profile_name") == true ||
                 node.viewIdResourceName?.contains("clips_author") == true ||
                 node.viewIdResourceName?.contains("user_name") == true
             ) && !node.text.isNullOrEmpty()
-        }
-        val author = authorNode?.text?.toString()?.trim()
+        }?.text?.toString()?.trim()
 
-        val captionNode = NodeUtils.findNode(rootNode) { node ->
+        val caption = NodeUtils.findNode(rootNode) { node ->
             node.isVisibleToUser && (
                 node.viewIdResourceName?.contains("clips_caption") == true ||
                 node.viewIdResourceName?.contains("video_caption") == true
             ) && !node.text.isNullOrEmpty()
-        }
-        val caption = captionNode?.text?.toString()?.trim()
+        }?.text?.toString()?.trim()
 
-        return when {
+        val specific = when {
             !author.isNullOrEmpty() && !caption.isNullOrEmpty() -> "$author:$caption"
             !author.isNullOrEmpty() -> author
             !caption.isNullOrEmpty() -> caption
             else -> null
         }
+
+        return specific ?: NodeUtils.extractOverlayFingerprint(rootNode)
     }
 }

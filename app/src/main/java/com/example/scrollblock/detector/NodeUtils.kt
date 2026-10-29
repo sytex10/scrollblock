@@ -11,6 +11,15 @@ object NodeUtils {
     /** Bottom navigation bar region: lower part of the screen. */
     private const val BOTTOM_NAV_MIN_Y_FRACTION = 0.82f
 
+    private val IGNORED_FINGERPRINT_LABELS = setOf(
+        "beğen", "like", "yorum", "yorumlar", "comment", "comments",
+        "paylaş", "share", "daha fazla", "more", "takip et", "follow",
+        "takip ediliyor", "following", "ses", "audio", "reels", "shorts",
+        "ana sayfa", "home", "gelen kutusu", "inbox", "profil", "profile",
+        "keşfet", "explore", "ara", "search", "oluştur", "create",
+        "mesaj gönder", "mesaj...", "send message", "message..."
+    )
+
     /**
      * Traverses the node tree up to MAX_NODES_TO_VISIT nodes and executes [predicate].
      * Returns true as soon as [predicate] returns true.
@@ -93,10 +102,14 @@ object NodeUtils {
      * Hidden fragments kept in memory (e.g. Reels after switching tab) are ignored.
      */
     fun hasVisibleViewId(root: AccessibilityNodeInfo?, vararg idSubstrings: String): Boolean {
+        val h = windowHeight(root)
+        val rect = Rect()
         return anyNodeMatches(root) { node ->
             if (!node.isVisibleToUser) return@anyNodeMatches false
             val viewId = node.viewIdResourceName?.lowercase() ?: return@anyNodeMatches false
-            idSubstrings.any { sub -> viewId.contains(sub.lowercase()) }
+            if (!idSubstrings.any { sub -> viewId.contains(sub.lowercase()) }) return@anyNodeMatches false
+            node.getBoundsInScreen(rect)
+            rect.width() > 0 && rect.height() > 0 && (h <= 0 || rect.bottom > 0)
         }
     }
 
@@ -124,6 +137,7 @@ object NodeUtils {
             if (!node.isVisibleToUser) return@anyNodeMatches false
             if (!matchesKeywords(node, phrases)) return@anyNodeMatches false
             node.getBoundsInScreen(rect)
+            if (rect.width() <= 0 || rect.height() <= 0) return@anyNodeMatches false
             val cy = rect.exactCenterY()
             cy >= h * minYFraction && cy <= h * maxYFraction
         }
@@ -194,7 +208,6 @@ object NodeUtils {
 
     /**
      * Checks if a tab or button matching [tabKeywords] is currently SELECTED or active.
-     * (Legacy: searches the whole screen.)
      */
     fun isTabSelected(root: AccessibilityNodeInfo?, vararg tabKeywords: String): Boolean {
         return anyNodeMatches(root) { node ->
@@ -203,6 +216,56 @@ object NodeUtils {
                 tabKeywords.any { viewId.contains(it.lowercase()) }
             matches && isNodeSelected(node)
         }
+    }
+
+    /**
+     * Extracts a Litho-compatible content fingerprint from visible overlay texts/descriptions
+     * in the video metadata region (middle-to-bottom of the screen).
+     * Changes immediately when the user swipes to the next Reel / TikTok video.
+     */
+    fun extractOverlayFingerprint(root: AccessibilityNodeInfo?): String? {
+        if (root == null) return null
+        val h = windowHeight(root)
+        if (h <= 0) return null
+
+        val rect = Rect()
+        val parts = LinkedHashSet<String>()
+        val queue = ArrayDeque<AccessibilityNodeInfo>()
+        queue.add(root)
+        var visited = 0
+
+        while (queue.isNotEmpty() && visited < MAX_NODES_TO_VISIT && parts.size < 4) {
+            val node = queue.poll() ?: continue
+            visited++
+
+            if (node.isVisibleToUser) {
+                node.getBoundsInScreen(rect)
+                val cy = rect.exactCenterY()
+                if (rect.width() > 0 && rect.height() > 0 && cy in (h * 0.45f)..(h * 0.90f)) {
+                    val rawText = node.text?.toString()?.trim()
+                    val rawDesc = node.contentDescription?.toString()?.trim()
+                    val candidate = when {
+                        !rawText.isNullOrEmpty() && rawText.length >= 3 -> rawText
+                        !rawDesc.isNullOrEmpty() && rawDesc.length >= 4 -> rawDesc
+                        else -> null
+                    }
+                    if (candidate != null) {
+                        val lower = candidate.lowercase()
+                        val isGeneric = IGNORED_FINGERPRINT_LABELS.any { lower == it || lower.startsWith("$it ") }
+                        if (!isGeneric) {
+                            parts.add(candidate.take(40))
+                        }
+                    }
+                }
+            }
+
+            val childCount = node.childCount
+            for (i in 0 until childCount) {
+                node.getChild(i)?.let { queue.add(it) }
+            }
+        }
+
+        return if (parts.isEmpty()) null else parts.joinToString("|")
     }
 
     /**

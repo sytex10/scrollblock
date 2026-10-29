@@ -8,11 +8,11 @@ import com.example.scrollblock.preferences.BlockPreferences
 
 /**
  * TikTok Engelleyici:
- *  - Ana Sayfa (Sizin İçin) video akışı -> Gelen Kutusu sekmesine geçiş (uygulamadan ATMAZ).
+ *  - Ana Sayfa (Sizin İçin / Takip Edilenler) video akışı -> Gelen Kutusu sekmesine geçiş (uygulamadan ASLA ATMAZ).
  *  - DM / Sohbetten açılan tam ekran video:
  *      * "DM İzni (Tek Video)" AÇIK ise: İlk video izlenebilir. Kullanıcı bir sonraki videoya
  *        kaydırdığı (scroll) veya video değiştiği anda anında GERİ atılır (sohbete döner).
- *      * "DM İzni" KAPALI ise: Video açıldığı an doğrudan GERİ atılır.
+ *      * "DM İzni" KAPALI ise: Video açıldığı an doğrudan GERİ atılır (sohbete döner).
  *  - Gelen Kutusu, Sohbet mesajlaşma ekranı, Profil, Ayarlar, Hikayeler, Arama -> serbesttir.
  */
 class TikTokDetector(
@@ -58,6 +58,7 @@ class TikTokDetector(
         val inboxSelected = NodeUtils.isNodeSelected(inboxTab)
         val profileSelected = NodeUtils.isNodeSelected(profileTab)
         val homeSelected = NodeUtils.isNodeSelected(homeTab)
+        val bottomBarVisible = inboxTab != null || homeTab != null || profileTab != null
 
         // Ekranın üst kısmında görünen "Sizin İçin" sekmesi = kesin ana video akışı
         val forYouVisibleAtTop = NodeUtils.hasVisibleTextInRegion(
@@ -101,25 +102,29 @@ class TikTokDetector(
         }
 
         // ---- 4. SOHBETTEN / DM'DEN AÇILAN TAM EKRAN VİDEO ----
-        val isFullScreenVideo = hasFullScreenVideoPlayer(rootNode)
+        val isFullScreenVideo = !bottomBarVisible && hasFullScreenVideoPlayer(rootNode)
 
         if (isFullScreenVideo) {
             val isDmVideoAllowed = preferences.isTikTokDmVideosAllowedSync()
 
-            // DM İzni (Tek Video) modu KAPALIYSA -> Video açıldığı an direkt kapat (katı koruma)
+            // DM İzni (Tek Video) modu KAPALIYSA -> Video açıldığı an direkt kapat (sohbete dön)
             if (!isDmVideoAllowed) {
                 singleVideoGuard.reset()
                 return DetectionResult.detected(
                     platform = platformName,
-                    reason = "TikTok tam ekran video (katı koruma: DM izni kapalı) -> Geri",
+                    reason = "TikTok tam ekran video (DM izni kapalı) -> Geri",
                     preferTabSwitch = false
                 )
             }
 
             // DM İzni (Tek Video) modu AÇIK:
-            // a) Kaydırma olayı (TYPE_VIEW_SCROLLED)
             if (event?.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
-                val verdict = singleVideoGuard.onPagerScrolled(now)
+                val movedPastFirstItem = event.fromIndex > 0 || (event.toIndex > 0 && event.itemCount > 1)
+                val verdict = if (movedPastFirstItem) {
+                    SingleReelGuard.Verdict.BLOCK
+                } else {
+                    singleVideoGuard.onPagerScrolled(now)
+                }
                 if (verdict == SingleReelGuard.Verdict.BLOCK) {
                     return DetectionResult.detected(
                         platform = platformName,
@@ -130,7 +135,6 @@ class TikTokDetector(
                 return DetectionResult.notDetected(platformName)
             }
 
-            // b) Ekrandaki videonun değişimi (yazar/açıklama parmak izi)
             val fingerprint = extractVideoFingerprint(rootNode)
             val verdict = singleVideoGuard.onViewerVisible(now, fingerprint)
             if (verdict == SingleReelGuard.Verdict.BLOCK) {
@@ -144,7 +148,6 @@ class TikTokDetector(
             // İlk video serbest
             return DetectionResult.notDetected(platformName)
         } else {
-            // Video oynatıcı ekranda değil (sohbette mesajlar görünüyorsa vb.)
             singleVideoGuard.onViewerGone()
         }
 
@@ -175,7 +178,7 @@ class TikTokDetector(
         if (screenW <= 0 || screenH <= 0) return false
 
         val nodeRect = Rect()
-        // Tam ekran dikey ViewPager kontrolü
+        // Tam ekran dikey ViewPager kontrolü (sohbet ekranında RecyclerView vardır, ViewPager yoktur)
         return NodeUtils.anyNodeMatches(rootNode) { node ->
             if (!node.isVisibleToUser) return@anyNodeMatches false
             val cls = node.className?.toString() ?: return@anyNodeMatches false
@@ -186,8 +189,8 @@ class TikTokDetector(
     }
 
     /**
-     * Ekranda oynatılan videonun içerik üreticisi (@kullanici) ve açıklama metninden
-     * parmak izi üretir. Kullanıcı kaydırıp video değiştiğinde parmak izi farklılaşır.
+     * Ekranda oynatılan videonun içerik üreticisi (@kullanici), açıklama metni veya
+     * görünür overlay metinlerinden parmak izi üretir.
      */
     private fun extractVideoFingerprint(rootNode: AccessibilityNodeInfo?): String? {
         if (rootNode == null) return null
@@ -218,11 +221,13 @@ class TikTokDetector(
         }
         val caption = captionNode?.text?.toString()?.trim()
 
-        return when {
+        val specific = when {
             !author.isNullOrEmpty() && !caption.isNullOrEmpty() -> "$author|$caption"
             !author.isNullOrEmpty() -> author
             !caption.isNullOrEmpty() -> caption
             else -> null
         }
+
+        return specific ?: NodeUtils.extractOverlayFingerprint(rootNode)
     }
 }

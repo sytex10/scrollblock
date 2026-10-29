@@ -1,7 +1,7 @@
 {
-  "versionCode": 17,
-  "versionName": "2.6",
-  "minRequiredVersionCode": 17,
-  "changelog": "v2.6: İlk defa girenlere özel tanıtım rehberi eklendi. Üst durum çubuğu (saat ve pil alanı) karanlık temaya uyarlandı. DM Reels ve TikTok tek video engelleme mekanizması hassaslaştırıldı.",
+  "versionCode": 18,
+  "versionName": "2.7",
+  "minRequiredVersionCode": 18,
+  "changelog": "v2.7: Instagram'dan tamamen atma sorunu giderildi (yalnızca Ana Sayfa'ya yönlendirir). Anti-spam koruması eklendi (art arda basarak engeli aşma kapatıldı). Mola Ver ve Güncellemeyi Kontrol Et butonlarındaki kayma düzeltildi. 4 adımlı detaylı ve etkileşimli kurulum/kullanım rehberi eklendi.",
   "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
 }

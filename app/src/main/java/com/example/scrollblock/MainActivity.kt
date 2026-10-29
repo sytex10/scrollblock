@@ -37,6 +37,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             ScrollBlockTheme {
                 val hasCompletedOnboarding by viewModel.hasCompletedOnboarding.collectAsStateWithLifecycle()
+                val isServiceActive by viewModel.isServiceActive.collectAsStateWithLifecycle()
 
                 // Tüm ekranı (status bar ve navigation bar dahil) NearBlack (#0A0A0B) ile doldurur
                 Surface(
@@ -54,6 +55,7 @@ class MainActivity : ComponentActivity() {
                         ) { completed ->
                             if (!completed) {
                                 OnboardingScreen(
+                                    isServiceActive = isServiceActive,
                                     onComplete = { viewModel.completeOnboarding() }
                                 )
                             } else {

@@ -103,6 +103,10 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
         preferences.setOnboardingCompleted(true)
     }
 
+    fun reopenOnboarding() {
+        preferences.setOnboardingCompleted(false)
+    }
+
     // --- Mola / Cooldown Aksiyonları ---
 
     fun startBreak(durationMinutes: Int = preferences.getBreakDurationMinutesSync()): Boolean {
