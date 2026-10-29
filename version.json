@@ -1,7 +1,7 @@
 {
-  "versionCode": 14,
-  "versionName": "2.3",
-  "minRequiredVersionCode": 14,
-  "changelog": "v2.3: TikTok Ana Sayfa akışı artık uygulamadan atmak yerine Gelen Kutusu'na yönlendirir. Instagram Reels sekmesi Ana Sayfa'ya yönlendirir. Gelen kutusunda kaydırma, profil düzenleme ve hikayeler tamamen serbest. Hayalet dokunma koruması eklendi.",
+  "versionCode": 15,
+  "versionName": "2.4",
+  "minRequiredVersionCode": 15,
+  "changelog": "v2.4: 3 Yeni Özellik Eklendi! 1) Ayarlanabilir Mola / Cooldown Modu (5-30 dk, günlük limit, canlı sayaç). 2) Ebeveyn / Güvenlik PIN Kilidi (PBKDF2 tuzlu hash ve brute-force korumalı 4 haneli PIN). 3) DM'den Gelen Reels İzni (İlk video serbest, sonraki videoya kaydırma anında engellenir).",
   "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
 }

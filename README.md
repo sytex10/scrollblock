@@ -4,12 +4,15 @@ ScrollBlock, Android cihazlarda kısa video akışlarını (**YouTube Shorts**, 
 
 ## 🚀 Özellikler
 
-* **Anında ve Sessiz Müdahale:** Hiçbir uyarı penceresi, geri sayım veya onay olmadan kısa video açıldığı milisaniyede otomatik `GERİ (BACK)` tuşunu tetikler.
+* **Anında ve Sessiz Müdahale:** Hiçbir uyarı penceresi veya onay olmadan kısa video açıldığı milisaniyede otomatik `GERİ (BACK)` veya akıllı yönlendirmeyi tetikler.
 * **Akıllı Koruma:**
   * **YouTube:** Yalnızca tam ekran Shorts oynatıcısını engeller; normal videolar, arama ve kitaplık kesintisiz çalışır.
-  * **Instagram:** Yalnızca tam ekran Reels oynatıcısını engeller; ana sayfa akışı, hikayeler, direkt mesajlar (DM) ve profiller tamamen serbesttir.
-  * **TikTok:** Ana video akışını kapatır; gelen kutusu, bildirimler ve sohbetler açık kalır.
-* **%100 Gizlilik:** İnternet üzerinden hiçbir ekran görüntüsü veya veri aktarılmaz.
+  * **Instagram:** Reels sekmesini Ana Sayfa'ya yönlendirir; ana sayfa akışı, hikayeler, direkt mesajlar (DM) ve profiller serbesttir.
+  * **TikTok:** Ana video akışını doğrudan Gelen Kutusu'na yönlendirir; gelen kutusunda kaydırma, profil yönetimi ve sohbetler serbesttir.
+* **⏱️ Ayarlanabilir Mola / Cooldown Modu:** 5, 10, 15 veya 30 dakikalık geçici mola hakkı; isteğe bağlı günlük kullanım limiti ve ana ekranda canlı geri sayım sayacı. Süre bitince servis otomatik olarak engellemeye devam eder.
+* **🔒 Ebeveyn / Güvenlik PIN Kilidi:** 4 haneli PIN şifresi ile engelleme ayarlarını, platform anahtarlarını ve mola başlatmayı yetkisiz değişikliklere karşı korur (PBKDF2 tuzlu hash ve brute-force koruması).
+* **📩 DM'den Gelen Reels İzni (Tek Video):** Arkadaşlarınızın DM'den gönderdiği ilk Reel'ı izlemenize izin verir; ancak bir sonraki videoya kaydırmaya çalıştığınız an algılayıp hemen kapatır.
+* **%100 Gizlilik:** İnternet üzerinden hiçbir ekran görüntüsü veya kişisel veri aktarılmaz.
 * **Uygulama İçi Doğrudan Güncelleme:** GitHub üzerinden tek tıkla doğrudan son sürüme güncelleme desteği.
 
 ## 📥 İndir (APK)

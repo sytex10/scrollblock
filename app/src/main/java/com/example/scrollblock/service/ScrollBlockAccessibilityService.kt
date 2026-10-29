@@ -21,12 +21,15 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Engelleme stratejisi:
- *  1. Ana akış sekmesindeyse (TikTok Ana Sayfa / Instagram Reels / YouTube Shorts sekmesi)
+ *  1. Mola (Cooldown) aktifse servis hiçbir engelleme yapmaz, kullanıcıya geçici serbestlik tanır.
+ *  2. Ana akış sekmesindeyse (TikTok Ana Sayfa / Instagram Reels / YouTube Shorts sekmesi)
  *     -> güvenli sekmeye geç (Gelen Kutusu / Ana Sayfa). Uygulamadan ATMAZ.
  *     a) Önce erişilebilirlik ACTION_CLICK
  *     b) Ekran değişmediyse sadece O SEKMENİN koordinatına tek bir dokunma
  *     c) Hâlâ değişmediyse son çare GERİ
- *  2. Tam ekran açılan tekil video (DM / keşfet) -> GERİ (önceki ekrana döner)
+ *  3. Tam ekran açılan tekil video (DM / keşfet):
+ *     - Instagram DM Reels izni açıkken ilk video serbest; bir sonraki videoya kaydırıldığı an GERİ atılır.
+ *     - İzin kapalıyken anında GERİ atılır.
  *
  * Hayalet dokunma koruması:
  *  - Dokunma sadece alt barda bulunan ve görünen hedef sekmenin merkezine yapılır.
@@ -78,6 +81,11 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
         val detector = detectors.firstOrNull { it.matchesPackage(packageName) } ?: return
         if (!detector.isEnabled()) return
 
+        // 1. Mola / Cooldown kontrolü: Mola süresi dolana kadar koruma geçici olarak askıya alınır
+        if (preferences.isBreakActiveSync()) {
+            return
+        }
+
         val eventType = event.eventType
         if (eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
             eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
@@ -87,8 +95,10 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
         val now = SystemClock.uptimeMillis()
         if (now < pausedUntil) return
         if (now - lastActionTime < DEBOUNCE_INTERVAL_MS) return
-        // Yoğun kaydırma olaylarında performans için seyrekleştir
-        if (eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
+
+        // Yalnızca yüksek sıklıkta gelen içerik değişikliklerini seyrekleştir;
+        // Kaydırma (TYPE_VIEW_SCROLLED) veya pencere geçişi anında değerlendirilir.
+        if (eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
             now - lastEvalTime < EVAL_THROTTLE_MS
         ) return
         lastEvalTime = now
