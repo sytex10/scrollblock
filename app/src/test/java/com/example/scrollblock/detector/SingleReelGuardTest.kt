@@ -9,7 +9,7 @@ import org.junit.Test
 class SingleReelGuardTest {
 
     private lateinit var guard: SingleReelGuard
-    private val graceMs = 900L
+    private val graceMs = 500L
 
     @Before
     fun setUp() {
@@ -34,12 +34,12 @@ class SingleReelGuardTest {
         // İzleyici açılıyor
         guard.onViewerVisible(now, "author:alice")
 
-        // Açılış anındaki geçiş animasyonu scroll tetikleyebilir (300ms sonra)
-        val scrollVerdict = guard.onPagerScrolled(now + 300L)
+        // Açılış anındaki geçiş animasyonu scroll tetikleyebilir (200ms sonra)
+        val scrollVerdict = guard.onPagerScrolled(now + 200L)
         assertEquals(SingleReelGuard.Verdict.ALLOW, scrollVerdict)
 
         // Hâlâ aynı video
-        val visibleVerdict = guard.onViewerVisible(now + 400L, "author:alice")
+        val visibleVerdict = guard.onViewerVisible(now + 300L, "author:alice")
         assertEquals(SingleReelGuard.Verdict.ALLOW, visibleVerdict)
     }
 
@@ -48,12 +48,12 @@ class SingleReelGuardTest {
         val now = 10_000L
         guard.onViewerVisible(now, "author:alice")
 
-        // Kullanıcı videoyu izledi, 2 saniye sonra bir sonraki videoya kaydırdı
-        val scrollVerdict = guard.onPagerScrolled(now + 2_000L)
+        // Kullanıcı videoyu izledi, 1 saniye sonra bir sonraki videoya kaydırdı
+        val scrollVerdict = guard.onPagerScrolled(now + 1_000L)
         assertEquals(SingleReelGuard.Verdict.BLOCK, scrollVerdict)
 
         // Artık izleyici kapanana kadar BLOCK döner
-        val nextVideoVerdict = guard.onViewerVisible(now + 2_500L, "author:bob")
+        val nextVideoVerdict = guard.onViewerVisible(now + 1_500L, "author:bob")
         assertEquals(SingleReelGuard.Verdict.BLOCK, nextVideoVerdict)
     }
 
@@ -62,8 +62,8 @@ class SingleReelGuardTest {
         val now = 10_000L
         guard.onViewerVisible(now, "author:creator1|cap:hello")
 
-        // 1.5 saniye sonra kullanıcı kaydırdı ve ekrandaki içerik değişti
-        val changedVerdict = guard.onViewerVisible(now + 1_500L, "author:creator2|cap:different")
+        // 800ms sonra kullanıcı kaydırdı ve ekrandaki içerik değişti
+        val changedVerdict = guard.onViewerVisible(now + 800L, "author:creator2|cap:different")
         assertEquals(SingleReelGuard.Verdict.BLOCK, changedVerdict)
     }
 
@@ -72,14 +72,14 @@ class SingleReelGuardTest {
         val now = 10_000L
         guard.onViewerVisible(now, "author:first")
         // Kaydırma ile engelleme tetiklendi
-        guard.onPagerScrolled(now + 1_500L)
-        assertEquals(SingleReelGuard.Verdict.BLOCK, guard.onPagerScrolled(now + 1_600L))
+        guard.onPagerScrolled(now + 800L)
+        assertEquals(SingleReelGuard.Verdict.BLOCK, guard.onPagerScrolled(now + 900L))
 
         // Kullanıcı DM'e geri döndü (izleyici kapandı)
         guard.onViewerGone()
         assertFalse(guard.isSessionActive)
 
-        // DM'den başka bir reels açtı -> yeni oturum başlar ve ilk video serbesttir
+        // DM'den başka bir video açtı -> yeni oturum başlar ve ilk video serbesttir
         val newSessionVerdict = guard.onViewerVisible(now + 5_000L, "author:second")
         assertEquals(SingleReelGuard.Verdict.ALLOW, newSessionVerdict)
         assertTrue(guard.isSessionActive)

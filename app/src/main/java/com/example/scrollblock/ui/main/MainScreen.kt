@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -36,8 +38,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -191,10 +191,10 @@ fun MainScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(horizontal = 20.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .padding(horizontal = 18.dp, vertical = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 1. Üst Başlık ve Durum Göstergesi
+            // 1. Üst Bar & Durum Hapı
             TopBarSection(
                 versionName = currentVersionName,
                 isServiceActive = isServiceActive,
@@ -207,7 +207,7 @@ fun MainScreen(
                 }
             )
 
-            // 2. Erişilebilirlik Kurulum Kartı (Yalnızca servis kapalıysa veya kullanıcı açmak istediğinde)
+            // 2. Erişilebilirlik Uyarısı (Servis kapalıysa görünür)
             if (!isServiceActive) {
                 PermissionSetupBanner(
                     onOpenAppDetails = { AccessibilityUtils.openAppDetailsSettings(context) },
@@ -216,8 +216,8 @@ fun MainScreen(
                 )
             }
 
-            // 3. Sayaç & Mola Kontrolü
-            OverviewAndBreakSection(
+            // 3. Gösterge Paneli: Engellenen Akış Sayacı
+            StatsOverviewCard(
                 totalCount = totalBlockedCount,
                 lastPlatform = lastBlockedPlatform,
                 lastTimestamp = lastBlockedTimestamp,
@@ -225,7 +225,12 @@ fun MainScreen(
                     executeProtectedAction(subtitle = "Sayacı sıfırlamak için PIN girin.") {
                         viewModel.resetStatistics()
                     }
-                },
+                }
+            )
+
+            // 4. Mola / Cooldown Bölümü
+            SectionHeader(title = "MOLA VE DİNLENME")
+            BreakCooldownCard(
                 isBreakActive = isBreakActive,
                 remainingSeconds = breakRemainingSeconds,
                 selectedDurationMin = breakDurationMinutes,
@@ -261,12 +266,13 @@ fun MainScreen(
                 },
                 onEndBreak = {
                     viewModel.endBreak()
-                    Toast.makeText(context, "Mola bitirildi.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Mola bitirildi. Koruma devrede.", Toast.LENGTH_SHORT).show()
                 }
             )
 
-            // 4. Platformlar ve DM Tek Video İzinleri
-            PlatformsGroupSection(
+            // 5. Koruma Platformları & DM İzinleri
+            SectionHeader(title = "KORUMA PLATFORMLARI")
+            PlatformsGroupCard(
                 isInstagramEnabled = isInstagramEnabled,
                 onInstagramToggle = { enabled ->
                     if (!enabled) {
@@ -319,8 +325,9 @@ fun MainScreen(
                 }
             )
 
-            // 5. Güvenlik & Güncelleme
-            SystemAndSecuritySection(
+            // 6. Güvenlik & Sistem Ayarları
+            SectionHeader(title = "GÜVENLİK VE SİSTEM")
+            SystemSecurityCard(
                 isPinEnabled = isPinEnabled,
                 onTogglePin = { enable ->
                     if (enable) {
@@ -365,7 +372,7 @@ fun MainScreen(
                 isCheckingUpdate = isCheckingUpdate
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         // PIN Doğrulama Diyaloğu
@@ -410,7 +417,7 @@ fun MainScreen(
             )
         }
 
-        // Uzaktan Güncelleme Diyaloğu
+        // Güncelleme Zorunlu Modalı
         if (remoteUpdateInfo != null && remoteUpdateInfo!!.versionCode > currentVersionCode) {
             val info = remoteUpdateInfo!!
             var isDownloadingMandatory by remember { mutableStateOf(false) }
@@ -440,7 +447,7 @@ fun MainScreen(
                     )
 
                     Text(
-                        text = "Devam etmek için uygulamayı güncelleyin.",
+                        text = "ScrollBlock v${info.versionName} güncellemesi mevcut.",
                         fontSize = 13.sp,
                         color = TextSecondary
                     )
@@ -450,14 +457,14 @@ fun MainScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(NearBlack)
+                                .background(CardBackgroundElevated)
                                 .border(1.dp, HairlineDivider, RoundedCornerShape(10.dp))
                                 .padding(12.dp)
                         ) {
                             Text(
                                 text = info.changelog,
                                 fontSize = 12.sp,
-                                color = TextSecondary,
+                                color = TextPrimary,
                                 lineHeight = 17.sp
                             )
                         }
@@ -467,36 +474,35 @@ fun MainScreen(
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             LinearProgressIndicator(
                                 progress = { mandatoryProgress },
-                                modifier = Modifier.fillMaxWidth().height(4.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp)),
                                 color = AccentPrimary,
                                 trackColor = CardBackgroundElevated
                             )
                             Text(
-                                text = "%${(mandatoryProgress * 100).toInt()} indirildi",
+                                text = "İndiriliyor: %${(mandatoryProgress * 100).toInt()}",
                                 fontSize = 11.sp,
-                                fontFamily = FontFamily.Monospace,
-                                color = TextMuted
+                                color = TextSecondary
                             )
                         }
                     } else {
                         Button(
                             onClick = {
-                                if (!UpdateManager.canRequestPackageInstalls(context)) {
-                                    Toast.makeText(context, "Bilinmeyen kaynaklardan yükleme izni verin", Toast.LENGTH_SHORT).show()
-                                    UpdateManager.openInstallPermissionSettings(context)
-                                } else {
-                                    isDownloadingMandatory = true
-                                    coroutineScope.launch {
-                                        UpdateManager.downloadAndInstall(
-                                            context = context,
-                                            urlString = info.apkUrl,
-                                            onProgress = { p -> mandatoryProgress = p / 100f },
-                                            onError = { err ->
-                                                isDownloadingMandatory = false
-                                                Toast.makeText(context, err, Toast.LENGTH_LONG).show()
-                                            }
-                                        )
-                                    }
+                                isDownloadingMandatory = true
+                                coroutineScope.launch {
+                                    UpdateManager.downloadAndInstall(
+                                        context = context,
+                                        urlString = info.apkUrl,
+                                        onProgress = { progressInt ->
+                                            mandatoryProgress = progressInt / 100f
+                                        },
+                                        onError = { errorMsg ->
+                                            isDownloadingMandatory = false
+                                            Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                                        }
+                                    )
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -507,7 +513,7 @@ fun MainScreen(
                             )
                         ) {
                             Text(
-                                text = "İndir ve Kur",
+                                text = "İndir ve Güncelle",
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 14.sp
                             )
@@ -519,7 +525,19 @@ fun MainScreen(
     }
 }
 
-// ---------------- BÖLÜMLER ----------------
+// ----------------- YARDIMCI BÖLÜM VE BİLEŞENLER -----------------
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = TextMuted,
+        letterSpacing = 1.sp,
+        modifier = Modifier.padding(start = 2.dp, top = 4.dp)
+    )
+}
 
 @Composable
 private fun TopBarSection(
@@ -531,7 +549,7 @@ private fun TopBarSection(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 4.dp),
+            .padding(top = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -541,8 +559,8 @@ private fun TopBarSection(
         ) {
             Text(
                 text = "scrollblock",
-                fontSize = 23.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
                 color = TextPrimary,
                 letterSpacing = (-0.8).sp
             )
@@ -618,7 +636,7 @@ private fun PermissionSetupBanner(
             .background(CardBackground)
             .border(1.dp, AccentSignal.copy(alpha = 0.45f), RoundedCornerShape(14.dp))
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -627,13 +645,13 @@ private fun PermissionSetupBanner(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = "Erişilebilirlik servisi kapalı",
+                    text = "Erişilebilirlik Servisi Kapalı",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = TextPrimary
                 )
                 Text(
-                    text = "Kısa video akışlarını algılamak için servisi açın.",
+                    text = "Kısa videoları algılayıp yönlendirmek için servisi açın.",
                     fontSize = 12.sp,
                     color = TextSecondary
                 )
@@ -654,14 +672,12 @@ private fun PermissionSetupBanner(
 
         HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
 
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = "Android 13+ kısıtlı ayar kilidi varsa önce Uygulama Bilgisi ekranında sağ üstteki ⋮ menüsünden \"Kısıtlı ayarlara izin ver\" seçeneğini açın.",
-                fontSize = 12.sp,
-                color = TextSecondary,
-                lineHeight = 17.sp
-            )
-        }
+        Text(
+            text = "Android 13+ kullanıyorsanız önce Uygulama Bilgisi ekranında sağ üstteki (⋮) menüsünden 'Kısıtlı ayarlara izin ver' seçeneğini etkinleştirin.",
+            fontSize = 12.sp,
+            color = TextSecondary,
+            lineHeight = 16.sp
+        )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -674,11 +690,7 @@ private fun PermissionSetupBanner(
                 contentPadding = PaddingValues(vertical = 10.dp, horizontal = 8.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
             ) {
-                Text(
-                    text = "1. Uygulama Bilgisi",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                Text(text = "1. Uygulama Bilgisi", fontSize = 12.sp, fontWeight = FontWeight.Medium)
             }
 
             Button(
@@ -691,22 +703,85 @@ private fun PermissionSetupBanner(
                     contentColor = NearBlack
                 )
             ) {
-                Text(
-                    text = "2. Erişilebilirliği Aç",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Text(text = "2. Erişilebilirliği Aç", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
         }
     }
 }
 
 @Composable
-private fun OverviewAndBreakSection(
+private fun StatsOverviewCard(
     totalCount: Int,
     lastPlatform: String,
     lastTimestamp: Long,
-    onResetStats: () -> Unit,
+    onResetStats: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(CardBackground)
+            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = "Toplam Engellenen Akış",
+                    fontSize = 12.sp,
+                    color = TextSecondary
+                )
+                Text(
+                    text = "$totalCount",
+                    fontSize = 38.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                    color = TextPrimary,
+                    letterSpacing = (-1.5).sp
+                )
+            }
+
+            if (totalCount > 0) {
+                Text(
+                    text = "Sıfırla",
+                    fontSize = 11.sp,
+                    color = TextMuted,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(CardBackgroundElevated)
+                        .clickable { onResetStats() }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+        }
+
+        val statusText = if (totalCount == 0 || lastPlatform.isEmpty()) {
+            "Henüz hiçbir kısa video akışı engellenmedi"
+        } else {
+            val timeAgo = DateUtils.getRelativeTimeSpanString(
+                lastTimestamp,
+                System.currentTimeMillis(),
+                DateUtils.MINUTE_IN_MILLIS,
+                DateUtils.FORMAT_ABBREV_RELATIVE
+            ).toString()
+            "Son engelleme: $lastPlatform · $timeAgo"
+        }
+
+        Text(
+            text = statusText,
+            fontSize = 12.sp,
+            color = TextMuted
+        )
+    }
+}
+
+@Composable
+private fun BreakCooldownCard(
     isBreakActive: Boolean,
     remainingSeconds: Long,
     selectedDurationMin: Int,
@@ -721,73 +796,18 @@ private fun OverviewAndBreakSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(CardBackground)
-            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // Üst Kısım: Engellenen Akış Sayacı
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = "Engellenen akış",
-                    fontSize = 12.sp,
-                    color = TextSecondary
-                )
-                Text(
-                    text = "$totalCount",
-                    fontSize = 34.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    fontFamily = FontFamily.Monospace,
-                    color = TextPrimary,
-                    letterSpacing = (-1).sp
-                )
-            }
+        if (isBreakActive) {
+            // Mola Aktif Göstergesi
+            val minutes = remainingSeconds / 60
+            val seconds = remainingSeconds % 60
+            val timeFormatted = "%02d:%02d".format(minutes, seconds)
 
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                if (lastPlatform.isNotEmpty() && lastTimestamp > 0L) {
-                    val relativeTime = DateUtils.getRelativeTimeSpanString(
-                        lastTimestamp,
-                        System.currentTimeMillis(),
-                        DateUtils.MINUTE_IN_MILLIS
-                    )
-                    Text(
-                        text = "$lastPlatform · $relativeTime",
-                        fontSize = 11.sp,
-                        color = TextSecondary
-                    )
-                }
-                if (totalCount > 0) {
-                    Text(
-                        text = "Sıfırla",
-                        fontSize = 11.sp,
-                        color = TextMuted,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .clickable { onResetStats() }
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
-            }
-        }
-
-        HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
-
-        // Alt Kısım: Mola / Cooldown Kontrolü
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -795,159 +815,152 @@ private fun OverviewAndBreakSection(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = if (isBreakActive) "Mola aktif" else "Geçici mola",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = TextPrimary
-                    )
-                    val usageText = if (dailyLimit == 0) {
-                        "Bugün $usedToday kez kullanıldı · Sınırsız"
-                    } else {
-                        val left = (dailyLimit - usedToday).coerceAtLeast(0)
-                        "Bugün kalan hak: $left / $dailyLimit"
-                    }
-                    Text(
-                        text = usageText,
+                        text = "MOLA AKTİF",
                         fontSize = 11.sp,
-                        color = TextMuted
+                        fontWeight = FontWeight.Bold,
+                        color = AccentSignal,
+                        letterSpacing = 0.5.sp
+                    )
+                    Text(
+                        text = timeFormatted,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace,
+                        color = TextPrimary
                     )
                 }
 
-                // Günlük limit seçici (kompakt)
-                if (!isBreakActive) {
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(NearBlack)
-                            .border(1.dp, HairlineDivider, RoundedCornerShape(8.dp))
-                            .padding(2.dp),
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        BreakPolicy.DAILY_LIMIT_OPTIONS.forEach { limit ->
-                            val selected = limit == dailyLimit
-                            val text = if (limit == 0) "∞" else "${limit}x"
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(if (selected) CardBackgroundElevated else Color.Transparent)
-                                    .clickable { onSelectDailyLimit(limit) }
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = text,
-                                    fontSize = 11.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                                    color = if (selected) TextPrimary else TextMuted
-                                )
-                            }
+                Button(
+                    onClick = onEndBreak,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AccentSignalSoft,
+                        contentColor = Color(0xFFFCA5A5)
+                    ),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text(text = "Molayı Bitir", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Text(
+                text = "Engelleme geçici olarak durduruldu. Süre dolunca otomatik olarak tekrar devreye girecektir.",
+                fontSize = 12.sp,
+                color = TextSecondary,
+                lineHeight = 16.sp
+            )
+        } else {
+            // Mola Ayarları & Başlatma
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = "Geçici Mola Modu",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = "Belirli bir süre için engellemeyi duraklatın.",
+                        fontSize = 12.sp,
+                        color = TextSecondary
+                    )
+                }
+
+                Button(
+                    onClick = onStartBreak,
+                    enabled = canStartBreak,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AccentPrimary,
+                        contentColor = NearBlack
+                    ),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text(text = "Mola Ver", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
+
+            // Süre Seçici Çipler
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "Mola Süresi",
+                    fontSize = 12.sp,
+                    color = TextSecondary
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    BreakPolicy.DURATION_OPTIONS_MIN.forEach { duration ->
+                        val isSelected = duration == selectedDurationMin
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSelected) AccentPrimary else CardBackgroundElevated)
+                                .border(1.dp, if (isSelected) AccentPrimary else HairlineDivider, RoundedCornerShape(8.dp))
+                                .clickable { onSelectDuration(duration) }
+                                .padding(vertical = 7.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "$duration dk",
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (isSelected) NearBlack else TextSecondary
+                            )
                         }
                     }
                 }
             }
 
-            if (isBreakActive) {
-                val min = remainingSeconds / 60
-                val sec = remainingSeconds % 60
-                val timeString = String.format("%02d:%02d", min, sec)
-
+            // Günlük Limit Seçici
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(NearBlack)
-                        .border(1.dp, AccentSignal.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Text(text = "Günlük Kullanım Sınırı", fontSize = 12.sp, color = TextSecondary)
+                    if (dailyLimit > 0) {
                         Text(
-                            text = "Kalan süre",
+                            text = "Bugün: $usedToday / $dailyLimit kullanıldı",
                             fontSize = 11.sp,
-                            color = TextSecondary
-                        )
-                        Text(
-                            text = timeString,
-                            fontSize = 26.sp,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
-                        )
-                    }
-
-                    Button(
-                        onClick = onEndBreak,
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = AccentSignal,
-                            contentColor = TextPrimary
-                        ),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
-                    ) {
-                        Text(
-                            text = "Bitir",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
+                            color = TextMuted
                         )
                     }
                 }
-            } else {
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Süre seçimi
-                    Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(NearBlack)
-                            .border(1.dp, HairlineDivider, RoundedCornerShape(10.dp))
-                            .padding(3.dp),
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        BreakPolicy.DURATION_OPTIONS_MIN.forEach { duration ->
-                            val isSelected = duration == selectedDurationMin
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(7.dp))
-                                    .background(if (isSelected) CardBackgroundElevated else Color.Transparent)
-                                    .clickable { onSelectDuration(duration) }
-                                    .padding(vertical = 8.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "${duration}dk",
-                                    fontSize = 12.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                    color = if (isSelected) TextPrimary else TextMuted
-                                )
-                            }
+                    BreakPolicy.DAILY_LIMIT_OPTIONS.forEach { limit ->
+                        val isSelected = limit == dailyLimit
+                        val label = if (limit == 0) "Sınırsız" else "$limit kez"
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSelected) AccentPrimary else CardBackgroundElevated)
+                                .border(1.dp, if (isSelected) AccentPrimary else HairlineDivider, RoundedCornerShape(8.dp))
+                                .clickable { onSelectDailyLimit(limit) }
+                                .padding(vertical = 7.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = label,
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (isSelected) NearBlack else TextSecondary
+                            )
                         }
-                    }
-
-                    Button(
-                        onClick = onStartBreak,
-                        enabled = canStartBreak,
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = AccentPrimary,
-                            contentColor = NearBlack,
-                            disabledContainerColor = CardBackgroundElevated,
-                            disabledContentColor = TextMuted
-                        )
-                    ) {
-                        Text(
-                            text = if (canStartBreak) "Başlat" else "Limit Doldu",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
                     }
                 }
             }
@@ -956,7 +969,7 @@ private fun OverviewAndBreakSection(
 }
 
 @Composable
-private fun PlatformsGroupSection(
+private fun PlatformsGroupCard(
     isInstagramEnabled: Boolean,
     onInstagramToggle: (Boolean) -> Unit,
     isInstagramDmReelsAllowed: Boolean,
@@ -968,68 +981,58 @@ private fun PlatformsGroupSection(
     isYouTubeEnabled: Boolean,
     onYouTubeToggle: (Boolean) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = "Platformlar",
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
-            color = TextSecondary,
-            modifier = Modifier.padding(start = 2.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(CardBackground)
+            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+    ) {
+        // 1. Instagram
+        PlatformToggleRow(
+            title = "Instagram",
+            subtitle = "Reels sekmesini Ana Sayfa'ya yönlendirir",
+            checked = isInstagramEnabled,
+            onCheckedChange = onInstagramToggle
         )
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .background(CardBackground)
-                .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
-        ) {
-            // 1. Instagram
-            PlatformToggleRow(
-                title = "Instagram Reels",
-                subtitle = "Reels sekmesini ve keşfet videolarını engeller",
-                checked = isInstagramEnabled,
-                onCheckedChange = onInstagramToggle
-            )
-
-            AnimatedVisibility(visible = isInstagramEnabled) {
-                DmAllowanceSubRow(
-                    title = "DM'den gelen tek videoya izin ver",
-                    subtitle = "Sohbetten açılan ilk Reel izlenir, aşağı kaydırınca kapanır",
-                    checked = isInstagramDmReelsAllowed,
-                    onCheckedChange = onInstagramDmReelsToggle
-                )
-            }
-
-            HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
-
-            // 2. TikTok
-            PlatformToggleRow(
-                title = "TikTok",
-                subtitle = "Sizin İçin akışını engeller, Gelen Kutusu açık kalır",
-                checked = isTikTokEnabled,
-                onCheckedChange = onTikTokToggle
-            )
-
-            AnimatedVisibility(visible = isTikTokEnabled) {
-                DmAllowanceSubRow(
-                    title = "DM'den gelen tek videoya izin ver",
-                    subtitle = "Mesajlardan açılan ilk video izlenir, kaydırınca sohbete döner",
-                    checked = isTikTokDmVideosAllowed,
-                    onCheckedChange = onTikTokDmVideosToggle
-                )
-            }
-
-            HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
-
-            // 3. YouTube Shorts
-            PlatformToggleRow(
-                title = "YouTube Shorts",
-                subtitle = "Yalnızca Shorts oynatıcısını kapatır, normal videolar çalışır",
-                checked = isYouTubeEnabled,
-                onCheckedChange = onYouTubeToggle
+        AnimatedVisibility(visible = isInstagramEnabled) {
+            DmSubSettingRow(
+                title = "DM'den gelen ilk Reels'a izin ver",
+                subtitle = "İlk videoyu izlemenize izin verir; sonraki videoya kaydırdığınız an kapatır.",
+                checked = isInstagramDmReelsAllowed,
+                onCheckedChange = onInstagramDmReelsToggle
             )
         }
+
+        HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
+
+        // 2. TikTok
+        PlatformToggleRow(
+            title = "TikTok",
+            subtitle = "Sizin İçin akışını Gelen Kutusu'na yönlendirir",
+            checked = isTikTokEnabled,
+            onCheckedChange = onTikTokToggle
+        )
+
+        AnimatedVisibility(visible = isTikTokEnabled) {
+            DmSubSettingRow(
+                title = "DM'den gelen ilk videoya izin ver",
+                subtitle = "Sohbetten açılan ilk video izlenir; sonraki videoya kaydırınca sohbete döner.",
+                checked = isTikTokDmVideosAllowed,
+                onCheckedChange = onTikTokDmVideosToggle
+            )
+        }
+
+        HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
+
+        // 3. YouTube Shorts
+        PlatformToggleRow(
+            title = "YouTube Shorts",
+            subtitle = "Shorts oynatıcısını kapatır, normal videolar çalışır",
+            checked = isYouTubeEnabled,
+            onCheckedChange = onYouTubeToggle
+        )
     }
 }
 
@@ -1052,12 +1055,12 @@ private fun PlatformToggleRow(
             modifier = Modifier
                 .weight(1f)
                 .padding(end = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(3.dp)
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Text(
                 text = title,
                 fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 color = TextPrimary
             )
             Text(
@@ -1068,15 +1071,12 @@ private fun PlatformToggleRow(
             )
         }
 
-        MinimalSwitch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
-        )
+        MinimalSwitch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 
 @Composable
-private fun DmAllowanceSubRow(
+private fun DmSubSettingRow(
     title: String,
     subtitle: String,
     checked: Boolean,
@@ -1085,9 +1085,9 @@ private fun DmAllowanceSubRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(NearBlack.copy(alpha = 0.45f))
+            .background(NearBlack.copy(alpha = 0.55f))
             .clickable { onCheckedChange(!checked) }
-            .padding(start = 26.dp, end = 18.dp, top = 11.dp, bottom = 13.dp),
+            .padding(start = 22.dp, end = 18.dp, top = 12.dp, bottom = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1096,12 +1096,12 @@ private fun DmAllowanceSubRow(
                 .weight(1f)
                 .padding(end = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(
                 modifier = Modifier
                     .width(2.dp)
-                    .height(28.dp)
+                    .height(30.dp)
                     .background(if (checked) AccentPrimary else CardBorder)
             )
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -1120,15 +1120,12 @@ private fun DmAllowanceSubRow(
             }
         }
 
-        MinimalSwitch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
-        )
+        MinimalSwitch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 
 @Composable
-private fun SystemAndSecuritySection(
+private fun SystemSecurityCard(
     isPinEnabled: Boolean,
     onTogglePin: (Boolean) -> Unit,
     onChangePin: () -> Unit,
@@ -1138,293 +1135,189 @@ private fun SystemAndSecuritySection(
     onCheckUpdate: () -> Unit,
     isCheckingUpdate: Boolean
 ) {
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    var showAdvancedUpdater by remember { mutableStateOf(false) }
-    var downloadUrl by remember { mutableStateOf("") }
-    var isDownloading by remember { mutableStateOf(false) }
-    var downloadProgress by remember { mutableFloatStateOf(0f) }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = "Güvenlik ve Sistem",
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
-            color = TextSecondary,
-            modifier = Modifier.padding(start = 2.dp)
-        )
-
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(CardBackground)
+            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+    ) {
+        // PIN Kilidi
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .background(CardBackground)
-                .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+                .clickable { onTogglePin(!isPinEnabled) }
+                .padding(horizontal = 18.dp, vertical = 15.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // PIN Kilidi Satırı
-            Row(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onTogglePin(!isPinEnabled) }
-                    .padding(horizontal = 18.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .weight(1f)
+                    .padding(end = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "PIN kilidi",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = TextPrimary
-                        )
-                        if (isPinEnabled) {
-                            Text(
-                                text = "Değiştir",
-                                fontSize = 11.sp,
-                                color = TextSecondary,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(CardBackgroundElevated)
-                                    .clickable { onChangePin() }
-                                    .padding(horizontal = 7.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
                     Text(
-                        text = if (isPinEnabled) "Ayarlar ve mola 4 haneli kodla korunuyor" else "Ayarları değiştirmek için kod iste",
-                        fontSize = 12.sp,
-                        color = TextSecondary
-                    )
-                }
-
-                MinimalSwitch(
-                    checked = isPinEnabled,
-                    onCheckedChange = onTogglePin
-                )
-            }
-
-            HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
-
-            // Erişilebilirlik Ayarları Kısayolu
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onOpenAccessibilitySettings() }
-                    .padding(horizontal = 18.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        text = "Erişilebilirlik ayarları",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
+                        text = "Ebeveyn / Güvenlik PIN Kilidi",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
                         color = TextPrimary
                     )
-                    Text(
-                        text = if (isServiceActive) "Servis çalışıyor · Sistem ayarlarını aç" else "Servis kapalı · İzin vermek için dokunun",
-                        fontSize = 12.sp,
-                        color = TextSecondary
-                    )
+                    if (isPinEnabled) {
+                        Text(
+                            text = "Değiştir",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = TextPrimary,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(CardBackgroundElevated)
+                                .clickable { onChangePin() }
+                                .padding(horizontal = 7.dp, vertical = 2.dp)
+                        )
+                    }
                 }
-
                 Text(
-                    text = "Aç",
+                    text = if (isPinEnabled) "Koruma anahtarları ve mola 4 haneli PIN ile korunuyor." else "Ayarları ve molayı 4 haneli şifreyle koruma altına alın.",
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
                     color = TextSecondary
                 )
             }
 
-            HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
+            MinimalSwitch(checked = isPinEnabled, onCheckedChange = onTogglePin)
+        }
 
-            // Güncelleme Bölümü
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 18.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Uygulama güncelleme",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = TextPrimary
-                    )
-                    Text(
-                        text = if (showAdvancedUpdater) "Gizle" else "Diğer seçenekler",
-                        fontSize = 11.sp,
-                        color = TextMuted,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .clickable { showAdvancedUpdater = !showAdvancedUpdater }
-                            .padding(horizontal = 4.dp, vertical = 2.dp)
-                    )
-                }
+        HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = onCheckUpdate,
-                        enabled = !isCheckingUpdate,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(9.dp),
-                        contentPadding = PaddingValues(vertical = 9.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
-                    ) {
-                        Text(
-                            text = if (isCheckingUpdate) "Bakılıyor..." else "Güncelleme Ara",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+        // Erişilebilirlik Kısayolu
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onOpenAccessibilitySettings() }
+                .padding(horizontal = 18.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = "Erişilebilirlik Servis Ayarları",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TextPrimary
+                )
+                Text(
+                    text = if (isServiceActive) "Servis arka planda çalışıyor · Ayarları aç" else "Servis kapalı · İzin vermek için dokunun",
+                    fontSize = 12.sp,
+                    color = TextSecondary
+                )
+            }
 
-                    OutlinedButton(
-                        onClick = onPickLocalApk,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(9.dp),
-                        contentPadding = PaddingValues(vertical = 9.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
-                    ) {
-                        Text(
-                            text = "APK Dosyası Seç",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
+            Text(
+                text = "Aç",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = TextSecondary
+            )
+        }
 
-                AnimatedVisibility(visible = showAdvancedUpdater) {
-                    Column(
-                        modifier = Modifier.padding(top = 4.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                isDownloading = true
-                                coroutineScope.launch {
-                                    UpdateManager.downloadAndInstall(
-                                        context = context,
-                                        urlString = UpdateManager.DEFAULT_GITHUB_APK_URL,
-                                        onProgress = { p -> downloadProgress = p / 100f },
-                                        onError = { err ->
-                                            isDownloading = false
-                                            Toast.makeText(context, err, Toast.LENGTH_LONG).show()
-                                        }
-                                    )
-                                    isDownloading = false
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(9.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
-                        ) {
-                            Text(
-                                text = "GitHub'dan Son Sürümü İndir",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
+        HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = downloadUrl,
-                                onValueChange = { downloadUrl = it },
-                                placeholder = { Text("APK bağlantısı...", fontSize = 11.sp, color = TextMuted) },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp),
-                                singleLine = true,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = TextPrimary,
-                                    unfocusedTextColor = TextPrimary,
-                                    focusedBorderColor = AccentPrimary,
-                                    unfocusedBorderColor = CardBorder
-                                )
-                            )
+        // Güncelleme Denetimi & Manuel APK
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = "Uygulama Güncellemesi",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TextPrimary
+                )
+                Text(
+                    text = "GitHub üzerinden son sürümü kontrol edin",
+                    fontSize = 12.sp,
+                    color = TextSecondary
+                )
+            }
 
-                            Button(
-                                onClick = {
-                                    if (downloadUrl.isNotBlank()) {
-                                        isDownloading = true
-                                        coroutineScope.launch {
-                                            UpdateManager.downloadAndInstall(
-                                                context = context,
-                                                urlString = downloadUrl.trim(),
-                                                onProgress = { p -> downloadProgress = p / 100f },
-                                                onError = { err ->
-                                                    isDownloading = false
-                                                    Toast.makeText(context, err, Toast.LENGTH_LONG).show()
-                                                }
-                                            )
-                                            isDownloading = false
-                                        }
-                                    }
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = AccentPrimary,
-                                    contentColor = NearBlack
-                                )
-                            ) {
-                                Text("Kur", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-                            }
-                        }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = if (isCheckingUpdate) "Denetleniyor..." else "Kontrol Et",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TextPrimary,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(CardBackgroundElevated)
+                        .clickable(enabled = !isCheckingUpdate) { onCheckUpdate() }
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                )
 
-                        if (isDownloading) {
-                            LinearProgressIndicator(
-                                progress = { downloadProgress },
-                                modifier = Modifier.fillMaxWidth().height(3.dp),
-                                color = AccentPrimary,
-                                trackColor = CardBackgroundElevated
-                            )
-                        }
-                    }
-                }
+                Text(
+                    text = "APK Seç",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TextMuted,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(CardBackgroundElevated)
+                        .clickable { onPickLocalApk() }
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                )
             }
         }
     }
 }
+
+// ----------------- MİNİMAL ANAHTAR (SWITCH) -----------------
 
 @Composable
 private fun MinimalSwitch(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
-    Switch(
-        checked = checked,
-        onCheckedChange = onCheckedChange,
-        colors = SwitchDefaults.colors(
-            checkedThumbColor = NearBlack,
-            checkedTrackColor = AccentPrimary,
-            checkedBorderColor = AccentPrimary,
-            uncheckedThumbColor = TextMuted,
-            uncheckedTrackColor = NearBlack,
-            uncheckedBorderColor = CardBorder
-        )
+    val trackBg by animateColorAsState(
+        targetValue = if (checked) AccentPrimary else CardBackgroundElevated,
+        label = "trackBg"
     )
+    val thumbColor by animateColorAsState(
+        targetValue = if (checked) NearBlack else TextMuted,
+        label = "thumbColor"
+    )
+    val thumbOffset by animateFloatAsState(
+        targetValue = if (checked) 18f else 2f,
+        label = "thumbOffset"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(width = 44.dp, height = 26.dp)
+            .clip(RoundedCornerShape(13.dp))
+            .background(trackBg)
+            .border(1.dp, if (checked) AccentPrimary else HairlineDivider, RoundedCornerShape(13.dp))
+            .clickable { onCheckedChange(!checked) }
+            .padding(2.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Box(
+            modifier = Modifier
+                .offset(x = thumbOffset.dp)
+                .size(20.dp)
+                .clip(CircleShape)
+                .background(thumbColor)
+        )
+    }
 }
 
-// ---------------- PIN DİYALOGLARI ----------------
+// ----------------- PIN DİYALOGLARI -----------------
 
 @Composable
 private fun PinVerificationDialog(
@@ -1433,7 +1326,7 @@ private fun PinVerificationDialog(
     onDismiss: () -> Unit,
     onVerify: (String) -> Boolean
 ) {
-    var enteredPin by remember { mutableStateOf("") }
+    var pin by remember { mutableStateOf("") }
 
     Dialog(onDismissRequest = onDismiss) {
         Column(
@@ -1443,8 +1336,7 @@ private fun PinVerificationDialog(
                 .background(CardBackground)
                 .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
                 .padding(22.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text(
                 text = title,
@@ -1452,66 +1344,52 @@ private fun PinVerificationDialog(
                 fontWeight = FontWeight.SemiBold,
                 color = TextPrimary
             )
-
             Text(
                 text = subtitle,
                 fontSize = 12.sp,
-                color = TextSecondary,
-                textAlign = TextAlign.Center
+                color = TextSecondary
             )
 
             OutlinedTextField(
-                value = enteredPin,
-                onValueChange = { if (it.length <= 4 && it.all { c -> c.isDigit() }) enteredPin = it },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                value = pin,
+                onValueChange = { if (it.length <= 4 && it.all { c -> c.isDigit() }) pin = it },
                 visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 singleLine = true,
-                placeholder = {
-                    Text(
-                        text = "••••",
-                        color = TextMuted,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                },
-                modifier = Modifier.width(130.dp),
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("4 haneli PIN", color = TextMuted) },
                 colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AccentPrimary,
+                    unfocusedBorderColor = CardBorder,
                     focusedTextColor = TextPrimary,
                     unfocusedTextColor = TextPrimary,
-                    focusedBorderColor = AccentPrimary,
-                    unfocusedBorderColor = CardBorder
+                    cursorColor = AccentPrimary
                 )
             )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.End
             ) {
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(9.dp)
-                ) {
-                    Text(text = "İptal", color = TextSecondary, fontSize = 13.sp)
+                TextButton(onClick = onDismiss) {
+                    Text("İptal", color = TextSecondary)
                 }
-
+                Spacer(modifier = Modifier.width(6.dp))
                 Button(
                     onClick = {
-                        if (enteredPin.length == 4) {
-                            onVerify(enteredPin)
+                        if (pin.length == 4) {
+                            if (!onVerify(pin)) {
+                                pin = ""
+                            }
                         }
                     },
-                    enabled = enteredPin.length == 4,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(9.dp),
+                    shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = AccentPrimary,
-                        contentColor = NearBlack,
-                        disabledContainerColor = CardBackgroundElevated,
-                        disabledContentColor = TextMuted
+                        contentColor = NearBlack
                     )
                 ) {
-                    Text(text = "Onayla", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                    Text("Onayla", fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -1524,8 +1402,8 @@ private fun PinSetupDialog(
     onSavePin: (String) -> Unit
 ) {
     var pin by remember { mutableStateOf("") }
-    var confirmPin by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var pinConfirm by remember { mutableStateOf("") }
+    var errorText by remember { mutableStateOf("") }
 
     Dialog(onDismissRequest = onDismiss) {
         Column(
@@ -1535,17 +1413,16 @@ private fun PinSetupDialog(
                 .background(CardBackground)
                 .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
                 .padding(22.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text(
-                text = "4 Haneli PIN Belirle",
+                text = "Yeni PIN Belirleyin",
                 fontSize = 17.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = TextPrimary
             )
-
             Text(
-                text = "Korumayı kapatırken veya mola başlatırken sorulur.",
+                text = "Ayarları ve molayı korumak için 4 haneli bir şifre girin.",
                 fontSize = 12.sp,
                 color = TextSecondary
             )
@@ -1553,82 +1430,76 @@ private fun PinSetupDialog(
             OutlinedTextField(
                 value = pin,
                 onValueChange = {
-                    if (it.length <= 4 && it.all { c -> c.isDigit() }) pin = it
-                    errorMessage = null
+                    if (it.length <= 4 && it.all { c -> c.isDigit() }) {
+                        pin = it
+                        errorText = ""
+                    }
                 },
-                label = { Text("PIN kodu", fontSize = 12.sp) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("4 haneli PIN", color = TextMuted) },
                 colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AccentPrimary,
+                    unfocusedBorderColor = CardBorder,
                     focusedTextColor = TextPrimary,
                     unfocusedTextColor = TextPrimary,
-                    focusedBorderColor = AccentPrimary,
-                    unfocusedBorderColor = CardBorder
+                    cursorColor = AccentPrimary
                 )
             )
 
             OutlinedTextField(
-                value = confirmPin,
+                value = pinConfirm,
                 onValueChange = {
-                    if (it.length <= 4 && it.all { c -> c.isDigit() }) confirmPin = it
-                    errorMessage = null
+                    if (it.length <= 4 && it.all { c -> c.isDigit() }) {
+                        pinConfirm = it
+                        errorText = ""
+                    }
                 },
-                label = { Text("PIN tekrar", fontSize = 12.sp) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("PIN'i tekrar girin", color = TextMuted) },
                 colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AccentPrimary,
+                    unfocusedBorderColor = CardBorder,
                     focusedTextColor = TextPrimary,
                     unfocusedTextColor = TextPrimary,
-                    focusedBorderColor = AccentPrimary,
-                    unfocusedBorderColor = CardBorder
+                    cursorColor = AccentPrimary
                 )
             )
 
-            if (errorMessage != null) {
-                Text(
-                    text = errorMessage!!,
-                    color = AccentSignal,
-                    fontSize = 12.sp
-                )
+            if (errorText.isNotEmpty()) {
+                Text(text = errorText, color = AccentSignal, fontSize = 12.sp)
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.End
             ) {
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(9.dp)
-                ) {
-                    Text(text = "İptal", color = TextSecondary, fontSize = 13.sp)
+                TextButton(onClick = onDismiss) {
+                    Text("İptal", color = TextSecondary)
                 }
-
+                Spacer(modifier = Modifier.width(6.dp))
                 Button(
                     onClick = {
-                        if (!PinHasher.isValidFormat(pin)) {
-                            errorMessage = "PIN 4 rakamdan oluşmalıdır."
-                        } else if (pin != confirmPin) {
-                            errorMessage = "PIN kodları eşleşmiyor."
+                        if (pin.length != 4) {
+                            errorText = "PIN 4 haneli olmalıdır."
+                        } else if (pin != pinConfirm) {
+                            errorText = "PIN kodları eşleşmiyor."
                         } else {
                             onSavePin(pin)
                         }
                     },
-                    enabled = pin.length == 4 && confirmPin.length == 4,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(9.dp),
+                    shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = AccentPrimary,
-                        contentColor = NearBlack,
-                        disabledContainerColor = CardBackgroundElevated,
-                        disabledContentColor = TextMuted
+                        contentColor = NearBlack
                     )
                 ) {
-                    Text(text = "Kaydet", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                    Text("Kaydet", fontWeight = FontWeight.SemiBold)
                 }
             }
         }

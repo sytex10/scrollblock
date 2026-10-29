@@ -8,11 +8,11 @@ import com.example.scrollblock.preferences.BlockPreferences
 
 /**
  * TikTok Engelleyici:
- *  - Ana Sayfa (Sizin İçin) video akışı -> Gelen Kutusu sekmesine geçiş (uygulamadan ATMAZ)
+ *  - Ana Sayfa (Sizin İçin) video akışı -> Gelen Kutusu sekmesine geçiş (uygulamadan ATMAZ).
  *  - DM / Sohbetten açılan tam ekran video:
  *      * "DM İzni (Tek Video)" AÇIK ise: İlk video izlenebilir. Kullanıcı bir sonraki videoya
  *        kaydırdığı (scroll) veya video değiştiği anda anında GERİ atılır (sohbete döner).
- *      * "DM İzni" KAPALI ise: Video açıldığı an GERİ atılır.
+ *      * "DM İzni" KAPALI ise: Video açıldığı an doğrudan GERİ atılır.
  *  - Gelen Kutusu, Sohbet mesajlaşma ekranı, Profil, Ayarlar, Hikayeler, Arama -> serbesttir.
  */
 class TikTokDetector(
@@ -66,7 +66,7 @@ class TikTokDetector(
         )
 
         // ---- 2. KESİN GÜVENLİ SEKME EKRANLARI ----
-        // Gelen Kutusu veya Profil sekmesi seçiliyse (alt bar görünürken)
+        // Gelen Kutusu veya Profil sekmesi seçiliyse (ve Sizin İçin akışı aktif değilse)
         if ((inboxSelected || profileSelected) && !forYouVisibleAtTop) {
             singleVideoGuard.onViewerGone()
             return DetectionResult.notDetected(platformName)
@@ -101,24 +101,23 @@ class TikTokDetector(
         }
 
         // ---- 4. SOHBETTEN / DM'DEN AÇILAN TAM EKRAN VİDEO ----
-        // Not: TikTok'ta DM'den video açıldığında ekranın en altında "Mesaj gönder..." hızlı yanıt
-        // çubuğu görünebilir. Bu yüzden tam ekran oynatıcı kontrolü sohbet kontrolünden ÖNCE yapılır.
-        val bottomBarVisible = inboxTab != null || homeTab != null || profileTab != null
-        val isFullScreenVideo = !bottomBarVisible && hasFullScreenVideoPlayer(rootNode)
+        val isFullScreenVideo = hasFullScreenVideoPlayer(rootNode)
 
         if (isFullScreenVideo) {
             val isDmVideoAllowed = preferences.isTikTokDmVideosAllowedSync()
 
+            // DM İzni (Tek Video) modu KAPALIYSA -> Video açıldığı an direkt kapat (katı koruma)
             if (!isDmVideoAllowed) {
                 singleVideoGuard.reset()
                 return DetectionResult.detected(
                     platform = platformName,
-                    reason = "TikTok tam ekran video (katı mod) -> Geri",
+                    reason = "TikTok tam ekran video (katı koruma: DM izni kapalı) -> Geri",
                     preferTabSwitch = false
                 )
             }
 
-            // DM İzni (Tek Video) modu aktif:
+            // DM İzni (Tek Video) modu AÇIK:
+            // a) Kaydırma olayı (TYPE_VIEW_SCROLLED)
             if (event?.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
                 val verdict = singleVideoGuard.onPagerScrolled(now)
                 if (verdict == SingleReelGuard.Verdict.BLOCK) {
@@ -131,6 +130,7 @@ class TikTokDetector(
                 return DetectionResult.notDetected(platformName)
             }
 
+            // b) Ekrandaki videonun değişimi (yazar/açıklama parmak izi)
             val fingerprint = extractVideoFingerprint(rootNode)
             val verdict = singleVideoGuard.onViewerVisible(now, fingerprint)
             if (verdict == SingleReelGuard.Verdict.BLOCK) {
@@ -144,6 +144,7 @@ class TikTokDetector(
             // İlk video serbest
             return DetectionResult.notDetected(platformName)
         } else {
+            // Video oynatıcı ekranda değil (sohbette mesajlar görünüyorsa vb.)
             singleVideoGuard.onViewerGone()
         }
 
@@ -152,8 +153,7 @@ class TikTokDetector(
 
     /**
      * Tam ekran TikTok video oynatıcısının aktif olup olmadığını tespit eder.
-     * Hem bilinen viewId'leri hem de TikTok'un obfuscate edilmiş sürümlerindeki
-     * tam ekran dikey ViewPager yapısını kontrol eder.
+     * Hem bilinen viewId'leri hem de tam ekran dikey ViewPager yapısını kontrol eder.
      */
     private fun hasFullScreenVideoPlayer(rootNode: AccessibilityNodeInfo): Boolean {
         if (NodeUtils.hasVisibleViewId(
@@ -161,7 +161,8 @@ class TikTokDetector(
                 "aweme_player",
                 "aweme_vertical_view_pager",
                 "video_post_page",
-                "vertical_view_pager"
+                "vertical_view_pager",
+                "feed_viewpager"
             )
         ) {
             return true
@@ -174,7 +175,7 @@ class TikTokDetector(
         if (screenW <= 0 || screenH <= 0) return false
 
         val nodeRect = Rect()
-        // Tam ekran dikey ViewPager kontrolü (sohbet ekranında RecyclerView vardır, ViewPager yoktur)
+        // Tam ekran dikey ViewPager kontrolü
         return NodeUtils.anyNodeMatches(rootNode) { node ->
             if (!node.isVisibleToUser) return@anyNodeMatches false
             val cls = node.className?.toString() ?: return@anyNodeMatches false
