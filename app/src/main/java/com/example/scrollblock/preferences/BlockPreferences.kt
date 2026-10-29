@@ -24,6 +24,9 @@ class BlockPreferences(context: Context) {
     private val _isInstagramDmReelsAllowed = MutableStateFlow(isInstagramDmReelsAllowedSync())
     val isInstagramDmReelsAllowed: StateFlow<Boolean> = _isInstagramDmReelsAllowed.asStateFlow()
 
+    private val _isTikTokDmVideosAllowed = MutableStateFlow(isTikTokDmVideosAllowedSync())
+    val isTikTokDmVideosAllowed: StateFlow<Boolean> = _isTikTokDmVideosAllowed.asStateFlow()
+
     private val _totalBlockedCount = MutableStateFlow(getTotalBlockedCountSync())
     val totalBlockedCount: StateFlow<Int> = _totalBlockedCount.asStateFlow()
 
@@ -61,6 +64,9 @@ class BlockPreferences(context: Context) {
     fun isInstagramDmReelsAllowedSync(): Boolean =
         prefs.getBoolean(KEY_INSTAGRAM_DM_REELS_ALLOWED, false)
 
+    fun isTikTokDmVideosAllowedSync(): Boolean =
+        prefs.getBoolean(KEY_TIKTOK_DM_VIDEOS_ALLOWED, false)
+
     fun getTotalBlockedCountSync(): Int =
         prefs.getInt(KEY_TOTAL_BLOCKED_COUNT, 0)
 
@@ -88,6 +94,11 @@ class BlockPreferences(context: Context) {
     fun setInstagramDmReelsAllowed(allowed: Boolean) {
         prefs.edit().putBoolean(KEY_INSTAGRAM_DM_REELS_ALLOWED, allowed).apply()
         _isInstagramDmReelsAllowed.value = allowed
+    }
+
+    fun setTikTokDmVideosAllowed(allowed: Boolean) {
+        prefs.edit().putBoolean(KEY_TIKTOK_DM_VIDEOS_ALLOWED, allowed).apply()
+        _isTikTokDmVideosAllowed.value = allowed
     }
 
     // --- Mola / Cooldown Yönetimi ---
@@ -229,6 +240,7 @@ class BlockPreferences(context: Context) {
         private const val KEY_INSTAGRAM_ENABLED = "pref_instagram_reels_enabled"
         private const val KEY_TIKTOK_ENABLED = "pref_tiktok_feed_enabled"
         private const val KEY_INSTAGRAM_DM_REELS_ALLOWED = "pref_instagram_dm_reels_allowed"
+        private const val KEY_TIKTOK_DM_VIDEOS_ALLOWED = "pref_tiktok_dm_videos_allowed"
         private const val KEY_TOTAL_BLOCKED_COUNT = "pref_total_blocked_count"
         private const val KEY_LAST_BLOCKED_PLATFORM = "pref_last_blocked_platform"
         private const val KEY_LAST_BLOCKED_TIMESTAMP = "pref_last_blocked_timestamp"

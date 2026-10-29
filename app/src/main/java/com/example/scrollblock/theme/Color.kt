@@ -2,29 +2,35 @@ package com.example.scrollblock.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Backgrounds
-val NearBlack = Color(0xFF0A0D14)
-val SurfaceDark = Color(0xFF121620)
-val CardBackground = Color(0xFF181D2A)
-val CardBorder = Color(0xFF242C3E)
-val CardBackgroundElevated = Color(0xFF1F2535)
+// Matte Carbon & Zinc Palette (No blue/neon AI tint)
+val NearBlack = Color(0xFF0A0A0B)
+val SurfaceDark = Color(0xFF111113)
+val CardBackground = Color(0xFF141417)
+val CardBackgroundElevated = Color(0xFF1C1C21)
+val CardBorder = Color(0xFF26262C)
+val HairlineDivider = Color(0xFF1F1F24)
 
-// Accents - Subtle Electric Blue
-val ElectricBlue = Color(0xFF00D2FF)
-val ElectricBlueVariant = Color(0xFF0077EE)
-val ElectricBlueSubtle = Color(0xFF0E3854)
-val ElectricBlueGlow = Color(0xFF38BDF8)
+// Primary Tactile Accent (Crisp Off-White / Bone & Warm Terracotta Signal)
+val AccentPrimary = Color(0xFFF4F4F6)
+val AccentSignal = Color(0xFFE5533D)
+val AccentSignalSoft = Color(0xFF2A1613)
 
-// Status colors
-val ActiveGreen = Color(0xFF10B981)
-val ActiveGreenContainer = Color(0xFF064E3B)
-val ActiveGreenText = Color(0xFF34D399)
+// Legacy aliases mapped to refined neutral/tactile tokens
+val ElectricBlue = AccentPrimary
+val ElectricBlueVariant = Color(0xFFA1A1AA)
+val ElectricBlueSubtle = Color(0xFF222228)
+val ElectricBlueGlow = Color(0xFFD4D4D8)
 
-val InactiveAmber = Color(0xFFF59E0B)
-val InactiveAmberContainer = Color(0xFF78350F)
-val InactiveAmberText = Color(0xFFFBBF24)
+// Status tokens
+val ActiveGreen = Color(0xFF22C55E)
+val ActiveGreenContainer = Color(0xFF112619)
+val ActiveGreenText = Color(0xFF86EFAC)
 
-// Typography colors
-val TextPrimary = Color(0xFFF1F5F9)
-val TextSecondary = Color(0xFF94A3B8)
-val TextMuted = Color(0xFF64748B)
+val InactiveAmber = Color(0xFFE5533D)
+val InactiveAmberContainer = Color(0xFF2A1613)
+val InactiveAmberText = Color(0xFFFCA5A5)
+
+// Typography
+val TextPrimary = Color(0xFFF4F4F6)
+val TextSecondary = Color(0xFF9E9EA8)
+val TextMuted = Color(0xFF63636E)
