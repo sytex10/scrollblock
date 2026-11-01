@@ -1,7 +1,7 @@
 {
-  "versionCode": 19,
-  "versionName": "2.8",
-  "minRequiredVersionCode": 19,
-  "changelog": "v2.8: Instagram Ana Sayfa normal kaydırma, gönderi/Reels paylaşma ve TikTok Gelen Kutusu/Sohbet normal kaydırma sırasında yanlış tetikleme sorunu tamamen giderildi.",
+  "versionCode": 20,
+  "versionName": "2.9",
+  "minRequiredVersionCode": 20,
+  "changelog": "v2.9: Instagram ve TikTok DM'den açılan Reels/videoları engelleme ve tek video izleme izni (DM İzni açık/kapalı) kusursuz çalışacak şekilde düzeltildi.",
   "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
 }

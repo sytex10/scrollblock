@@ -1,15 +1,17 @@
 package com.example.scrollblock.detector
 
+import android.graphics.Rect
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.example.scrollblock.preferences.BlockPreferences
+import kotlin.math.abs
 
 /**
  * Instagram Reels Engelleyici:
  *  - Alt bardaki Reels sekmesi seçiliyse -> Ana Sayfa sekmesine geçiş (uygulamadan ASLA ATMAZ).
  *  - Ana Sayfa akışı (normal kaydırma, gönderi/Reels paylaşma), Hikayeler, DM sohbet ekranı ve Profil -> %100 SERBESTTİR.
- *  - DM'den tıklandığında açılan tam ekran Reels izleyicisi (clips_viewer_view_pager):
+ *  - DM'den veya Keşfet'ten tıklandığında açılan tam ekran Reels izleyicisi:
  *      * "DM İzni (Tek Video)" AÇIK ise: İlk video izlenebilir; bir sonraki videoya kaydırılınca GERİ atar.
  *      * "DM İzni" KAPALI ise: Açıldığı an GERİ atarak sohbete döndürür.
  */
@@ -39,6 +41,7 @@ class InstagramReelsDetector(
         val reelsTab = NodeUtils.findBottomNavTab(rootNode, listOf("clips_tab"), listOf("reels"))
         val feedTab = NodeUtils.findBottomNavTab(rootNode, listOf("feed_tab"), listOf("ana sayfa", "home"))
         val profileTab = NodeUtils.findBottomNavTab(rootNode, listOf("profile_tab"), listOf("profil", "profile"))
+        val searchTab = NodeUtils.findBottomNavTab(rootNode, listOf("search_tab"), listOf("ara", "keşfet", "search", "explore"))
 
         // Alt bardaki Reels sekmesi seçiliyse -> Ana Sayfa sekmesine geç (GERİ basılmaz)
         if (NodeUtils.isNodeSelected(reelsTab)) {
@@ -55,38 +58,32 @@ class InstagramReelsDetector(
         // ---- 2. KESİN GÜVENLİ EKRANLAR ----
         // Ana Sayfa veya Profil sekmesi seçiliyse (Ana sayfada kaydırma, gönderi izleme, paylaşım yapma tamamen serbest)
         if (NodeUtils.isNodeSelected(feedTab) || NodeUtils.isNodeSelected(profileTab)) {
-            singleReelGuard.onViewerGone()
+            singleReelGuard.reset()
             return DetectionResult.notDetected(platformName)
         }
 
-        // Hikaye (Story) izleyicisi veya Paylaşım (Share) alt penceresi açıksa dokunma
-        val isStoryOrShareSheet = NodeUtils.hasVisibleViewId(
+        // Paylaşım (Share) alt penceresi açıksa dokunma
+        val isShareSheet = NodeUtils.hasVisibleViewId(
             rootNode,
-            "reel_viewer",
-            "story_viewer",
-            "reel_viewer_media_container",
             "direct_share_sheet",
-            "share_sheet",
-            "bottom_sheet_container"
+            "share_sheet"
         )
-        if (isStoryOrShareSheet) {
-            singleReelGuard.onViewerGone()
+        if (isShareSheet) {
             return DetectionResult.notDetected(platformName)
         }
 
-        // ---- 3. SADECE TAM EKRAN REELS İZLEYİCİSİ (DM / Keşfet'ten açılan dikey sayfalayıcı) ----
-        // Not: "clips_video_container" Ana Sayfa akışındaki normal videolarda da bulunduğu için KULLANILMAZ.
-        // Yalnızca tam ekran Reels sayfalayıcısı olan "clips_viewer_view_pager" ve "clips_viewer_fragment" kontrol edilir.
-        val clipsPagerVisible = NodeUtils.hasVisibleViewId(
-            rootNode,
-            "clips_viewer_view_pager",
-            "clips_viewer_fragment"
-        )
-        val className = event?.className?.toString() ?: ""
-        val clipsActivity = event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
-            className.contains("ClipsViewer", ignoreCase = true)
+        val bottomBarVisible = reelsTab != null || feedTab != null || profileTab != null || searchTab != null
 
-        if (clipsPagerVisible || clipsActivity) {
+        // ---- 3. TAM EKRAN REELS İZLEYİCİSİ (DM / Keşfet'ten açılan dikey sayfalayıcı) ----
+        val isFullScreenReelViewer = isFullScreenClipsViewer(rootNode, event, bottomBarVisible)
+
+        // Aktif bir tek-video oturumu varken gelen dikey sayfalayıcı kaydırmalarını yakala
+        val isActiveSessionScroll = singleReelGuard.isSessionActive &&
+            !bottomBarVisible &&
+            event?.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED &&
+            !isCommentsSheetOpen(rootNode)
+
+        if (isFullScreenReelViewer || isActiveSessionScroll) {
             val isDmReelAllowed = preferences.isInstagramDmReelsAllowedSync()
 
             if (!isDmReelAllowed) {
@@ -99,7 +96,7 @@ class InstagramReelsDetector(
             }
 
             // DM İzni (Tek Video) modu AÇIK:
-            if (event?.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
+            if (event?.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED && !isCommentsSheetOpen(rootNode)) {
                 val movedPastFirstItem = event.fromIndex > 0 || (event.toIndex > 0 && event.itemCount > 1)
                 val verdict = if (movedPastFirstItem) {
                     SingleReelGuard.Verdict.BLOCK
@@ -127,11 +124,185 @@ class InstagramReelsDetector(
             }
 
             return DetectionResult.notDetected(platformName)
+        }
+
+        // Eğer DM sohbet ekranındaysak (arama butonları veya mesaj yazma alanı görünüyorsa) oturumu temizle
+        if (isDmChatConversation(rootNode)) {
+            singleReelGuard.reset()
         } else {
-            singleReelGuard.onViewerGone()
+            singleReelGuard.onViewerGone(now)
         }
 
         return DetectionResult.notDetected(platformName)
+    }
+
+    /**
+     * DM'den veya Keşfet'ten açılan tam ekran Reels izleyicisini tespit eder.
+     * Hem açık viewId'leri hem de obfuscated (gizlenmiş) Instagram sürümleri için
+     * ekranın sağ kenarındaki dikey Reels aksiyon sütununu ve üst "Reels" başlığını kontrol eder.
+     */
+    private fun isFullScreenClipsViewer(
+        rootNode: AccessibilityNodeInfo,
+        event: AccessibilityEvent?,
+        bottomBarVisible: Boolean
+    ): Boolean {
+        // 1. Doğrudan Clips izleyici viewId'leri (Görünür alt bileşenler veya ViewPager)
+        val hasVisibleClipsId = NodeUtils.hasVisibleViewId(
+            rootNode,
+            "clips_viewer_view_pager",
+            "clips_viewer_fragment",
+            "clips_ufi",
+            "clips_author",
+            "clips_audio",
+            "clips_caption",
+            "clips_remix"
+        ) || (
+            NodeUtils.hasViewIdContaining(rootNode, "clips_viewer_view_pager", "clips_viewer_fragment") &&
+                NodeUtils.hasVisibleViewId(rootNode, "clips_video_container")
+        )
+        if (hasVisibleClipsId) return true
+
+        // 2. Pencere sınıf adı (ClipsViewer)
+        val className = event?.className?.toString() ?: ""
+        if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
+            className.contains("ClipsViewer", ignoreCase = true)
+        ) {
+            return true
+        }
+
+        // Hikaye (Story) izleyicisi açıksa Reels değildir
+        val isStoryViewer = NodeUtils.hasVisibleViewId(
+            rootNode,
+            "reel_viewer_media_container",
+            "story_viewer"
+        )
+        if (isStoryViewer) return false
+
+        // DM sohbet üst barındaki sesli/görüntülü arama butonları görünüyorsa henüz videoya tıklanmamıştır
+        if (hasDmCallHeader(rootNode)) return false
+
+        // 3. Sağ kenardaki dikey Reels aksiyon sütunu (Beğen + Yorum + Paylaş dikey dizilimi)
+        if (hasRightSideReelActions(rootNode)) return true
+
+        // 4. Alt bar gizliyken (DM içindeyken) üst barda "Reels" başlığı veya altta "Orijinal ses" etiketi
+        if (!bottomBarVisible) {
+            val hasTopReelsTitle = hasExactTopTitle(rootNode, "reels")
+            val hasOriginalAudioLabel = NodeUtils.hasVisibleTextInRegion(
+                rootNode, 0.50f, 0.92f,
+                "orijinal ses", "original audio"
+            )
+            if (hasTopReelsTitle || hasOriginalAudioLabel) return true
+        }
+
+        return false
+    }
+
+    /**
+     * Instagram Reels tam ekran izleyicisinde ekranın sağ kenarında (x >= %72)
+     * dikey olarak sıralanmış Beğen, Yorum, Paylaş/Gönder butonları bulunur.
+     * Ana sayfa akışında bu butonlar sol taraftadır; DM sohbetinde ve Hikayelerde ise Yorum butonu yoktur.
+     */
+    private fun hasRightSideReelActions(rootNode: AccessibilityNodeInfo): Boolean {
+        val winRect = Rect()
+        rootNode.getBoundsInScreen(winRect)
+        val w = winRect.width()
+        val h = winRect.height()
+        if (w <= 0 || h <= 0) return false
+
+        var likeY: Float? = null
+        var commentY: Float? = null
+        var shareOrAudioFound = false
+        val rect = Rect()
+
+        NodeUtils.findNode(rootNode) { node ->
+            if (node.isVisibleToUser) {
+                node.getBoundsInScreen(rect)
+                val cx = rect.exactCenterX()
+                val cy = rect.exactCenterY()
+                if (rect.width() > 0 && rect.height() > 0 &&
+                    cx >= w * 0.72f && cy in (h * 0.25f)..(h * 0.90f)
+                ) {
+                    val text = node.text?.toString()?.lowercase() ?: ""
+                    val desc = node.contentDescription?.toString()?.lowercase() ?: ""
+                    val combined = "$text $desc"
+
+                    if (likeY == null && (
+                            combined.contains("beğen") || combined.contains("like")
+                        )
+                    ) {
+                        likeY = cy
+                    }
+                    if (commentY == null && (
+                            combined.contains("yorum") || combined.contains("comment")
+                        )
+                    ) {
+                        commentY = cy
+                    }
+                    if (combined.contains("paylaş") || combined.contains("share") ||
+                        combined.contains("gönder") || combined.contains("send") ||
+                        combined.contains("yeniden paylaş") || combined.contains("repost") ||
+                        combined.contains("orijinal ses") || combined.contains("original audio")
+                    ) {
+                        shareOrAudioFound = true
+                    }
+                }
+            }
+            false // tüm ağacı tara
+        }
+
+        val lY = likeY
+        val cY = commentY
+        if (lY != null && cY != null && abs(lY - cY) >= h * 0.035f) {
+            return true
+        }
+        if ((lY != null || cY != null) && shareOrAudioFound) {
+            return true
+        }
+        return false
+    }
+
+    private fun hasExactTopTitle(rootNode: AccessibilityNodeInfo, title: String): Boolean {
+        val h = NodeUtils.windowHeight(rootNode)
+        if (h <= 0) return false
+        val rect = Rect()
+        return NodeUtils.anyNodeMatches(rootNode) { node ->
+            if (!node.isVisibleToUser) return@anyNodeMatches false
+            val t = node.text?.toString()?.trim() ?: ""
+            val d = node.contentDescription?.toString()?.trim() ?: ""
+            if (!t.equals(title, ignoreCase = true) && !d.equals(title, ignoreCase = true)) {
+                return@anyNodeMatches false
+            }
+            node.getBoundsInScreen(rect)
+            rect.width() > 0 && rect.height() > 0 && rect.exactCenterY() in (h * 0.02f)..(h * 0.16f)
+        }
+    }
+
+    private fun hasDmCallHeader(rootNode: AccessibilityNodeInfo): Boolean {
+        return NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0f, 0.18f,
+            "sesli arama", "görüntülü arama", "audio call", "video call", "sesli ara", "görüntülü ara"
+        ) || NodeUtils.hasVisibleViewId(
+            rootNode,
+            "header_call_button", "header_video_call_button", "direct_thread_header"
+        )
+    }
+
+    private fun isDmChatConversation(rootNode: AccessibilityNodeInfo): Boolean {
+        if (hasDmCallHeader(rootNode)) return true
+        return NodeUtils.hasVisibleViewId(
+            rootNode,
+            "row_thread_composer", "direct_thread"
+        ) || NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0.82f, 1f,
+            "sesli mesaj", "voice message", "çıkartma", "sticker"
+        )
+    }
+
+    private fun isCommentsSheetOpen(rootNode: AccessibilityNodeInfo): Boolean {
+        return NodeUtils.hasVisibleViewId(
+            rootNode,
+            "comment_composer", "layout_comment_thread"
+        ) || hasExactTopTitle(rootNode, "yorumlar") || hasExactTopTitle(rootNode, "comments")
     }
 
     private fun extractVideoFingerprint(rootNode: AccessibilityNodeInfo?): String? {
@@ -140,23 +311,24 @@ class InstagramReelsDetector(
         val author = NodeUtils.findNode(rootNode) { node ->
             node.isVisibleToUser && (
                 node.viewIdResourceName?.endsWith(":id/row_feed_photo_profile_name") == true ||
-                node.viewIdResourceName?.contains("clips_author") == true ||
-                node.viewIdResourceName?.contains("user_name") == true
-            ) && !node.text.isNullOrEmpty()
+                    node.viewIdResourceName?.contains("clips_author") == true ||
+                    node.viewIdResourceName?.contains("user_name") == true
+                ) && !node.text.isNullOrEmpty()
         }?.text?.toString()?.trim()
 
         val caption = NodeUtils.findNode(rootNode) { node ->
             node.isVisibleToUser && (
                 node.viewIdResourceName?.contains("clips_caption") == true ||
-                node.viewIdResourceName?.contains("video_caption") == true
-            ) && !node.text.isNullOrEmpty()
+                    node.viewIdResourceName?.contains("video_caption") == true
+                ) && !node.text.isNullOrEmpty()
         }?.text?.toString()?.trim()
 
-        return when {
+        val byId = when {
             !author.isNullOrEmpty() && !caption.isNullOrEmpty() -> "$author:$caption"
             !author.isNullOrEmpty() -> author
             !caption.isNullOrEmpty() -> caption
             else -> null
         }
+        return byId ?: NodeUtils.extractOverlayFingerprint(rootNode)
     }
 }

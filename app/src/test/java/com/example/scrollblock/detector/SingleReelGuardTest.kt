@@ -84,4 +84,18 @@ class SingleReelGuardTest {
         assertEquals(SingleReelGuard.Verdict.ALLOW, newSessionVerdict)
         assertTrue(guard.isSessionActive)
     }
+
+    @Test
+    fun testBriefDisappearanceMidSwipePreservesSessionAndBlocksNextVideo() {
+        val now = 10_000L
+        assertEquals(SingleReelGuard.Verdict.ALLOW, guard.onViewerVisible(now, "author:video1"))
+
+        // Kaydırma animasyonu sırasında izleyici 200ms boyunca görünmez oldu -> oturum sıfırlanmamalı
+        guard.onViewerGone(now + 200L)
+        assertTrue(guard.isSessionActive)
+
+        // 700ms sonra 2. video ekrana yerleşti -> BLOCK dönmeli
+        val verdict = guard.onViewerVisible(now + 700L, "author:video2")
+        assertEquals(SingleReelGuard.Verdict.BLOCK, verdict)
+    }
 }
