@@ -1,7 +1,7 @@
 {
-  "versionCode": 11,
-  "versionName": "2.0",
-  "minRequiredVersionCode": 11,
-  "changelog": "TikTok'ta video akışı açıldığında donanımsal dokunma hareketiyle (gesture) anında Gelen Kutusu'na otomatik geçiş desteği.",
+  "versionCode": 20,
+  "versionName": "2.9",
+  "minRequiredVersionCode": 20,
+  "changelog": "v2.9: Instagram ve TikTok DM'den açılan Reels/videoları engelleme ve tek video izleme izni (DM İzni açık/kapalı) kusursuz çalışacak şekilde düzeltildi.",
   "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
 }
