@@ -11,8 +11,8 @@ android {
         applicationId = "com.scrollblock.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 20
-        versionName = "2.9"
+        versionCode = 21
+        versionName = "3.0"
     }
 
     signingConfigs {

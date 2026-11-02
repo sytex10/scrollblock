@@ -1,9 +1,6 @@
 package com.example.scrollblock.service
 
 import android.accessibilityservice.AccessibilityService
-import android.accessibilityservice.GestureDescription
-import android.graphics.Path
-import android.os.Build
 import android.os.SystemClock
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
@@ -24,7 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
  *  - Mola (Cooldown) aktifse koruma geçici olarak askıya alınır.
  *  - Ana akış sekmelerinde (Instagram Reels / TikTok Ana Sayfa / YouTube Shorts)
  *    yalnızca hedef sekmeye (Ana Sayfa / Gelen Kutusu) ACTION_CLICK gönderir;
- *    ekrana gereksiz fiziksel dokunma (tap) yapmaz ve kaydırmayı KESİNLİKLE bölmez.
+ *    ekrana fiziksel dokunma (gesture) yapmaz ve kaydırmayı KESİNLİKLE bölmez.
  *  - Tam ekran açılan tekil videolarda (DM / Shorts) GERİ tuşu ile önceki ekrana döner.
  */
 class ScrollBlockAccessibilityService : AccessibilityService() {
@@ -111,31 +108,21 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
 
     /**
      * Güvenli sekmeye geçiş:
-     * Önce doğrudan erişilebilirlik ACTION_CLICK kullanır (kullanıcının kaydırma hareketini asla bölmez).
-     * Yalnızca ACTION_CLICK desteklenmiyorsa sekme koordinatına tek dokunma yapar.
+     * Doğrudan erişilebilirlik ACTION_CLICK kullanır (ekrana fiziksel dokunma göndermez).
      */
     private fun switchToSafeTab(
         root: AccessibilityNodeInfo,
         result: DetectionResult
     ): Boolean {
         val tab = NodeUtils.findBottomNavTab(root, result.targetTabIds, result.targetHomeTabKeywords)
-        if (tab != null) {
-            if (NodeUtils.clickNode(tab)) return true
-            NodeUtils.centerOf(tab)?.let { (x, y) -> if (tapAt(x, y)) return true }
+        if (tab != null && NodeUtils.clickNode(tab)) {
+            return true
         }
 
         if (result.platform.contains("YouTube", ignoreCase = true)) {
             return performGlobalAction(GLOBAL_ACTION_BACK)
         }
         return false
-    }
-
-    private fun tapAt(x: Float, y: Float): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return false
-        val path = Path().apply { moveTo(x, y) }
-        val stroke = GestureDescription.StrokeDescription(path, 0, 40L)
-        val gesture = GestureDescription.Builder().addStroke(stroke).build()
-        return dispatchGesture(gesture, null, null)
     }
 
     override fun onInterrupt() {

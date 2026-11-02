@@ -33,6 +33,13 @@ class TikTokDetector(
     private val profileKeywords = listOf("profil", "profile")
     private val friendsKeywords = listOf("arkadaşlar", "friends")
 
+    /**
+     * Kullanıcının bir DM sohbeti (mesajlaşma ekranı) içinden gelip gelmediğini takip eder.
+     * Böylece Gelen Kutusu'ndan açılan Hikayeler (Stories) veya başka birinin profil sayfası
+     * asla DM videosu sanılarak engellenmez.
+     */
+    private var inDmChatContext: Boolean = false
+
     override fun matchesPackage(packageName: String): Boolean {
         val p = packageName.lowercase()
         return p.contains("musically") ||
@@ -68,31 +75,16 @@ class TikTokDetector(
             "sizin için", "for you"
         )
 
-        // ---- 2. KESİN GÜVENLİ EKRANLAR (Gelen Kutusu & Profil Sekmeleri) ----
+        // ---- 2. KESİN GÜVENLİ EKRANLAR (Gelen Kutusu & Kendi Profilimiz) ----
         if ((inboxSelected || profileSelected) && !forYouVisibleAtTop) {
+            inDmChatContext = false
             singleVideoGuard.reset()
-            return DetectionResult.notDetected(platformName)
-        }
-
-        // Profil düzenleme / ayarlar / arama / hikaye / paylaşım ekranları
-        val isEditOrSettings = NodeUtils.hasVisibleTextInRegion(
-            rootNode, 0f, 1f,
-            "profili düzenle", "edit profile", "ayarlar ve gizlilik", "settings and privacy",
-            "kullanıcı adı", "username", "biyografi", "bio"
-        )
-        val isSearchOrStory = NodeUtils.hasVisibleViewId(
-            rootNode,
-            "search_input", "search_edit_text", "et_search_kw",
-            "story_viewer", "story_surface", "story_progress",
-            "share_panel", "share_sheet"
-        )
-        if (isEditOrSettings || isSearchOrStory) {
-            singleVideoGuard.onViewerGone(now)
             return DetectionResult.notDetected(platformName)
         }
 
         // ---- 3. ANA SAYFA VİDEO AKIŞI -> GELEN KUTUSUNA GEÇ ----
         if (forYouVisibleAtTop || homeSelected) {
+            inDmChatContext = false
             singleVideoGuard.reset()
             return DetectionResult.detected(
                 platform = platformName,
@@ -102,16 +94,31 @@ class TikTokDetector(
             )
         }
 
-        // ---- 4. SOHBETTEN (DM) AÇILAN TAM EKRAN VİDEO ----
-        // ÖNEMLİ: TikTok DM'den açılan tam ekran videonun en altında da "Mesaj gönder..." çubuğu bulunur.
-        // Bu nedenle alt bar gizliyken (!bottomBarVisible) önce tam ekran video oynatıcı kontrol edilir!
+        // ---- 4. BAŞKA BİRİNİN PROFİLİ, HİKAYELER (STORIES), AYARLAR VE ARAMA ----
+        // Birinin profiline bakarken, profil düzenlerken veya Hikaye (Story) izlerken ASLA atma!
+        if (isUserProfileOrSettings(rootNode) || isStoryOrSearchScreen(rootNode)) {
+            inDmChatContext = false
+            singleVideoGuard.reset()
+            return DetectionResult.notDetected(platformName)
+        }
+
+        // ---- 5. SOHBETTEN (DM) AÇILAN TAM EKRAN VİDEO ----
+        val hasDmQuickReplyBar = NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0.80f, 1f,
+            "mesaj gönder", "mesaj yaz", "send a message", "type a message", "message..."
+        )
         val isFullScreenVideo = !bottomBarVisible && isFullScreenDmVideoPlayer(rootNode)
+
+        // Yalnızca DM sohbetinden açılan tam ekran videoları yakala (Hikaye veya profil gezintisini değil)
+        val isDmVideoActive = (inDmChatContext || hasDmQuickReplyBar) && isFullScreenVideo
         val isActiveSessionScroll = singleVideoGuard.isSessionActive &&
+            inDmChatContext &&
             !bottomBarVisible &&
             event?.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED &&
             !isCommentsSheetOpen(rootNode)
 
-        if (isFullScreenVideo || isActiveSessionScroll) {
+        if (isDmVideoActive || isActiveSessionScroll) {
+            inDmChatContext = true
             val isDmVideoAllowed = preferences.isTikTokDmVideosAllowedSync()
 
             if (!isDmVideoAllowed) {
@@ -154,15 +161,15 @@ class TikTokDetector(
             return DetectionResult.notDetected(platformName)
         }
 
-        // Tam ekran video oynatıcıda değilsek ve normal sohbet ekranındaysak oturumu sıfırla
+        // Tam ekran video oynatıcıda değilsek ve normal DM sohbet ekranındaysak:
+        // Kullanıcının DM sohbetinde olduğunu işaretle ve tek-video oturumunu yeni video için sıfırla
         val isChatConversation = NodeUtils.hasVisibleViewId(
             rootNode,
             "chat_input", "msg_box", "message_edit_text", "et_message", "chat_room"
-        ) || NodeUtils.hasVisibleTextInRegion(
-            rootNode, 0.72f, 1f,
-            "mesaj gönder", "mesaj yaz", "send a message", "type a message", "message..."
-        )
+        ) || hasDmQuickReplyBar
+
         if (isChatConversation) {
+            inDmChatContext = true
             singleVideoGuard.reset()
         } else {
             singleVideoGuard.onViewerGone(now)
@@ -172,9 +179,109 @@ class TikTokDetector(
     }
 
     /**
+     * Başka bir kullanıcının profil sayfasını, takipçi/takip edilen listesini veya ayarlar ekranını tespit eder.
+     * Bu ekranlarda kullanıcı serbestçe gezinebilir, kaydırabilir.
+     */
+    private fun isUserProfileOrSettings(rootNode: AccessibilityNodeInfo): Boolean {
+        val isSettingsOrEdit = NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0f, 1f,
+            "profili düzenle", "edit profile", "ayarlar ve gizlilik", "settings and privacy",
+            "profili paylaş", "share profile"
+        )
+        if (isSettingsOrEdit) return true
+
+        // Başka birinin profil sayfasında üst/orta alanda "Takipçi" (Followers) ve "Beğeni" (Likes) / "Takip edilen" (Following) yer alır
+        var profileStatCount = 0
+        if (NodeUtils.hasVisibleTextInRegion(rootNode, 0.08f, 0.65f, "takipçi", "followers")) {
+            profileStatCount++
+        }
+        if (NodeUtils.hasVisibleTextInRegion(rootNode, 0.08f, 0.65f, "takip edilen", "following")) {
+            profileStatCount++
+        }
+        if (NodeUtils.hasVisibleTextInRegion(rootNode, 0.08f, 0.65f, "beğeni", "likes")) {
+            profileStatCount++
+        }
+        if (profileStatCount >= 2) return true
+
+        // Profil sayfasındaki 3 sütunlu video ızgarası (küçük kare/dikdörtgen video önizlemeleri yan yana)
+        if (hasProfileThumbnailGrid(rootNode)) return true
+
+        return false
+    }
+
+    /**
+     * Profil ekranlarındaki 3 sütunlu video küçük resim (thumbnail) ızgarasını tespit eder.
+     * Tam ekran video oynatıcıda yan yana 3 küçük video kutusu bulunmaz.
+     */
+    private fun hasProfileThumbnailGrid(rootNode: AccessibilityNodeInfo): Boolean {
+        val winRect = Rect()
+        rootNode.getBoundsInScreen(winRect)
+        val w = winRect.width()
+        val h = winRect.height()
+        if (w <= 0 || h <= 0) return false
+
+        var gridCellCount = 0
+        val rect = Rect()
+        NodeUtils.findNode(rootNode) { node ->
+            if (node.isVisibleToUser) {
+                node.getBoundsInScreen(rect)
+                val nw = rect.width()
+                val nh = rect.height()
+                // 3 sütunlu profil ızgarası hücreleri ekran genişliğinin ~%28-%35'i kadardır
+                if (nw in (w * 0.26f).toInt()..(w * 0.36f).toInt() &&
+                    nh in (h * 0.12f).toInt()..(h * 0.32f).toInt() &&
+                    rect.top >= h * 0.18f
+                ) {
+                    gridCellCount++
+                }
+            }
+            gridCellCount >= 3
+        }
+        return gridCellCount >= 3
+    }
+
+    /**
+     * TikTok Hikaye (Story) izleyici, Arama veya Paylaşım ekranlarını tespit eder.
+     * Hikayelerde "Hikaye" / "Story" rozeti veya altta "Yorum ekle..." (Add comment...) alanı bulunur.
+     */
+    private fun isStoryOrSearchScreen(rootNode: AccessibilityNodeInfo): Boolean {
+        val hasStoryOrSearchId = NodeUtils.hasVisibleViewId(
+            rootNode,
+            "search_input", "search_edit_text", "et_search_kw",
+            "story_viewer", "story_surface", "story_progress", "story_tag",
+            "share_panel", "share_sheet"
+        )
+        if (hasStoryOrSearchId) return true
+
+        // TikTok Hikaye (Story) ekranında altta "Yorum ekle..." veya ekranda "Hikaye" / "Story" etiketi bulunur
+        val hasStoryCommentInput = NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0.78f, 1f,
+            "yorum ekle", "bir yorum ekle", "add comment", "add a comment",
+            "hikayeye yanıt", "reply to story"
+        )
+        if (hasStoryCommentInput) return true
+
+        return hasExactStoryBadge(rootNode)
+    }
+
+    private fun hasExactStoryBadge(rootNode: AccessibilityNodeInfo): Boolean {
+        return NodeUtils.anyNodeMatches(rootNode) { node ->
+            if (!node.isVisibleToUser) return@anyNodeMatches false
+            val t = node.text?.toString()?.trim() ?: ""
+            val d = node.contentDescription?.toString()?.trim() ?: ""
+            t.equals("hikaye", ignoreCase = true) ||
+                t.equals("story", ignoreCase = true) ||
+                t.equals("hikayeler", ignoreCase = true) ||
+                t.equals("stories", ignoreCase = true) ||
+                d.equals("hikaye", ignoreCase = true) ||
+                d.equals("story", ignoreCase = true)
+        }
+    }
+
+    /**
      * Alt bar gizliyken (DM içindeyken) tam ekran video oynatıcının açık olup olmadığını tespit eder.
-     * Hem bilinen viewId'leri hem de obfuscated TikTok sürümleri için sağ kenar aksiyon sütununu,
-     * tam ekran dikey ViewPager'ı ve video üstü katmanlarını kontrol eder.
+     * NOT: Tek başına ViewPager kontrolü KULLANILMAZ (çünkü kullanıcı profilleri de ViewPager içerir).
+     * Yalnızca gerçek tam ekran video oynatıcı bileşenleri ve sağ kenar video aksiyon sütunu kontrol edilir.
      */
     private fun isFullScreenDmVideoPlayer(rootNode: AccessibilityNodeInfo): Boolean {
         // 1. Bilinen TikTok video oynatıcı viewId'leri
@@ -193,7 +300,6 @@ class TikTokDetector(
         val h = winRect.height()
         if (w <= 0 || h <= 0) return false
 
-        var hasFullScreenViewPager = false
         val rightActionYs = ArrayList<Float>()
         val rightEdgeStripYs = ArrayList<Float>()
         var hasCreatorHandleOrSound = false
@@ -205,13 +311,6 @@ class TikTokDetector(
                 val nw = rect.width()
                 val nh = rect.height()
                 if (nw > 0 && nh > 0) {
-                    val cls = node.className?.toString() ?: ""
-                    if (cls.contains("ViewPager", ignoreCase = true) &&
-                        nw >= w * 0.85f && nh >= h * 0.70f
-                    ) {
-                        hasFullScreenViewPager = true
-                    }
-
                     val cx = rect.exactCenterX()
                     val cy = rect.exactCenterY()
                     val text = node.text?.toString()?.trim() ?: ""
@@ -249,18 +348,14 @@ class TikTokDetector(
             false // tüm ağacı tara
         }
 
-        // 2. Alt bar yokken tam ekran ViewPager yalnızca DM'den/profilden açılan tam ekran video oynatıcıda vardır
-        // (Normal DM sohbet ekranı RecyclerView kullanır, ViewPager kullanmaz)
-        if (hasFullScreenViewPager) return true
-
-        // 3. Sağ kenarda dikey sıralı en az 2 video etkileşim butonu
+        // 2. Sağ kenarda dikey sıralı en az 2 video etkileşim butonu (Beğen / Yorum / Favori / Paylaş)
         if (rightActionYs.size >= 2) {
             val minY = rightActionYs.minOrNull() ?: 0f
             val maxY = rightActionYs.maxOrNull() ?: 0f
             if (abs(maxY - minY) >= h * 0.035f) return true
         }
 
-        // 4. Sağ şeritte dikey dizili en az 3 sayaç/ikon + sol altta @kullanıcı veya ses bilgisi
+        // 3. Sağ şeritte dikey dizili en az 3 sayaç/ikon + sol altta @kullanıcı veya ses bilgisi
         if (rightEdgeStripYs.size >= 3 && hasCreatorHandleOrSound) {
             val minY = rightEdgeStripYs.minOrNull() ?: 0f
             val maxY = rightEdgeStripYs.maxOrNull() ?: 0f

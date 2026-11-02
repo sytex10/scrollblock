@@ -269,10 +269,13 @@ object NodeUtils {
     }
 
     /**
-     * Performs ACTION_CLICK on [node] or its nearest clickable ancestor.
+     * Performs ACTION_CLICK on [node], its nearest clickable ancestor, or its clickable children.
      */
     fun clickNode(node: AccessibilityNodeInfo?): Boolean {
-        var p = node
+        if (node == null) return false
+
+        // 1. Tıklanabilir üst düğümler (parent)
+        var p: AccessibilityNodeInfo? = node
         var depth = 0
         while (p != null && depth < 6) {
             if (p.isClickable && p.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
@@ -281,7 +284,21 @@ object NodeUtils {
             p = try { p.parent } catch (_: Exception) { null }
             depth++
         }
-        return false
+
+        // 2. Tıklanabilir alt düğümler (children)
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            if (child.isClickable && child.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                return true
+            }
+        }
+
+        // 3. isClickable false olsa bile doğrudan ACTION_CLICK / ACTION_SELECT dene
+        if (node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) return true
+        if (try { node.parent?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true } catch (_: Exception) { false }) {
+            return true
+        }
+        return node.performAction(AccessibilityNodeInfo.ACTION_SELECT)
     }
 
     /** Center point of [node] on screen, or null if it has no bounds. */

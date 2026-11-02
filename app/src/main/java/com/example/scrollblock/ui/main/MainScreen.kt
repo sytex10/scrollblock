@@ -167,21 +167,6 @@ fun MainScreen(
         }
     }
 
-    val apkPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            coroutineScope.launch {
-                try {
-                    Toast.makeText(context, "Paket yükleyici açılıyor...", Toast.LENGTH_SHORT).show()
-                    UpdateManager.installFromPickedUri(context, uri)
-                } catch (e: Exception) {
-                    Toast.makeText(context, "Hata: ${e.message}", Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-    }
-
     Surface(
         modifier = modifier.fillMaxSize(),
         color = NearBlack
@@ -357,7 +342,7 @@ fun MainScreen(
                     viewModel.reopenOnboarding()
                 },
                 onPickLocalApk = {
-                    apkPickerLauncher.launch("application/vnd.android.package-archive")
+                    UpdateManager.openBrowserDownload(context)
                 },
                 onCheckUpdate = {
                     isCheckingUpdate = true
@@ -422,13 +407,11 @@ fun MainScreen(
         // Güncelleme Zorunlu Modalı
         if (remoteUpdateInfo != null && remoteUpdateInfo!!.versionCode > currentVersionCode) {
             val info = remoteUpdateInfo!!
-            var isDownloadingMandatory by remember { mutableStateOf(false) }
-            var mandatoryProgress by remember { mutableFloatStateOf(0f) }
 
             Dialog(
-                onDismissRequest = { },
+                onDismissRequest = { remoteUpdateInfo = null },
                 properties = DialogProperties(
-                    dismissOnBackPress = false,
+                    dismissOnBackPress = true,
                     dismissOnClickOutside = false
                 )
             ) {
@@ -472,54 +455,22 @@ fun MainScreen(
                         }
                     }
 
-                    if (isDownloadingMandatory) {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            LinearProgressIndicator(
-                                progress = { mandatoryProgress },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(6.dp)
-                                    .clip(RoundedCornerShape(3.dp)),
-                                color = AccentPrimary,
-                                trackColor = CardBackgroundElevated
-                            )
-                            Text(
-                                text = "İndiriliyor: %${(mandatoryProgress * 100).toInt()}",
-                                fontSize = 11.sp,
-                                color = TextSecondary
-                            )
-                        }
-                    } else {
-                        Button(
-                            onClick = {
-                                isDownloadingMandatory = true
-                                coroutineScope.launch {
-                                    UpdateManager.downloadAndInstall(
-                                        context = context,
-                                        urlString = info.apkUrl,
-                                        onProgress = { progressInt ->
-                                            mandatoryProgress = progressInt / 100f
-                                        },
-                                        onError = { errorMsg ->
-                                            isDownloadingMandatory = false
-                                            Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-                                        }
-                                    )
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AccentPrimary,
-                                contentColor = NearBlack
-                            )
-                        ) {
-                            Text(
-                                text = "İndir ve Güncelle",
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 14.sp
-                            )
-                        }
+                    Button(
+                        onClick = {
+                            UpdateManager.openBrowserDownload(context, info.apkUrl)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AccentPrimary,
+                            contentColor = NearBlack
+                        )
+                    ) {
+                        Text(
+                            text = "Tarayıcıdan İndir ve Güncelle",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
                     }
                 }
             }
@@ -1372,7 +1323,7 @@ private fun SystemSecurityCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Yerel APK Seç",
+                        text = "APK İndir",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
                         color = TextSecondary,

@@ -1,7 +1,7 @@
 {
-  "versionCode": 20,
-  "versionName": "2.9",
-  "minRequiredVersionCode": 20,
-  "changelog": "v2.9: Instagram ve TikTok DM'den açılan Reels/videoları engelleme ve tek video izleme izni (DM İzni açık/kapalı) kusursuz çalışacak şekilde düzeltildi.",
+  "versionCode": 21,
+  "versionName": "3.0",
+  "minRequiredVersionCode": 21,
+  "changelog": "v3.0: TikTok'ta Hikayeler (Stories) ve kullanıcı profillerinde gezinirken yanlışlıkla atma sorunu giderildi; Play Protect kurulum engeline yol açan izin ve bileşenler temizlendi.",
   "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
 }

@@ -170,13 +170,25 @@ class InstagramReelsDetector(
             return true
         }
 
-        // Hikaye (Story) izleyicisi açıksa Reels değildir
+        // Hikaye (Story) izleyicisi veya başka bir kullanıcının profil ekranı açıksa Reels değildir
         val isStoryViewer = NodeUtils.hasVisibleViewId(
             rootNode,
             "reel_viewer_media_container",
             "story_viewer"
+        ) || NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0.80f, 1f,
+            "hikayeye yanıt", "reply to story"
         )
         if (isStoryViewer) return false
+
+        val isOtherUserProfile = NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0.08f, 0.55f,
+            "takipçi", "followers"
+        ) && NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0.08f, 0.55f,
+            "gönderi", "posts", "takip", "following"
+        )
+        if (isOtherUserProfile) return false
 
         // DM sohbet üst barındaki sesli/görüntülü arama butonları görünüyorsa henüz videoya tıklanmamıştır
         if (hasDmCallHeader(rootNode)) return false
