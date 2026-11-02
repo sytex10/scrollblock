@@ -11,7 +11,8 @@ import kotlin.math.abs
  * Instagram Reels Engelleyici:
  *  - Alt bardaki Reels sekmesi seçiliyse -> Ana Sayfa sekmesine geçiş (uygulamadan ASLA ATMAZ).
  *  - Ana Sayfa akışı (normal kaydırma, gönderi/Reels paylaşma), Hikayeler, DM sohbet ekranı ve Profil -> %100 SERBESTTİR.
- *  - DM'den veya Keşfet'ten tıklandığında açılan tam ekran Reels izleyicisi:
+ *  - Keşfet'ten (Explore) tıklandığında açılan Reels videoları -> İLK VİDEO DAHİL ANINDA GERİ ATAR (oynatmaz).
+ *  - Yalnızca DM sohbetinden tıklandığında açılan tam ekran Reels izleyicisi:
  *      * "DM İzni (Tek Video)" AÇIK ise: İlk video izlenebilir; bir sonraki videoya kaydırılınca GERİ atar.
  *      * "DM İzni" KAPALI ise: Açıldığı an GERİ atarak sohbete döndürür.
  */
@@ -22,6 +23,12 @@ class InstagramReelsDetector(
 
     override val platformName: String = "Instagram Reels"
     override val packageNames: Set<String> = setOf("com.instagram.android")
+
+    /**
+     * Kullanıcının bir DM sohbetinden (Direct Message) gelip gelmediğini takip eder.
+     * Keşfet (Explore) sekmesinden açılan Reels videolarında bu değer false olur ve ilk video bile oynatılmaz.
+     */
+    private var inDmChatContext: Boolean = false
 
     override fun matchesPackage(packageName: String): Boolean {
         return packageName.lowercase().contains("instagram")
@@ -45,6 +52,7 @@ class InstagramReelsDetector(
 
         // Alt bardaki Reels sekmesi seçiliyse -> Ana Sayfa sekmesine geç (GERİ basılmaz)
         if (NodeUtils.isNodeSelected(reelsTab)) {
+            inDmChatContext = false
             singleReelGuard.reset()
             return DetectionResult.detected(
                 platform = platformName,
@@ -58,8 +66,15 @@ class InstagramReelsDetector(
         // ---- 2. KESİN GÜVENLİ EKRANLAR ----
         // Ana Sayfa veya Profil sekmesi seçiliyse (Ana sayfada kaydırma, gönderi izleme, paylaşım yapma tamamen serbest)
         if (NodeUtils.isNodeSelected(feedTab) || NodeUtils.isNodeSelected(profileTab)) {
+            inDmChatContext = false
             singleReelGuard.reset()
             return DetectionResult.notDetected(platformName)
+        }
+
+        val searchTabSelected = NodeUtils.isNodeSelected(searchTab)
+        if (searchTabSelected || isExploreGridScreen(rootNode)) {
+            // Keşfet (Explore) sekmesindeyiz -> DM bağlamını kapat
+            inDmChatContext = false
         }
 
         // Paylaşım (Share) alt penceresi açıksa dokunma
@@ -74,30 +89,50 @@ class InstagramReelsDetector(
 
         val bottomBarVisible = reelsTab != null || feedTab != null || profileTab != null || searchTab != null
 
-        // ---- 3. TAM EKRAN REELS İZLEYİCİSİ (DM / Keşfet'ten açılan dikey sayfalayıcı) ----
-        val isFullScreenReelViewer = isFullScreenClipsViewer(rootNode, event, bottomBarVisible)
+        // ---- 3. TAM EKRAN REELS İZLEYİCİSİ (DM veya Keşfet'ten açılan dikey sayfalayıcı) ----
+        val isFullScreenReelViewer = isFullScreenClipsViewer(rootNode, event, bottomBarVisible, searchTabSelected)
         val isPagerScroll = isVerticalPagerScrollEvent(event) && !isCommentsSheetOpen(rootNode)
 
         // Aktif bir tek-video oturumu varken gelen dikey sayfalayıcı kaydırmalarını yakala
         val isActiveSessionScroll = singleReelGuard.isSessionActive &&
+            inDmChatContext &&
             !bottomBarVisible &&
             isPagerScroll
 
         if (isFullScreenReelViewer || isActiveSessionScroll) {
+            val hasDmQuickReply = !bottomBarVisible &&
+                !searchTabSelected &&
+                NodeUtils.hasVisibleTextInRegion(
+                    rootNode, 0.82f, 1f,
+                    "mesaj gönder", "mesaj yaz", "send a message", "message..."
+                )
+            val hasExploreHeader = hasExactTopTitle(rootNode, "keşfet") || hasExactTopTitle(rootNode, "explore")
+
+            // Eğer video DM sohbetinden DEĞİL (örneğin Keşfet / Explore'dan) açıldıysa:
+            // İlk videoya dahi izin verme, anında GERİ tuşuyla Keşfet'e döndür!
+            val openedFromDm = (inDmChatContext || hasDmQuickReply) && !searchTabSelected && !hasExploreHeader
+            if (!openedFromDm) {
+                singleReelGuard.reset()
+                return DetectionResult.detected(
+                    platform = platformName,
+                    reason = "Instagram Keşfet Reel -> Geri",
+                    preferTabSwitch = false
+                )
+            }
+
+            inDmChatContext = true
             val isDmReelAllowed = preferences.isInstagramDmReelsAllowedSync()
 
             if (!isDmReelAllowed) {
                 singleReelGuard.reset()
                 return DetectionResult.detected(
                     platform = platformName,
-                    reason = "Instagram tam ekran Reel -> Geri",
+                    reason = "Instagram DM tam ekran Reel -> Geri",
                     preferTabSwitch = false
                 )
             }
 
-            // DM İzni (Tek Video) modu AÇIK:
-            // Yalnızca gerçek dikey sayfalayıcı (ViewPager / dikey RecyclerView) kaydırmalarını değerlendir.
-            // Video ilerleme çubuğu (SeekBar), kayan ses yazısı (TextView) vb. scroll olayları YOK SAYILIR.
+            // DM İzni (Tek Video) modu AÇIK ve video DM'den açıldı:
             if (isPagerScroll) {
                 val verdict = singleReelGuard.onPagerScrolled(now)
                 if (verdict == SingleReelGuard.Verdict.BLOCK) {
@@ -123,8 +158,9 @@ class InstagramReelsDetector(
             return DetectionResult.notDetected(platformName)
         }
 
-        // Eğer DM sohbet ekranındaysak (arama butonları veya mesaj yazma alanı görünüyorsa) oturumu temizle
+        // Eğer DM sohbet ekranındaysak (arama butonları veya mesaj yazma alanı görünüyorsa) DM bağlamını aktif et ve oturumu temizle
         if (isDmChatConversation(rootNode)) {
+            inDmChatContext = true
             singleReelGuard.reset()
         } else {
             singleReelGuard.onViewerGone(now)
@@ -141,8 +177,12 @@ class InstagramReelsDetector(
     private fun isFullScreenClipsViewer(
         rootNode: AccessibilityNodeInfo,
         event: AccessibilityEvent?,
-        bottomBarVisible: Boolean
+        bottomBarVisible: Boolean,
+        searchTabSelected: Boolean
     ): Boolean {
+        // Keşfet ızgarasında (üstte Arama çubuğu görünürken) henüz videoya tıklanmamıştır
+        if (isExploreGridScreen(rootNode)) return false
+
         // 1. Doğrudan Clips izleyici viewId'leri (Görünür alt bileşenler veya ViewPager)
         val hasVisibleClipsId = NodeUtils.hasVisibleViewId(
             rootNode,
@@ -193,17 +233,30 @@ class InstagramReelsDetector(
         // 3. Sağ kenardaki dikey Reels aksiyon sütunu (Beğen + Yorum + Paylaş dikey dizilimi)
         if (hasRightSideReelActions(rootNode)) return true
 
-        // 4. Alt bar gizliyken (DM içindeyken) üst barda "Reels" başlığı veya altta "Orijinal ses" etiketi
-        if (!bottomBarVisible) {
-            val hasTopReelsTitle = hasExactTopTitle(rootNode, "reels")
+        // 4. Alt bar gizliyken (DM içindeyken) veya Keşfet sekmesi seçiliyken üst barda "Reels"/"Keşfet" başlığı ya da altta "Orijinal ses" etiketi
+        if (!bottomBarVisible || searchTabSelected) {
+            val hasTopReelsOrExploreTitle = hasExactTopTitle(rootNode, "reels") ||
+                hasExactTopTitle(rootNode, "keşfet") ||
+                hasExactTopTitle(rootNode, "explore")
             val hasOriginalAudioLabel = NodeUtils.hasVisibleTextInRegion(
                 rootNode, 0.50f, 0.92f,
                 "orijinal ses", "original audio"
             )
-            if (hasTopReelsTitle || hasOriginalAudioLabel) return true
+            if (hasTopReelsOrExploreTitle || hasOriginalAudioLabel) return true
         }
 
         return false
+    }
+
+    /**
+     * Keşfet (Explore) küçük resim ızgarasını (üstte Arama çubuğu bulunan ana Keşfet sayfası) tespit eder.
+     */
+    private fun isExploreGridScreen(rootNode: AccessibilityNodeInfo): Boolean {
+        return NodeUtils.hasVisibleViewId(
+            rootNode,
+            "action_bar_search_edit_text",
+            "search_row"
+        ) || hasExactTopTitle(rootNode, "ara") || hasExactTopTitle(rootNode, "search")
     }
 
     /**

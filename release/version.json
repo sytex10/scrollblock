@@ -1,7 +1,7 @@
 {
-  "versionCode": 23,
-  "versionName": "3.2",
-  "minRequiredVersionCode": 23,
-  "changelog": "v3.2: Güncellemeler uygulama içinde indirilir ve kurulum tamamlandığı anda indirilen APK dosyası otomatik olarak silinir; Play Protect ve DM ilk video iyileştirmeleri sabitlendi.",
+  "versionCode": 24,
+  "versionName": "3.3",
+  "minRequiredVersionCode": 24,
+  "changelog": "v3.3: Instagram Keşfet (Explore) sekmesinden açılan Reels/videolarda ilk videonun oynama sorunu giderildi (anında geri atar); yalnızca DM sohbetinden açılan ilk videoya izin verilir.",
   "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
 }
