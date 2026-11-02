@@ -38,6 +38,9 @@ object UpdateManager {
     const val VERSION_CHECK_URL =
         "https://raw.githubusercontent.com/sytex10/scrollblock/main/version.json"
 
+    private const val GITHUB_API_VERSION_URL =
+        "https://api.github.com/repos/sytex10/scrollblock/contents/version.json?ref=main"
+
     data class RemoteVersionInfo(
         val versionCode: Int,
         val versionName: String,
@@ -105,25 +108,45 @@ object UpdateManager {
     }
 
     /**
-     * Checks GitHub for the latest version information from version.json (bypasses CDN cache).
+     * Checks GitHub for the latest version information from version.json.
+     * Queries both the live GitHub Contents API (instant, uncached) and raw.githubusercontent.com
+     * and returns whichever reports the newest versionCode.
      */
     suspend fun checkRemoteVersion(): RemoteVersionInfo? = withContext(Dispatchers.IO) {
+        val apiResult = fetchVersionFromUrl(
+            urlString = "$GITHUB_API_VERSION_URL&_t=${System.currentTimeMillis()}",
+            acceptHeader = "application/vnd.github.v3.raw"
+        )
+        val rawResult = fetchVersionFromUrl(
+            urlString = "$VERSION_CHECK_URL?t=${System.currentTimeMillis()}",
+            acceptHeader = "application/json"
+        )
+
+        return@withContext when {
+            apiResult != null && rawResult != null ->
+                if (apiResult.versionCode >= rawResult.versionCode) apiResult else rawResult
+            apiResult != null -> apiResult
+            else -> rawResult
+        }
+    }
+
+    private fun fetchVersionFromUrl(urlString: String, acceptHeader: String): RemoteVersionInfo? {
         var connection: HttpURLConnection? = null
         try {
-            val cacheBustedUrl = "$VERSION_CHECK_URL?t=${System.currentTimeMillis()}"
-            val url = URL(cacheBustedUrl)
+            val url = URL(urlString)
             connection = url.openConnection() as HttpURLConnection
             connection.useCaches = false
             connection.connectTimeout = 8000
             connection.readTimeout = 8000
             connection.setRequestProperty("User-Agent", "ScrollBlock-Updater")
+            connection.setRequestProperty("Accept", acceptHeader)
             connection.setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
             connection.setRequestProperty("Pragma", "no-cache")
 
             if (connection.responseCode == HttpURLConnection.HTTP_OK) {
                 val text = connection.inputStream.bufferedReader().use { it.readText() }
                 val obj = JSONObject(text)
-                return@withContext RemoteVersionInfo(
+                return RemoteVersionInfo(
                     versionCode = obj.getInt("versionCode"),
                     versionName = obj.getString("versionName"),
                     changelog = obj.optString("changelog", ""),
@@ -131,11 +154,11 @@ object UpdateManager {
                 )
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to check remote version: ${e.message}")
+            Log.w(TAG, "Failed to check remote version from $urlString: ${e.message}")
         } finally {
             connection?.disconnect()
         }
-        return@withContext null
+        return null
     }
 
     /**
