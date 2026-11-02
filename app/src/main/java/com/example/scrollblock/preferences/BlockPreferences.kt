@@ -65,10 +65,10 @@ class BlockPreferences(context: Context) {
         prefs.getBoolean(KEY_TIKTOK_ENABLED, true)
 
     fun isInstagramDmReelsAllowedSync(): Boolean =
-        prefs.getBoolean(KEY_INSTAGRAM_DM_REELS_ALLOWED, false)
+        prefs.getBoolean(KEY_INSTAGRAM_DM_REELS_ALLOWED, true)
 
     fun isTikTokDmVideosAllowedSync(): Boolean =
-        prefs.getBoolean(KEY_TIKTOK_DM_VIDEOS_ALLOWED, false)
+        prefs.getBoolean(KEY_TIKTOK_DM_VIDEOS_ALLOWED, true)
 
     fun getTotalBlockedCountSync(): Int =
         prefs.getInt(KEY_TOTAL_BLOCKED_COUNT, 0)

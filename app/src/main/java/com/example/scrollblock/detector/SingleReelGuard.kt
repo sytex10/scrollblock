@@ -17,7 +17,7 @@ package com.example.scrollblock.detector
  *     2. videoya yanlışlıkla izin verilmesi engellenir.
  */
 class SingleReelGuard(
-    private val graceMs: Long = 450L,
+    private val graceMs: Long = 1200L,
     private val goneResetMs: Long = 1400L
 ) {
     enum class Verdict { ALLOW, BLOCK }
@@ -45,17 +45,24 @@ class SingleReelGuard(
             return Verdict.ALLOW
         }
 
+        // İlk açılış animasyonu (graceMs) içinde arayüz henüz yerleşirken gelen yazar bilgisini ilk video olarak sabitle
+        if (now - startedAt <= graceMs) {
+            if (!currentFingerprint.isNullOrEmpty()) {
+                initialFingerprint = currentFingerprint
+            }
+            return Verdict.ALLOW
+        }
+
         // Başlangıçta parmak izi henüz hazır değilse ilk gelenle sabitle
         if (initialFingerprint.isNullOrEmpty() && !currentFingerprint.isNullOrEmpty()) {
             initialFingerprint = currentFingerprint
             return Verdict.ALLOW
         }
 
-        // Grace süresi dolduktan sonra ekrandaki videonun parmak izi değiştiyse -> 2. videoya geçilmiş
+        // Grace süresi dolduktan sonra ekrandaki videonun parmak izi (yazar) değiştiyse -> 2. videoya geçilmiş
         if (!initialFingerprint.isNullOrEmpty() &&
             !currentFingerprint.isNullOrEmpty() &&
-            currentFingerprint != initialFingerprint &&
-            now - startedAt > graceMs
+            currentFingerprint != initialFingerprint
         ) {
             return block()
         }
@@ -63,7 +70,7 @@ class SingleReelGuard(
         return Verdict.ALLOW
     }
 
-    /** Tam ekran dikey sayfalayıcıdan TYPE_VIEW_SCROLLED geldiğinde çağrılır. */
+    /** Tam ekran dikey sayfalayıcıdan gerçek dikey TYPE_VIEW_SCROLLED geldiğinde çağrılır. */
     fun onPagerScrolled(now: Long): Verdict {
         lastVisibleAt = now
         if (blocking) return Verdict.BLOCK
@@ -71,18 +78,17 @@ class SingleReelGuard(
         if (!active) {
             active = true
             startedAt = now
-            scrollEventCount = 1
+            scrollEventCount = 0
+            return Verdict.ALLOW
+        }
+
+        // Açılış animasyonu (graceMs) içindeki yerleşim kaydırmalarını tamamen yok say
+        if (now - startedAt <= graceMs) {
             return Verdict.ALLOW
         }
 
         scrollEventCount++
-
-        // Grace süresi bittiğinde veya birden fazla scroll olayı geldiyse engelle
-        return if (now - startedAt > graceMs || scrollEventCount >= 2) {
-            block()
-        } else {
-            Verdict.ALLOW
-        }
+        return block()
     }
 
     /**

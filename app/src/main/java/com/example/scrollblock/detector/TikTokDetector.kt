@@ -108,14 +108,14 @@ class TikTokDetector(
             "mesaj gönder", "mesaj yaz", "send a message", "type a message", "message..."
         )
         val isFullScreenVideo = !bottomBarVisible && isFullScreenDmVideoPlayer(rootNode)
+        val isPagerScroll = isVerticalPagerScrollEvent(event) && !isCommentsSheetOpen(rootNode)
 
         // Yalnızca DM sohbetinden açılan tam ekran videoları yakala (Hikaye veya profil gezintisini değil)
         val isDmVideoActive = (inDmChatContext || hasDmQuickReplyBar) && isFullScreenVideo
         val isActiveSessionScroll = singleVideoGuard.isSessionActive &&
             inDmChatContext &&
             !bottomBarVisible &&
-            event?.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED &&
-            !isCommentsSheetOpen(rootNode)
+            isPagerScroll
 
         if (isDmVideoActive || isActiveSessionScroll) {
             inDmChatContext = true
@@ -131,13 +131,10 @@ class TikTokDetector(
             }
 
             // DM İzni (Tek Video) modu AÇIK:
-            if (event?.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED && !isCommentsSheetOpen(rootNode)) {
-                val movedPastFirstItem = event.fromIndex > 0 || (event.toIndex > 0 && event.itemCount > 1)
-                val verdict = if (movedPastFirstItem) {
-                    SingleReelGuard.Verdict.BLOCK
-                } else {
-                    singleVideoGuard.onPagerScrolled(now)
-                }
+            // Yalnızca gerçek dikey sayfalayıcı (ViewPager / dikey RecyclerView) kaydırmalarını değerlendir.
+            // Video süre çubuğu (SeekBar), kayan müzik yazısı (TextView) vb. scroll olayları YOK SAYILIR.
+            if (isPagerScroll) {
+                val verdict = singleVideoGuard.onPagerScrolled(now)
                 if (verdict == SingleReelGuard.Verdict.BLOCK) {
                     return DetectionResult.detected(
                         platform = platformName,
@@ -375,41 +372,68 @@ class TikTokDetector(
         )
     }
 
+    /**
+     * Yalnızca tam ekran dikey video sayfalayıcısından (ViewPager / ViewPager2 / dikey RecyclerView)
+     * gelen gerçek sayfa geçiş kaydırmalarını kabul eder.
+     * Video süre çubuğu (SeekBar/ProgressBar) veya kayan müzik adı (TextView) olaylarını yok sayar.
+     */
+    private fun isVerticalPagerScrollEvent(event: AccessibilityEvent?): Boolean {
+        if (event == null || event.eventType != AccessibilityEvent.TYPE_VIEW_SCROLLED) return false
+        val cls = event.className?.toString() ?: ""
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            val dx = abs(event.scrollDeltaX)
+            val dy = abs(event.scrollDeltaY)
+            if (dx > dy && dx > 0) return false
+        }
+
+        if (cls.contains("ViewPager", ignoreCase = true)) {
+            return true
+        }
+
+        if (cls.contains("RecyclerView", ignoreCase = true)) {
+            if (event.itemCount >= 2 && event.fromIndex in 0..1 && event.toIndex in 1..2 && event.toIndex > event.fromIndex) {
+                return true
+            }
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P && abs(event.scrollDeltaY) > 140) {
+                return true
+            }
+        }
+        return false
+    }
+
+    /**
+     * Yalnızca videonun SABİT içerik üreticisi (@kullanici_adi) bilgisini döndürür.
+     * Altyazı, süre sayacı (0:14 -> 0:13) veya beğeni sayısı gibi video oynarken değişen metinleri
+     * DAHİL ETMEZ; böylece ilk video oynarken asla yanlışlıkla engelleme tetiklenmez.
+     */
     private fun extractVideoFingerprint(rootNode: AccessibilityNodeInfo?): String? {
         if (rootNode == null) return null
 
-        val h = NodeUtils.windowHeight(rootNode)
-        val rect = Rect()
+        val winRect = Rect()
+        rootNode.getBoundsInScreen(winRect)
+        val w = winRect.width()
+        val h = winRect.height()
+        if (w <= 0 || h <= 0) return null
 
+        val rect = Rect()
         val authorNode = NodeUtils.findNode(rootNode) { node ->
             if (!node.isVisibleToUser) return@findNode false
             val id = node.viewIdResourceName?.lowercase() ?: ""
             val txt = node.text?.toString()?.trim() ?: ""
+            if (txt.isEmpty() || txt.contains(" ") || txt.length !in 3..32) return@findNode false
+
             if (id.contains("title") || id.contains("author") || id.contains("nickname")) {
-                return@findNode txt.isNotEmpty()
+                return@findNode true
             }
-            if (txt.startsWith("@") && txt.length > 2 && h > 0) {
+            if (txt.startsWith("@")) {
                 node.getBoundsInScreen(rect)
-                return@findNode rect.exactCenterY() in (h * 0.45f)..(h * 0.92f)
+                return@findNode rect.width() > 0 && rect.height() > 0 &&
+                    rect.exactCenterX() <= w * 0.70f &&
+                    rect.exactCenterY() in (h * 0.45f)..(h * 0.90f)
             }
             false
         }
-        val author = authorNode?.text?.toString()?.trim()
-
-        val captionNode = NodeUtils.findNode(rootNode) { node ->
-            if (!node.isVisibleToUser) return@findNode false
-            val id = node.viewIdResourceName?.lowercase() ?: ""
-            val txt = node.text?.toString()?.trim() ?: ""
-            (id.contains("desc") || id.contains("caption")) && txt.isNotEmpty()
-        }
-        val caption = captionNode?.text?.toString()?.trim()
-
-        val byId = when {
-            !author.isNullOrEmpty() && !caption.isNullOrEmpty() -> "$author|$caption"
-            !author.isNullOrEmpty() -> author
-            !caption.isNullOrEmpty() -> caption
-            else -> null
-        }
-        return byId ?: NodeUtils.extractOverlayFingerprint(rootNode)
+        return authorNode?.text?.toString()?.trim()
     }
 }

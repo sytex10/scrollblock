@@ -76,12 +76,12 @@ class InstagramReelsDetector(
 
         // ---- 3. TAM EKRAN REELS İZLEYİCİSİ (DM / Keşfet'ten açılan dikey sayfalayıcı) ----
         val isFullScreenReelViewer = isFullScreenClipsViewer(rootNode, event, bottomBarVisible)
+        val isPagerScroll = isVerticalPagerScrollEvent(event) && !isCommentsSheetOpen(rootNode)
 
         // Aktif bir tek-video oturumu varken gelen dikey sayfalayıcı kaydırmalarını yakala
         val isActiveSessionScroll = singleReelGuard.isSessionActive &&
             !bottomBarVisible &&
-            event?.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED &&
-            !isCommentsSheetOpen(rootNode)
+            isPagerScroll
 
         if (isFullScreenReelViewer || isActiveSessionScroll) {
             val isDmReelAllowed = preferences.isInstagramDmReelsAllowedSync()
@@ -96,13 +96,10 @@ class InstagramReelsDetector(
             }
 
             // DM İzni (Tek Video) modu AÇIK:
-            if (event?.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED && !isCommentsSheetOpen(rootNode)) {
-                val movedPastFirstItem = event.fromIndex > 0 || (event.toIndex > 0 && event.itemCount > 1)
-                val verdict = if (movedPastFirstItem) {
-                    SingleReelGuard.Verdict.BLOCK
-                } else {
-                    singleReelGuard.onPagerScrolled(now)
-                }
+            // Yalnızca gerçek dikey sayfalayıcı (ViewPager / dikey RecyclerView) kaydırmalarını değerlendir.
+            // Video ilerleme çubuğu (SeekBar), kayan ses yazısı (TextView) vb. scroll olayları YOK SAYILIR.
+            if (isPagerScroll) {
+                val verdict = singleReelGuard.onPagerScrolled(now)
                 if (verdict == SingleReelGuard.Verdict.BLOCK) {
                     return DetectionResult.detected(
                         platform = platformName,
@@ -317,10 +314,45 @@ class InstagramReelsDetector(
         ) || hasExactTopTitle(rootNode, "yorumlar") || hasExactTopTitle(rootNode, "comments")
     }
 
+    /**
+     * Yalnızca tam ekran dikey video sayfalayıcısından (ViewPager / ViewPager2 / dikey RecyclerView)
+     * gelen gerçek sayfa geçiş kaydırmalarını kabul eder.
+     * Video süre çubuğu (SeekBar/ProgressBar) veya kayan müzik adı (TextView) olaylarını yok sayar.
+     */
+    private fun isVerticalPagerScrollEvent(event: AccessibilityEvent?): Boolean {
+        if (event == null || event.eventType != AccessibilityEvent.TYPE_VIEW_SCROLLED) return false
+        val cls = event.className?.toString() ?: ""
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            val dx = abs(event.scrollDeltaX)
+            val dy = abs(event.scrollDeltaY)
+            if (dx > dy && dx > 0) return false
+        }
+
+        if (cls.contains("ViewPager", ignoreCase = true)) {
+            return true
+        }
+
+        if (cls.contains("RecyclerView", ignoreCase = true)) {
+            if (event.itemCount >= 2 && event.fromIndex in 0..1 && event.toIndex in 1..2 && event.toIndex > event.fromIndex) {
+                return true
+            }
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P && abs(event.scrollDeltaY) > 140) {
+                return true
+            }
+        }
+        return false
+    }
+
+    /**
+     * Yalnızca videonun SABİT içerik üreticisi (kullanıcı adı / yazar) bilgisini döndürür.
+     * Altyazı, süre sayacı (0:14 -> 0:13) veya beğeni sayısı gibi video oynarken değişen metinleri
+     * DAHİL ETMEZ; böylece ilk video oynarken asla yanlışlıkla engelleme tetiklenmez.
+     */
     private fun extractVideoFingerprint(rootNode: AccessibilityNodeInfo?): String? {
         if (rootNode == null) return null
 
-        val author = NodeUtils.findNode(rootNode) { node ->
+        val authorById = NodeUtils.findNode(rootNode) { node ->
             node.isVisibleToUser && (
                 node.viewIdResourceName?.endsWith(":id/row_feed_photo_profile_name") == true ||
                     node.viewIdResourceName?.contains("clips_author") == true ||
@@ -328,19 +360,37 @@ class InstagramReelsDetector(
                 ) && !node.text.isNullOrEmpty()
         }?.text?.toString()?.trim()
 
-        val caption = NodeUtils.findNode(rootNode) { node ->
-            node.isVisibleToUser && (
-                node.viewIdResourceName?.contains("clips_caption") == true ||
-                    node.viewIdResourceName?.contains("video_caption") == true
-                ) && !node.text.isNullOrEmpty()
-        }?.text?.toString()?.trim()
+        if (!authorById.isNullOrEmpty()) return authorById
 
-        val byId = when {
-            !author.isNullOrEmpty() && !caption.isNullOrEmpty() -> "$author:$caption"
-            !author.isNullOrEmpty() -> author
-            !caption.isNullOrEmpty() -> caption
-            else -> null
+        // Obfuscated sürümler için: Sol-alt yazar bölgesindeki tek kelimelik @kullanici_adi düğümü
+        val winRect = Rect()
+        rootNode.getBoundsInScreen(winRect)
+        val w = winRect.width()
+        val h = winRect.height()
+        if (w <= 0 || h <= 0) return null
+
+        val ignoredWords = setOf(
+            "takip", "follow", "takipet", "following", "reels", "beğen", "like",
+            "yorum", "comment", "paylaş", "share", "daha", "more", "ses", "audio",
+            "orijinal", "original", "mesaj", "message", "gönder", "send", "sponsorlu", "sponsored"
+        )
+        val rect = Rect()
+        val handleNode = NodeUtils.findNode(rootNode) { node ->
+            if (!node.isVisibleToUser) return@findNode false
+            val txt = node.text?.toString()?.trim() ?: return@findNode false
+            if (txt.length !in 3..30 || txt.contains(" ")) return@findNode false
+            val clean = txt.removePrefix("@")
+            val isUsernameShape = clean.all { it.isLetterOrDigit() || it == '_' || it == '.' } &&
+                clean.any { it.isLetter() }
+            if (!isUsernameShape) return@findNode false
+            if (ignoredWords.contains(clean.lowercase())) return@findNode false
+
+            node.getBoundsInScreen(rect)
+            rect.width() > 0 && rect.height() > 0 &&
+                rect.exactCenterX() <= w * 0.62f &&
+                rect.exactCenterY() in (h * 0.58f)..(h * 0.90f)
         }
-        return byId ?: NodeUtils.extractOverlayFingerprint(rootNode)
+
+        return handleNode?.text?.toString()?.trim()
     }
 }

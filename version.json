@@ -1,7 +1,7 @@
 {
-  "versionCode": 21,
-  "versionName": "3.0",
-  "minRequiredVersionCode": 21,
-  "changelog": "v3.0: TikTok'ta Hikayeler (Stories) ve kullanıcı profillerinde gezinirken yanlışlıkla atma sorunu giderildi; Play Protect kurulum engeline yol açan izin ve bileşenler temizlendi.",
+  "versionCode": 22,
+  "versionName": "3.1",
+  "minRequiredVersionCode": 22,
+  "changelog": "v3.1: DM'den gelen ilk videoyu izlerken süre çubuğu veya altyazı değişimi nedeniyle ilk videodan erken atma sorunu tamamen düzeltildi; yalnızca 2. videoya kaydırıldığında engeller.",
   "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
 }
