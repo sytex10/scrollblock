@@ -19,6 +19,7 @@ import com.example.scrollblock.theme.ScrollBlockTheme
 import com.example.scrollblock.ui.main.MainScreen
 import com.example.scrollblock.ui.main.MainScreenViewModel
 import com.example.scrollblock.ui.onboarding.OnboardingScreen
+import com.example.scrollblock.updater.UpdateManager
 
 class MainActivity : ComponentActivity() {
 
@@ -26,6 +27,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Kurulum tamamlandıktan sonra uygulama açıldığında geçici güncelleme APK'sını otomatik sil
+        UpdateManager.cleanupInstalledApks(applicationContext, forceAll = true)
+
         enableEdgeToEdge()
 
         // Üst durum çubuğu (saat, şarj) ve alt çubuk simgelerini açık renk (beyaz) yap
@@ -72,5 +76,6 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         // Re-check accessibility service status when user returns from Android Settings
         viewModel.refreshServiceStatus()
+        UpdateManager.cleanupInstalledApks(applicationContext)
     }
 }

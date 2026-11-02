@@ -1,7 +1,7 @@
 {
-  "versionCode": 22,
-  "versionName": "3.1",
-  "minRequiredVersionCode": 22,
-  "changelog": "v3.1: DM'den gelen ilk videoyu izlerken süre çubuğu veya altyazı değişimi nedeniyle ilk videodan erken atma sorunu tamamen düzeltildi; yalnızca 2. videoya kaydırıldığında engeller.",
+  "versionCode": 23,
+  "versionName": "3.2",
+  "minRequiredVersionCode": 23,
+  "changelog": "v3.2: Güncellemeler uygulama içinde indirilir ve kurulum tamamlandığı anda indirilen APK dosyası otomatik olarak silinir; Play Protect ve DM ilk video iyileştirmeleri sabitlendi.",
   "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
 }
