@@ -1,11 +1,8 @@
 package com.example.scrollblock.ui.main
 
-import android.net.Uri
 import android.os.Build
 import android.text.format.DateUtils
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -164,21 +161,6 @@ fun MainScreen(
         val info = UpdateManager.checkRemoteVersion()
         if (info != null && info.versionCode > currentVersionCode) {
             remoteUpdateInfo = info
-        }
-    }
-
-    val apkPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            coroutineScope.launch {
-                try {
-                    Toast.makeText(context, "Paket yükleyici açılıyor...", Toast.LENGTH_SHORT).show()
-                    UpdateManager.installFromPickedUri(context, uri)
-                } catch (e: Exception) {
-                    Toast.makeText(context, "Hata: ${e.message}", Toast.LENGTH_LONG).show()
-                }
-            }
         }
     }
 
@@ -355,9 +337,6 @@ fun MainScreen(
                 },
                 onReopenOnboarding = {
                     viewModel.reopenOnboarding()
-                },
-                onPickLocalApk = {
-                    apkPickerLauncher.launch("application/vnd.android.package-archive")
                 },
                 onCheckUpdate = {
                     isCheckingUpdate = true
@@ -1171,7 +1150,6 @@ private fun SystemSecurityCard(
     isServiceActive: Boolean,
     onOpenAccessibilitySettings: () -> Unit,
     onReopenOnboarding: () -> Unit,
-    onPickLocalApk: () -> Unit,
     onCheckUpdate: () -> Unit,
     isCheckingUpdate: Boolean
 ) {
@@ -1317,7 +1295,7 @@ private fun SystemSecurityCard(
 
         HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
 
-        // 4. Uygulama Güncellemesi (Tam genişlikte iki dengeli buton - kayma yapmaz)
+        // 4. Uygulama Güncellemesi (Tam genişlikte tek buton - uygulama içinde indirir)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1332,55 +1310,30 @@ private fun SystemSecurityCard(
                     color = TextPrimary
                 )
                 Text(
-                    text = "GitHub üzerinden yeni sürümü denetleyin veya indirdiğiniz APK'yı kurun",
+                    text = "Yeni sürümü uygulama içinde denetleyin ve indirin",
                     fontSize = 12.sp,
                     color = TextSecondary
                 )
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(CardBackgroundElevated)
+                    .border(1.dp, HairlineDivider, RoundedCornerShape(8.dp))
+                    .clickable(enabled = !isCheckingUpdate) { onCheckUpdate() }
+                    .padding(vertical = 9.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(CardBackgroundElevated)
-                        .border(1.dp, HairlineDivider, RoundedCornerShape(8.dp))
-                        .clickable(enabled = !isCheckingUpdate) { onCheckUpdate() }
-                        .padding(vertical = 9.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (isCheckingUpdate) "Denetleniyor..." else "Güncellemeyi Kontrol Et",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = TextPrimary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .weight(0.65f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(CardBackgroundElevated)
-                        .border(1.dp, HairlineDivider, RoundedCornerShape(8.dp))
-                        .clickable { onPickLocalApk() }
-                        .padding(vertical = 9.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Yerel APK Seç",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = TextSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                Text(
+                    text = if (isCheckingUpdate) "Denetleniyor..." else "Güncellemeyi Kontrol Et",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }

@@ -1,7 +1,6 @@
 {
-  "versionCode": 24,
-  "versionName": "3.3",
-  "minRequiredVersionCode": 24,
-  "changelog": "v3.3: Instagram Keşfet (Explore) sekmesinden açılan Reels/videolarda ilk videonun oynama sorunu giderildi (anında geri atar); yalnızca DM sohbetinden açılan ilk videoya izin verilir.",
+  "versionCode": 25,
+  "versionName": "3.4",
+  "changelog": "• Instagram Keşfet (Explore) videoları: Keşfet ızgarasından tıklanan tüm Reels ve videolar ilk video dahil anında geri atılacak şekilde düzeltildi.\n• Play Protect koruması: Zararlı uygulama uyarısına neden olan paket yükleme izni tamamen kaldırıldı.\n• Uygulama içi güncelleme: Güncellemeler tarayıcı açmadan uygulama içinde indirilir ve kurulum sonrası APK otomatik silinir.",
   "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
 }

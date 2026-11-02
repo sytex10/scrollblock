@@ -1,34 +1,36 @@
 package com.example.scrollblock.updater
 
+import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.util.Log
-import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
-import java.io.FileOutputStream
-import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Uygulama içi güncelleme ve otomatik APK temizleme yöneticisi:
- *  - Yeni sürümü uygulama içinde ilerleme çubuğu ile indirir ve kurulum ekranını açar.
- *  - Kurulum tamamlanıp uygulama/servis başladığında indirilen geçici APK dosyalarını
+ * Play Protect uyumlu uygulama içi güncelleme ve otomatik APK temizleme yöneticisi:
+ *  - Yeni sürümü tarayıcı açmadan, uygulama içindeki ilerleme çubuğu (%0..%100) ile
+ *    Android'in sistem DownloadManager servisi üzerinden indirir.
+ *  - REQUEST_INSTALL_PACKAGES izni kullanmadığı için Google Play Protect "zararlı uygulama"
+ *    uyarısı tetiklemez.
+ *  - Kurulum tamamlanıp yeni sürüm açıldığında indirilen APK kaydını ve dosyasını
  *    otomatik olarak siler (telefonda gereksiz yer kaplamaz).
  */
 object UpdateManager {
 
     private const val TAG = "UpdateManager"
-    private const val FILE_PROVIDER_AUTHORITY = "com.scrollblock.app.fileprovider"
     private const val PREFS_UPDATER = "scrollblock_updater_prefs"
     private const val KEY_PENDING_APK_VERSION = "pending_apk_version_code"
-    private const val NETWORK_APK_NAME = "network_update.apk"
-    private const val PICKED_APK_NAME = "picked_update.apk"
+    private const val KEY_LAST_DOWNLOAD_ID = "last_download_id"
+    private const val DOWNLOAD_FILE_NAME = "ScrollBlock-update.apk"
 
     const val DEFAULT_GITHUB_APK_URL =
         "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
@@ -44,21 +46,33 @@ object UpdateManager {
     )
 
     /**
-     * Kurulum tamamlandıktan sonra (veya uygulama açılışında) indirilen geçici APK dosyalarını siler.
+     * Kurulum tamamlandıktan sonra (veya yeni indirme öncesinde) indirilen APK dosyasını siler.
      */
     fun cleanupInstalledApks(context: Context, forceAll: Boolean = false) {
         try {
-            val prefs = context.applicationContext.getSharedPreferences(PREFS_UPDATER, Context.MODE_PRIVATE)
+            val appCtx = context.applicationContext
+            val prefs = appCtx.getSharedPreferences(PREFS_UPDATER, Context.MODE_PRIVATE)
             val pendingVersion = prefs.getInt(KEY_PENDING_APK_VERSION, -1)
-            val currentVersion = getCurrentVersionCode(context)
+            val lastDownloadId = prefs.getLong(KEY_LAST_DOWNLOAD_ID, -1L)
+            val currentVersion = getCurrentVersionCode(appCtx)
 
-            // Kurulum tamamlandıysa (mevcut sürüm >= indirilen sürüm) veya açılış temizliğiyse APK'ları sil
-            val shouldDelete = forceAll || pendingVersion <= 0 || currentVersion >= pendingVersion
+            val shouldDelete = forceAll || (pendingVersion > 0 && currentVersion >= pendingVersion)
             if (shouldDelete) {
-                deleteApkFilesInDir(context.cacheDir)
-                deleteApkFilesInDir(context.filesDir)
-                context.externalCacheDir?.let { deleteApkFilesInDir(it) }
-                prefs.edit().remove(KEY_PENDING_APK_VERSION).apply()
+                if (lastDownloadId > 0L) {
+                    try {
+                        val dm = appCtx.getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager
+                        dm?.remove(lastDownloadId)
+                    } catch (_: Exception) { }
+                }
+                deleteApkFilesInDir(appCtx.cacheDir)
+                deleteApkFilesInDir(appCtx.filesDir)
+                appCtx.externalCacheDir?.let { deleteApkFilesInDir(it) }
+                appCtx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.let { deleteApkFilesInDir(it) }
+
+                prefs.edit()
+                    .remove(KEY_PENDING_APK_VERSION)
+                    .remove(KEY_LAST_DOWNLOAD_ID)
+                    .apply()
             }
         } catch (e: Exception) {
             Log.w(TAG, "Error cleaning up temporary APK files: ${e.message}")
@@ -68,12 +82,7 @@ object UpdateManager {
     private fun deleteApkFilesInDir(dir: File?) {
         if (dir == null || !dir.exists()) return
         dir.listFiles()?.forEach { file ->
-            if (file.isFile && (
-                    file.name.endsWith(".apk", ignoreCase = true) ||
-                        file.name == NETWORK_APK_NAME ||
-                        file.name == PICKED_APK_NAME
-                    )
-            ) {
+            if (file.isFile && file.name.endsWith(".apk", ignoreCase = true)) {
                 try {
                     file.delete()
                 } catch (_: Exception) { }
@@ -130,40 +139,9 @@ object UpdateManager {
     }
 
     /**
-     * Launches the system package installer for an APK file.
-     */
-    fun installApkFile(context: Context, apkFile: File) {
-        val apkUri: Uri = FileProvider.getUriForFile(
-            context,
-            FILE_PROVIDER_AUTHORITY,
-            apkFile
-        )
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(apkUri, "application/vnd.android.package-archive")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
-        }
-        context.startActivity(intent)
-    }
-
-    /**
-     * Copies a user-picked APK URI from storage, launches installation, and marks it for auto-deletion.
-     */
-    suspend fun installFromPickedUri(context: Context, pickedUri: Uri) = withContext(Dispatchers.IO) {
-        cleanupInstalledApks(context, forceAll = true)
-        val destFile = File(context.cacheDir, PICKED_APK_NAME)
-        context.contentResolver.openInputStream(pickedUri)?.use { input ->
-            FileOutputStream(destFile).use { output ->
-                input.copyTo(output)
-            }
-        }
-        withContext(Dispatchers.Main) {
-            installApkFile(context, destFile)
-        }
-    }
-
-    /**
-     * Downloads the APK inside the app with live progress and launches the installer.
-     * Once installed, [cleanupInstalledApks] automatically deletes the APK file.
+     * Uygulama içinde sistem DownloadManager ile yeni sürümü indirir, %0..%100 canlı ilerleme
+     * bildirir ve tamamlandığında sistem İndirilenler penceresini açar.
+     * Kurulum tamamlandığında [cleanupInstalledApks] indirilen APK'yı otomatik olarak siler.
      */
     suspend fun downloadAndInstall(
         context: Context,
@@ -172,83 +150,88 @@ object UpdateManager {
         onProgress: (Int) -> Unit,
         onError: (String) -> Unit
     ) = withContext(Dispatchers.IO) {
-        var input: InputStream? = null
-        var output: FileOutputStream? = null
-        var connection: HttpURLConnection? = null
-
         try {
-            // Yeni indirmeden önce eski APK kalıntılarını temizle
-            cleanupInstalledApks(context, forceAll = true)
+            val appCtx = context.applicationContext
+            cleanupInstalledApks(appCtx, forceAll = true)
 
-            val separator = if (urlString.contains("?")) "&" else "?"
-            var currentUrl = "$urlString${separator}t=${System.currentTimeMillis()}"
-            var redirects = 0
-            val maxRedirects = 6
-
-            while (redirects < maxRedirects) {
-                val url = URL(currentUrl)
-                connection = url.openConnection() as HttpURLConnection
-                connection.instanceFollowRedirects = true
-                connection.useCaches = false
-                connection.connectTimeout = 15000
-                connection.readTimeout = 30000
-                connection.setRequestProperty("User-Agent", "ScrollBlock-Updater")
-
-                val status = connection.responseCode
-                if (status == HttpURLConnection.HTTP_MOVED_TEMP ||
-                    status == HttpURLConnection.HTTP_MOVED_PERM ||
-                    status == 307 || status == 308
-                ) {
-                    val location = connection.getHeaderField("Location") ?: break
-                    currentUrl = location
-                    connection.disconnect()
-                    redirects++
-                } else {
-                    break
-                }
-            }
-
-            if (connection == null || connection.responseCode != HttpURLConnection.HTTP_OK) {
-                val code = connection?.responseCode ?: -1
+            val dm = appCtx.getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager
+            if (dm == null) {
                 withContext(Dispatchers.Main) {
-                    onError("Sunucu bağlantı hatası: HTTP $code")
+                    onError("Sistem indirme yöneticisi başlatılamadı")
                 }
                 return@withContext
             }
 
-            val fileLength = connection.contentLength
-            val apkFile = File(context.cacheDir, NETWORK_APK_NAME)
+            val separator = if (urlString.contains("?")) "&" else "?"
+            val cacheBustedUrl = "$urlString${separator}t=${System.currentTimeMillis()}"
 
-            input = connection.inputStream
-            output = FileOutputStream(apkFile)
+            val request = DownloadManager.Request(Uri.parse(cacheBustedUrl)).apply {
+                setTitle("ScrollBlock Güncellemesi")
+                setDescription("Yeni sürüm indiriliyor...")
+                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                setAllowedOverMetered(true)
+                setAllowedOverRoaming(true)
+                setDestinationInExternalFilesDir(
+                    appCtx,
+                    Environment.DIRECTORY_DOWNLOADS,
+                    DOWNLOAD_FILE_NAME
+                )
+            }
 
-            val data = ByteArray(8192)
-            var total: Long = 0
-            var count: Int
-
-            while (input.read(data).also { count = it } != -1) {
-                total += count
-                if (fileLength > 0) {
-                    val progress = ((total * 100) / fileLength).toInt()
-                    withContext(Dispatchers.Main) {
-                        onProgress(progress)
+            val downloadId = dm.enqueue(request)
+            appCtx.getSharedPreferences(PREFS_UPDATER, Context.MODE_PRIVATE)
+                .edit()
+                .putLong(KEY_LAST_DOWNLOAD_ID, downloadId)
+                .apply {
+                    if (targetVersionCode > 0) {
+                        putInt(KEY_PENDING_APK_VERSION, targetVersionCode)
                     }
                 }
-                output.write(data, 0, count)
-            }
+                .apply()
 
-            output.flush()
+            var isRunning = true
+            while (isRunning) {
+                val query = DownloadManager.Query().setFilterById(downloadId)
+                dm.query(query)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val statusIdx = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                        val downloadedIdx = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                        val totalIdx = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
 
-            if (targetVersionCode > 0) {
-                context.applicationContext
-                    .getSharedPreferences(PREFS_UPDATER, Context.MODE_PRIVATE)
-                    .edit()
-                    .putInt(KEY_PENDING_APK_VERSION, targetVersionCode)
-                    .apply()
-            }
+                        val status = if (statusIdx >= 0) cursor.getInt(statusIdx) else DownloadManager.STATUS_RUNNING
+                        val downloaded = if (downloadedIdx >= 0) cursor.getLong(downloadedIdx) else 0L
+                        val total = if (totalIdx >= 0) cursor.getLong(totalIdx) else -1L
 
-            withContext(Dispatchers.Main) {
-                installApkFile(context, apkFile)
+                        if (total > 0) {
+                            val pct = ((downloaded * 100L) / total).toInt().coerceIn(0, 100)
+                            withContext(Dispatchers.Main) {
+                                onProgress(pct)
+                            }
+                        }
+
+                        when (status) {
+                            DownloadManager.STATUS_SUCCESSFUL -> {
+                                isRunning = false
+                                withContext(Dispatchers.Main) {
+                                    onProgress(100)
+                                    openSystemDownloads(context)
+                                }
+                            }
+                            DownloadManager.STATUS_FAILED -> {
+                                isRunning = false
+                                cleanupInstalledApks(appCtx, forceAll = true)
+                                withContext(Dispatchers.Main) {
+                                    onError("İndirme başarısız oldu. Lütfen tekrar deneyin.")
+                                }
+                            }
+                        }
+                    } else {
+                        isRunning = false
+                    }
+                }
+                if (isRunning) {
+                    delay(150L)
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Download error", e)
@@ -256,10 +239,17 @@ object UpdateManager {
             withContext(Dispatchers.Main) {
                 onError("İndirme başarısız: ${e.localizedMessage ?: "Bağlantı hatası"}")
             }
-        } finally {
-            output?.close()
-            input?.close()
-            connection?.disconnect()
+        }
+    }
+
+    private fun openSystemDownloads(context: Context) {
+        try {
+            val intent = Intent(DownloadManager.ACTION_VIEW_DOWNLOADS).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not open system downloads view: ${e.message}")
         }
     }
 }
