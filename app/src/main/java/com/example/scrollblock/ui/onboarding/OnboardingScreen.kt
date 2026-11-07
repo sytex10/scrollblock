@@ -217,17 +217,28 @@ fun OnboardingScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.ic_shortban_logo),
+                        painter = painterResource(id = R.drawable.shortban_logo),
                         contentDescription = "ShortBan Logo",
-                        modifier = Modifier.size(26.dp)
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(7.dp))
                     )
-                    Text(
-                        text = "shortban",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary,
-                        letterSpacing = (-0.5).sp
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "SHORT",
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = TextPrimary,
+                            letterSpacing = (-0.4).sp
+                        )
+                        Text(
+                            text = "BAN",
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = androidx.compose.ui.graphics.Color(0xFFF21B2D),
+                            letterSpacing = (-0.4).sp
+                        )
+                    }
                     Text(
                         text = "REHBER",
                         fontSize = 10.sp,

@@ -1,6 +1,6 @@
 {
-  "versionCode": 31,
-  "versionName": "4.0",
-  "changelog": "• Yeni ShortBan Logosu: Hem Android ana ekran ikonuna, hem uygulama üst barına hem de web sitesine (vsolken.com/shortban) özel ShortBan kalkan logosu eklendi.\n• Yorumları Engelle (Toksik Yorum Kalkanı): Instagram, TikTok ve YouTube için ayrı ayrı açılabilen Yorum Kalkanı.\n• Modüler yapı: insta/, tiktok/, yt/ ve web/ doğrudan ana klasör altında.",
+  "versionCode": 32,
+  "versionName": "4.1",
+  "changelog": "• Yeni SHORTBAN Logosu: Gönderdiğiniz orijinal ShortBan logosu Android uygulama ikonuna, üst bara, web sitesine ve PC eklentisine entegre edildi.\n• YouTube Music Muafiyeti: YouTube Music, YouTube Studio ve YouTube Kids hem Android hem PC'de tamamen muaf tutuldu.\n• PC Yorum Kalkanı (Beyaz Ekran): PC'de yorumlar açıldığında yorum alanı bembeyaz (#FFFFFF) kalır ve hiçbir yorum görünmez.\n• Tek Tıkla PC Kurulumu ve Otomatik Güncelleme: Geliştirici moduyla uğraşmadan tek tıkla kurulum (.CMD) ve arka plan otomatik güncelleme servisi eklendi.",
   "apkUrl": "https://raw.githubusercontent.com/sytex10/scrollblock/main/release/ScrollBlock-release.apk"
 }

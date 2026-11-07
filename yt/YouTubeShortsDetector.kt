@@ -18,11 +18,25 @@ class YouTubeShortsDetector(
 ) : PlatformDetector {
 
     override val platformName: String = "YouTube Shorts"
-    override val packageNames: Set<String> = setOf("com.google.android.youtube")
+    override val packageNames: Set<String> = setOf(
+        "com.google.android.youtube",
+        "app.revanced.android.youtube",
+        "com.vanced.android.youtube"
+    )
 
     override fun matchesPackage(packageName: String): Boolean {
         val p = packageName.lowercase()
-        return p.contains("youtube")
+        // YouTube Music, YouTube Studio, YouTube Kids ve YouTube TV kesinlikle hariç tutulur
+        if (p.contains("music") ||
+            p.contains("creator") ||
+            p.contains("studio") ||
+            p.contains("kids") ||
+            p.contains("tv") ||
+            p.contains("unplugged")
+        ) {
+            return false
+        }
+        return packageNames.contains(p) || p == "com.google.android.youtube"
     }
 
     override fun isEnabled(): Boolean =

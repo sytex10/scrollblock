@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ShortBan — Kısa Video & Yorum Kalkanı | vsolken.com/shortban</title>
-  <link rel="icon" type="image/svg+xml" href="logo.svg" />
+  <link rel="icon" type="image/jpeg" href="logo.jpg" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -12,9 +12,9 @@
     <!-- ÜST BAR -->
     <header class="topbar">
       <div class="brand-group">
-        <img src="logo.svg" alt="ShortBan Logo" class="brand-icon" width="32" height="32" />
-        <span class="brand-logo">shortban</span>
-        <span id="versionBadge" class="version-tag">v4.0</span>
+        <img src="logo.jpg" alt="ShortBan Logo" class="brand-icon" width="38" height="38" style="border-radius: 9px; object-fit: cover;" />
+        <span class="brand-logo"><span style="color: #ffffff;">SHORT</span><span style="color: #F21B2D;">BAN</span></span>
+        <span id="versionBadge" class="version-tag">v4.1</span>
         <span class="domain-tag">vsolken.com/shortban</span>
       </div>
       <div id="extensionStatusPill" class="status-pill warning">
@@ -41,11 +41,11 @@
         <div class="dl-box android-box">
           <div class="dl-top">
             <span class="dl-badge emerald">ANDROID UYGULAMASI</span>
-            <span id="androidVersionText" class="dl-ver">v4.0 · Güncel</span>
+            <span id="androidVersionText" class="dl-ver">v4.1 · Güncel</span>
           </div>
           <h3 class="dl-title">ShortBan Android APK</h3>
           <p class="dl-desc">
-            Play Protect uyumlu, Yorum Kalkanı, uygulama içi güncelleme ve otomatik APK temizleme destekli Android sürümü.
+            Play Protect uyumlu, Yorum Kalkanı, YouTube Music muafiyeti, uygulama içi otomatik güncelleme destekli Android sürümü.
           </p>
           <a
             id="androidDownloadLink"
@@ -61,33 +61,40 @@
         <!-- 2. BİLGİSAYAR TARAYICI EKLENTİSİ KARTI -->
         <div class="dl-box pc-box">
           <div class="dl-top">
-            <span class="dl-badge neutral">CHROME · EDGE · BRAVE · OPERA</span>
-            <span class="dl-ver">v4.0 PC · Manifest V3</span>
+            <span class="dl-badge neutral">OTOMATİK KURULUM & GÜNCELLEME</span>
+            <span class="dl-ver">v4.1 PC · Manifest V3</span>
           </div>
           <h3 class="dl-title">ShortBan Bilgisayar Eklentisi</h3>
           <p class="dl-desc">
-            Bilgisayardan girilen YouTube Shorts, Instagram Reels, TikTok akışlarını ve yorumları bu web paneliyle senkronize engeller.
+            Geliştirici seçenekleriyle uğraşmadan tek tıkla kurulur, arka planda otomatik güncellenir ve yorumları bembeyaz gizler.
           </p>
           <div class="dl-actions">
             <a
-              href="downloads/ScrollBlock-PC-Extension.zip"
-              download="ScrollBlock-PC-Extension.zip"
+              id="oneClickPcInstallBtn"
+              href="downloads/ShortBan-PC-Kurulum.cmd"
+              download="ShortBan-PC-Kurulum.cmd"
               class="btn-secondary"
             >
-              Bilgisayar Eklentisini İndir (.ZIP)
+              Tek Tıkla Otomatik Kur (.CMD)
             </a>
-            <button id="toggleGuideBtn" class="btn-outline">Kurulum Rehberi</button>
+            <a
+              href="downloads/ScrollBlock-PC-Extension.zip"
+              download="ScrollBlock-PC-Extension.zip"
+              class="btn-outline"
+            >
+              .ZIP İndir
+            </a>
+            <button id="toggleGuideBtn" class="btn-outline">Rehber</button>
           </div>
         </div>
       </div>
 
       <!-- PC EKLENTİ KURULUM REHBERİ (AÇILIR KUTU) -->
       <div id="pcInstallGuide" class="guide-box" style="display: none;">
-        <h4>Bilgisayara 30 Saniyede Nasıl Kurulur?</h4>
+        <h4>Geliştirici Moduyla Uğraşmadan Tek Tıkla Kurulum:</h4>
         <ol>
-          <li>Yukarıdaki <strong>Bilgisayar Eklentisini İndir (.ZIP)</strong> butonuna basıp dosyayı bir klasöre çıkartın.</li>
-          <li>Tarayıcınızın adres çubuğuna <code>chrome://extensions</code> (veya Edge için <code>edge://extensions</code>) yazıp sağ üstten <strong>Geliştirici Modu</strong>'nu açın.</li>
-          <li>Sol üstteki <strong>Paketlenmemiş öğe yükle (Load unpacked)</strong> butonuna tıklayıp çıkarttığınız klasörü seçin. Bu sayfa anında <strong>"PC Eklentisi Aktif"</strong> durumuna geçecektir!</li>
+          <li>Yukarıdaki <strong>Tek Tıkla Otomatik Kur (.CMD)</strong> butonuna tıklayın ve inen <code>ShortBan-PC-Kurulum.cmd</code> dosyasını çalıştırın.</li>
+          <li>Kurulum aracı eklentiyi otomatik olarak bilgisayarınıza kurar, <strong>arka plan otomatik güncelleme servisini</strong> aktif eder ve tarayıcınızı ShortBan korumasıyla başlatır!</li>
         </ol>
       </div>
     </section>
@@ -295,8 +302,37 @@
       </div>
     </div>
 
+    <!-- OTOMATİK PC KURULUM BİLDİRİM MODALI (PC'DEN GİRİLİNCE EKLENTİ YOKSA ÇIKAR) -->
+    <div id="autoInstallModalBackdrop" class="modal-backdrop" style="display: none;">
+      <div class="modal-card" style="max-width: 430px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <img src="logo.jpg" alt="ShortBan" width="44" height="44" style="border-radius: 10px;" />
+          <div>
+            <h3 class="card-title">ShortBan PC Korumasını Başlat</h3>
+            <p class="card-sub">Geliştirici seçenekleriyle uğraşmadan tek tıkla kurulum</p>
+          </div>
+        </div>
+        <p class="card-sub" style="color: #d4d4d8; line-height: 1.55;">
+          Bilgisayarınızda ShortBan eklentisi henüz aktif değil. Otomatik kurulum aracını indirip çalıştırarak
+          <strong>geliştirici moduyla uğraşmadan</strong> eklentiyi ve otomatik güncellemeyi anında aktif edebilirsiniz.
+        </p>
+        <div class="modal-actions" style="margin-top: 4px;">
+          <button id="dismissAutoInstallBtn" class="btn-outline">Daha Sonra</button>
+          <a
+            id="confirmAutoInstallBtn"
+            href="downloads/ShortBan-PC-Kurulum.cmd"
+            download="ShortBan-PC-Kurulum.cmd"
+            class="btn-secondary"
+            style="flex: none;"
+          >
+            Otomatik Kur (.CMD İndir)
+          </a>
+        </div>
+      </div>
+    </div>
+
     <footer class="footer">
-      <span>ShortBan v4.0 · vsolken.com/shortban · Kısa Video & Toksik Yorum Kalkanı</span>
+      <span>ShortBan v4.1 · vsolken.com/shortban · Kısa Video & Toksik Yorum Kalkanı</span>
     </footer>
   </div>
 

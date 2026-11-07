@@ -1,12 +1,6 @@
 /**
- * ScrollBlock PC — TikTok & Yorum Engelleyici (Tamamen İzole Modül: scrollblock/tiktok)
- *  - Bu dosyadaki hiçbir değişiklik Instagram (scrollblock/insta) veya YouTube (scrollblock/yt) modüllerini etkilemez.
- *  - "Yorumları Engelle (Yorum Kalkanı)" AÇIK ise: TikTok video yorumlarını ve yorum çekmecesini gizler.
- *  - TikTok Ana Sayfa (Sizin İçin / For You) ve Keşfet akışını -> Mesajlar (/messages) ekranına yönlendirir.
- *  - Mesajlar (/messages), Kullanıcı Profilleri (/@kullanici), Hikayeler ve Ayarlar -> %100 Serbesttir.
- *  - DM'den (/messages) açılan tam ekran videolarda:
- *      * "DM'den gelen ilk videoya izin ver" AÇIK ise: İlk video izlenir; 2. videoya geçilince Mesajlar'a döner.
- *      * KAPALI ise: Açıldığı an Mesajlar'a döner.
+ * ShortBan PC — TikTok & Yorum Engelleyici (Tamamen İzole Modül: scrollblock/tiktok)
+ *  - "Yorumları Engelle (Yorum Kalkanı)" AÇIK ise: Yorumlar açıldığında yorum alanı bembeyaz (#FFFFFF) boş kalır.
  */
 (function () {
   "use strict";
@@ -25,15 +19,26 @@
     if (blocked) {
       if (!commentStyleEl) {
         commentStyleEl = document.createElement("style");
-        commentStyleEl.id = "scrollblock-tiktok-comment-shield";
+        commentStyleEl.id = "shortban-tiktok-comment-shield";
         commentStyleEl.textContent = `
           [data-e2e="comment-list"],
-          [data-e2e="comment-level-1"],
-          [data-e2e="comment-input"],
           [class*="DivCommentListContainer"],
-          [class*="DivCommentContainer"],
+          [class*="DivCommentContainer"] {
+            background: #FFFFFF !important;
+            background-color: #FFFFFF !important;
+            min-height: 220px !important;
+            pointer-events: none !important;
+          }
+          [data-e2e="comment-list"] *,
+          [data-e2e="comment-level-1"],
+          [data-e2e="comment-level-2"],
+          [data-e2e="comment-input"],
+          [class*="DivCommentListContainer"] *,
+          [class*="DivCommentItemContainer"],
           [class*="DivCommentFooter"] {
-            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
           }
         `;
         (document.head || document.documentElement).appendChild(commentStyleEl);
@@ -78,14 +83,12 @@
 
         const path = window.location.pathname || "/";
 
-        // 1. Mesajlar (DM Gelen Kutusu) -> %100 Serbest ve DM bağlamını aktif et
         if (path.startsWith("/messages")) {
           inDmContext = true;
           allowedDmVideoPath = null;
           return;
         }
 
-        // 2. Bir kullanıcının profil sayfası (/@kullanici) veya video sayfası (/@kullanici/video/123)
         if (path.startsWith("/@")) {
           const isSingleVideoUrl = path.includes("/video/");
           if (!isSingleVideoUrl) {
@@ -114,12 +117,10 @@
           return;
         }
 
-        // 3. Ayarlar veya Arama sayfası -> Serbest
         if (path.startsWith("/setting") || path.startsWith("/search")) {
           return;
         }
 
-        // 4. Ana Sayfa (Sizin İçin / Following / Explore / Live) -> Mesajlar sekmesine yönlendir
         if (
           path === "/" ||
           path.startsWith("/foryou") ||
@@ -143,4 +144,3 @@
     evaluateTikTokPage();
   });
 })();
-

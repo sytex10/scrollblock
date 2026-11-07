@@ -1,8 +1,13 @@
 {
   "manifest_version": 3,
   "name": "ShortBan — Kısa Video & Yorum Kalkanı",
-  "version": "3.9.0",
-  "description": "Short + Ban: YouTube Shorts, Instagram Reels, TikTok kısa video akışlarını ve toksik yorumları engeller.",
+  "version": "4.1.0",
+  "description": "Short + Ban: YouTube Shorts, Instagram Reels, TikTok kısa video akışlarını ve toksik yorumları engeller (YouTube Music'e dokunmaz).",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
   "permissions": [
     "storage",
     "tabs",
@@ -14,18 +19,30 @@
     "*://*.tiktok.com/*",
     "*://*.vsolken.com/*",
     "*://*.eminipek.dev/*",
-    "*://*.netlify.app/*"
+    "*://*.netlify.app/*",
+    "https://raw.githubusercontent.com/*"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "ScrollBlock Kontrol Paneli",
-    "default_popup": "popup/popup.html"
+    "default_title": "ShortBan Kontrol Paneli",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
   },
   "content_scripts": [
     {
       "matches": ["*://*.youtube.com/*"],
+      "exclude_matches": [
+        "*://music.youtube.com/*",
+        "*://studio.youtube.com/*",
+        "*://kids.youtube.com/*",
+        "*://tv.youtube.com/*"
+      ],
       "js": ["detectors/youtube/youtube-detector.js"],
       "run_at": "document_start"
     },

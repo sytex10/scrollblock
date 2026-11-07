@@ -618,24 +618,35 @@ private fun TopBarSection(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(9.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Image(
-                painter = painterResource(id = R.drawable.ic_shortban_logo),
+                painter = painterResource(id = R.drawable.shortban_logo),
                 contentDescription = "ShortBan Logo",
-                modifier = Modifier.size(30.dp)
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(8.dp))
             )
             Row(
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "shortban",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
-                    letterSpacing = (-0.8).sp
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "SHORT",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = TextPrimary,
+                        letterSpacing = (-0.5).sp
+                    )
+                    Text(
+                        text = "BAN",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFFF21B2D),
+                        letterSpacing = (-0.5).sp
+                    )
+                }
                 Text(
                     text = "v$versionName",
                     fontSize = 11.sp,

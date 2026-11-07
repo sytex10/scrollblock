@@ -1,13 +1,6 @@
 /**
- * ScrollBlock PC — Instagram Reels, Keşfet & Yorum Engelleyici (Tamamen İzole Modül: scrollblock/insta)
- *  - Bu dosyadaki hiçbir değişiklik TikTok (scrollblock/tiktok) veya YouTube (scrollblock/yt) modüllerini etkilemez.
- *  - "Yorumları Engelle (Yorum Kalkanı)" AÇIK ise: Gönderi yorumlarını ve yorum yazma kutusunu gizler.
- *  - Alt/sol menüdeki Reels sekmesini (/reels/*) -> Ana Sayfa'ya (instagram.com) yönlendirir.
- *  - Keşfet (/explore/*) içinden açılan videoları -> İlk video dahil anında Keşfet ızgarasına döndürür.
- *  - DM sohbetinden (/direct/t/*) tıklanan Reels videoları:
- *      * "DM'den gelen ilk Reels'a izin ver" AÇIK ise: İlk video izlenir; 2. videoya kaydırılınca sohbete döndürür.
- *      * KAPALI ise: Açıldığı an sohbete döndürür.
- *  - Ana Sayfa, Hikayeler (/stories/*) ve Kullanıcı Profilleri (%100) serbesttir.
+ * ShortBan PC — Instagram Reels, Keşfet & Yorum Engelleyici (Tamamen İzole Modül: scrollblock/insta)
+ *  - "Yorumları Engelle (Yorum Kalkanı)" AÇIK ise: Yorumlar açıldığında yorum alanı bembeyaz (#FFFFFF) boş kalır.
  */
 (function () {
   "use strict";
@@ -27,15 +20,25 @@
     if (blocked) {
       if (!commentStyleEl) {
         commentStyleEl = document.createElement("style");
-        commentStyleEl.id = "scrollblock-instagram-comment-shield";
+        commentStyleEl.id = "shortban-instagram-comment-shield";
         commentStyleEl.textContent = `
           ul._a9z6,
           div._ae5q,
+          div[role="dialog"] ul {
+            background: #FFFFFF !important;
+            background-color: #FFFFFF !important;
+            min-height: 180px !important;
+            pointer-events: none !important;
+          }
+          ul._a9z6 *,
+          div._ae5q *,
           section._aamu form,
           form textarea[aria-label*="yorum" i],
           form textarea[aria-label*="comment" i],
-          div[role="dialog"] ul {
-            display: none !important;
+          div[role="dialog"] ul * {
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
           }
         `;
         (document.head || document.documentElement).appendChild(commentStyleEl);
@@ -81,7 +84,6 @@
         const href = window.location.href;
         const path = window.location.pathname || "/";
 
-        // 1. DM sohbet ekranındayken (/direct/...) DM bağlamını işaretle ve güvenli URL olarak kaydet
         if (path.startsWith("/direct")) {
           inDmContext = true;
           allowedDmReelUrl = null;
@@ -89,7 +91,6 @@
           return;
         }
 
-        // 2. Keşfet 3'lü ızgara ana ekranı (/explore/ veya /explore/search/) -> Güvenli, ancak DM bağlamını kapat
         if (path === "/explore" || path === "/explore/" || path.startsWith("/explore/search")) {
           inDmContext = false;
           allowedDmReelUrl = null;
@@ -97,7 +98,6 @@
           return;
         }
 
-        // 3. Keşfet içinden bir gönderiye/Reels'a tıklandığında açılan modal (/p/... veya /reel/... Keşfet üstündeyken)
         const isReelPath =
           path === "/reels" ||
           path === "/reels/" ||
@@ -114,7 +114,6 @@
           return;
         }
 
-        // 4. Doğrudan Reels sekmesi (/reels/ veya /reel/...)
         if (isReelPath) {
           if (inDmContext) {
             const dmAllowed = !state || state.isInstagramDmAllowed !== false;
@@ -138,7 +137,6 @@
           return;
         }
 
-        // 5. Ana Sayfa, Hikayeler (/stories/...) veya Kullanıcı Profilleri -> %100 Serbest
         inDmContext = false;
         allowedDmReelUrl = null;
         if (path === "/") {
@@ -156,4 +154,3 @@
     evaluateInstagramPage();
   });
 })();
-
