@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>ScrollBlock PC</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">scrollblock</span>
+        <span class="version">v3.6 PC</span>
+      </div>
+      <div id="statusPill" class="pill active">
+        <span class="dot"></span>
+        <span id="statusText">Aktif</span>
+      </div>
+    </header>
+
+    <section class="card stats-card">
+      <div class="stats-row">
+        <div>
+          <p class="muted-label">Toplam Engellenen Akış</p>
+          <h1 id="blockedCount" class="counter">0</h1>
+        </div>
+        <button id="openWebDashboard" class="small-btn">vsolken.com Paneli</button>
+      </div>
+      <p id="lastBlockedInfo" class="muted-sub">Bilgisayar koruması devrede</p>
+    </section>
+
+    <div class="section-title">KORUMA PLATFORMLARI</div>
+    <section class="card list-card">
+      <div class="toggle-row">
+        <div>
+          <div class="row-title">Instagram Reels</div>
+          <div class="row-sub">Reels ve Keşfet videolarını engeller</div>
+        </div>
+        <input type="checkbox" id="toggleInstagram" class="switch" checked />
+      </div>
+      <div id="igDmSubRow" class="sub-row">
+        <div>
+          <div class="sub-title">DM'den gelen ilk Reels'a izin ver</div>
+          <div class="sub-desc">Sohbetten açılan ilk videoya izin verir, 2. videoda kapatır</div>
+        </div>
+        <input type="checkbox" id="toggleInstagramDm" class="switch" checked />
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="row-title">TikTok</div>
+          <div class="row-sub">Sizin İçin akışını Mesajlar'a yönlendirir</div>
+        </div>
+        <input type="checkbox" id="toggleTikTok" class="switch" checked />
+      </div>
+      <div id="ttDmSubRow" class="sub-row">
+        <div>
+          <div class="sub-title">DM'den gelen ilk videoya izin ver</div>
+          <div class="sub-desc">Sohbetten açılan ilk video izlenir, kaydırınca kapatır</div>
+        </div>
+        <input type="checkbox" id="toggleTikTokDm" class="switch" checked />
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="row-title">YouTube Shorts</div>
+          <div class="row-sub">Shorts oynatıcısını kapatır, uzun videolar çalışır</div>
+        </div>
+        <input type="checkbox" id="toggleYouTube" class="switch" checked />
+      </div>
+    </section>
+
+    <div class="section-title">GEÇİCİ MOLA (COOLDOWN)</div>
+    <section class="card break-card">
+      <div id="breakInactiveView">
+        <button id="startBreakBtn" class="primary-btn">5 Dakika Mola Başlat</button>
+      </div>
+      <div id="breakActiveView" style="display: none;">
+        <div class="break-timer" id="breakTimerText">05:00</div>
+        <button id="endBreakBtn" class="danger-btn">Molayı Bitir ve Korumaya Dön</button>
+      </div>
+    </section>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
+

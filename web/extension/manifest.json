@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "ScrollBlock — Kısa Video & Akış Kalkanı",
+  "version": "3.6.0",
+  "description": "YouTube Shorts, Instagram Reels ve TikTok kısa video akışlarını bilgisayarda engeller. DM tek-video izni, Mola modu ve PIN koruması içerir.",
+  "permissions": [
+    "storage",
+    "tabs",
+    "alarms"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://*.instagram.com/*",
+    "*://*.tiktok.com/*",
+    "*://*.vsolken.com/*",
+    "*://*.eminipek.dev/*",
+    "*://*.netlify.app/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "ScrollBlock Kontrol Paneli",
+    "default_popup": "popup/popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["detectors/youtube/youtube-detector.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.instagram.com/*"],
+      "js": ["detectors/instagram/instagram-detector.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.tiktok.com/*"],
+      "js": ["detectors/tiktok/tiktok-detector.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "*://*.vsolken.com/*",
+        "*://*.eminipek.dev/*",
+        "*://*.netlify.app/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
+      ],
+      "js": ["detectors/bridge/vsolken-bridge.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

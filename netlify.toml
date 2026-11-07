@@ -1,0 +1,9 @@
+[build]
+  publish = "web/site"
+  command = ""
+
+[[headers]]
+  for = "/downloads/*"
+  [headers.values]
+    Content-Disposition = "attachment"
+    Cache-Control = "no-cache"
