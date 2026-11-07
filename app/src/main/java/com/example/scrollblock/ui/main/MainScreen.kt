@@ -477,7 +477,7 @@ fun MainScreen(
                     )
 
                     Text(
-                        text = "ScrollBlock v${info.versionName} güncellemesi mevcut.",
+                        text = "Unscroll v${info.versionName} güncellemesi mevcut.",
                         fontSize = 13.sp,
                         color = TextSecondary
                     )
@@ -618,7 +618,7 @@ private fun TopBarSection(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "scrollblock",
+                text = "unscroll",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
