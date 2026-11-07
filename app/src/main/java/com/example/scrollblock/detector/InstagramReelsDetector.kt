@@ -10,11 +10,14 @@ import kotlin.math.abs
 /**
  * Instagram Reels Engelleyici:
  *  - Alt bardaki Reels sekmesi seçiliyse -> Ana Sayfa sekmesine geçiş (uygulamadan ASLA ATMAZ).
- *  - Ana Sayfa akışı (normal kaydırma, gönderi/Reels paylaşma), Hikayeler, DM sohbet ekranı ve Profil -> %100 SERBESTTİR.
- *  - Keşfet'ten (Explore) tıklandığında açılan Reels videoları -> İLK VİDEO DAHİL ANINDA GERİ ATAR (oynatmaz).
- *  - Yalnızca DM sohbetinden tıklandığında açılan tam ekran Reels izleyicisi:
- *      * "DM İzni (Tek Video)" AÇIK ise: İlk video izlenebilir; bir sonraki videoya kaydırılınca GERİ atar.
- *      * "DM İzni" KAPALI ise: Açıldığı an GERİ atarak sohbete döndürür.
+ *  - Ana Sayfa akışı (alt bar gizlense bile normal kaydırma, gönderi/Reels izleme), Hikayeler,
+ *    DM sohbet ekranı, Arama/Keşfet ızgarası ve Profil -> %100 SERBESTTİR ve ASLA GERİ BASMAZ.
+ *  - Keşfet'ten (Explore) tıklandığında açılan Reels videoları ->
+ *      * Alt bar görünürse Keşfet sekmesine tıklayarak ızgaraya döner (GERİ tuşu kullanmaz, uygulamadan atmaz).
+ *      * Tam ekran ise yalnızca 1 kez GERİ basarak Keşfet ızgarasına döner (zincirleme GERİ basmaz).
+ *  - DM sohbetinden tıklandığında açılan tam ekran Reels izleyicisi:
+ *      * "DM İzni (Tek Video)" AÇIK ise: İlk video izlenebilir; bir sonraki videoya kaydırılınca 1 kez GERİ basar.
+ *      * "DM İzni" KAPALI ise: Açıldığı an 1 kez GERİ basarak sohbete döndürür.
  */
 class InstagramReelsDetector(
     private val preferences: BlockPreferences,
@@ -24,12 +27,22 @@ class InstagramReelsDetector(
     override val platformName: String = "Instagram Reels"
     override val packageNames: Set<String> = setOf("com.instagram.android")
 
+    private enum class ActiveSection {
+        HOME,
+        PROFILE,
+        EXPLORE,
+        DM,
+        REELS
+    }
+
+    private var activeSection: ActiveSection = ActiveSection.HOME
+
     /**
-     * Kullanıcının bir DM sohbetinden (Direct Message) gelip gelmediğini takip eder.
-     * Keşfet (Explore) sekmesinden açılan Reels videolarında bu değer false olur ve ilk video bile oynatılmaz.
+     * Tam ekran oynatıcıdan çıkmak için GERİ tuşuna basıldığında true olur.
+     * Güvenli bir ekrana (DM sohbeti, Keşfet ızgarası veya alt bar) dönülene kadar
+     * ikinci kez GERİ basılmasını engelleyerek uygulamadan atmayı %100 önler.
      */
-    private var inDmChatContext: Boolean = false
-    private var inExploreContext: Boolean = false
+    private var awaitingOverlayExit: Boolean = false
 
     override fun matchesPackage(packageName: String): Boolean {
         return packageName.lowercase().contains("instagram")
@@ -53,8 +66,8 @@ class InstagramReelsDetector(
 
         // Alt bardaki Reels sekmesi seçiliyse -> Ana Sayfa sekmesine geç (GERİ basılmaz)
         if (NodeUtils.isNodeSelected(reelsTab)) {
-            inDmChatContext = false
-            inExploreContext = false
+            activeSection = ActiveSection.REELS
+            awaitingOverlayExit = false
             singleReelGuard.reset()
             return DetectionResult.detected(
                 platform = platformName,
@@ -65,79 +78,114 @@ class InstagramReelsDetector(
             )
         }
 
-        // ---- 2. KESİN GÜVENLİ EKRANLAR ----
-        // Ana Sayfa veya Profil sekmesi seçiliyse (Ana sayfada kaydırma, gönderi izleme, paylaşım yapma tamamen serbest)
-        if (NodeUtils.isNodeSelected(feedTab) || NodeUtils.isNodeSelected(profileTab)) {
-            inDmChatContext = false
-            inExploreContext = false
+        // ---- 2. KESİN GÜVENLİ EKRANLAR (Ana Sayfa, Profil, Hikaye, Paylaşım, DM Sohbet, Keşfet Izgarası) ----
+        if (NodeUtils.isNodeSelected(feedTab) || isHomeFeedScreen(rootNode)) {
+            activeSection = ActiveSection.HOME
+            awaitingOverlayExit = false
+            singleReelGuard.reset()
+            return DetectionResult.notDetected(platformName)
+        }
+
+        if (NodeUtils.isNodeSelected(profileTab) || isOtherUserProfile(rootNode)) {
+            activeSection = ActiveSection.PROFILE
+            awaitingOverlayExit = false
+            singleReelGuard.reset()
+            return DetectionResult.notDetected(platformName)
+        }
+
+        if (isStoryViewer(rootNode) || isShareSheet(rootNode)) {
+            awaitingOverlayExit = false
+            return DetectionResult.notDetected(platformName)
+        }
+
+        if (isDmChatConversation(rootNode)) {
+            activeSection = ActiveSection.DM
+            awaitingOverlayExit = false
             singleReelGuard.reset()
             return DetectionResult.notDetected(platformName)
         }
 
         val searchTabSelected = NodeUtils.isNodeSelected(searchTab)
         if (searchTabSelected) {
-            // Keşfet (Explore) sekmesindeyiz -> DM bağlamını kapat, Keşfet bağlamını aç
-            inDmChatContext = false
-            inExploreContext = true
+            activeSection = ActiveSection.EXPLORE
+            if (isExploreGridOrSearchScreen(rootNode)) {
+                awaitingOverlayExit = false
+                singleReelGuard.reset()
+                return DetectionResult.notDetected(platformName)
+            }
         }
 
-        // Paylaşım (Share) alt penceresi açıksa dokunma
-        val isShareSheet = NodeUtils.hasVisibleViewId(
-            rootNode,
-            "direct_share_sheet",
-            "share_sheet"
-        )
-        if (isShareSheet) {
-            return DetectionResult.notDetected(platformName)
+        // Eğer kullanıcı Ana Sayfa veya Profil sekmesinde gezinirken alt bar gizlendiyse
+        // (ör. Ana Sayfa akışında aşağı doğru kaydırırken) ASLA engelleme yapma!
+        if (activeSection == ActiveSection.HOME || activeSection == ActiveSection.PROFILE) {
+            val hasDmQuickReplyOnScreen = NodeUtils.hasVisibleTextInRegion(
+                rootNode, 0.82f, 1f,
+                "mesaj gönder", "mesaj yaz", "send a message", "message..."
+            )
+            if (!hasDmQuickReplyOnScreen) {
+                singleReelGuard.reset()
+                return DetectionResult.notDetected(platformName)
+            }
         }
 
         val bottomBarVisible = reelsTab != null || feedTab != null || profileTab != null || searchTab != null
 
-        // ---- 3. TAM EKRAN REELS / KEŞFET VİDEO İZLEYİCİSİ ----
-        val isFullScreenReelViewer = isFullScreenClipsViewer(
-            rootNode = rootNode,
-            event = event,
-            bottomBarVisible = bottomBarVisible,
-            searchTabSelected = searchTabSelected || inExploreContext
-        )
+        // ---- 3. TAM EKRAN REELS İZLEYİCİSİ (DM veya Keşfet'ten açılan tam ekran Reels) ----
+        val isFullScreenReelViewer = isFullScreenClipsViewer(rootNode, event, bottomBarVisible)
         val isPagerScroll = isVerticalPagerScrollEvent(event) && !isCommentsSheetOpen(rootNode)
 
-        // Aktif bir tek-video oturumu varken gelen dikey sayfalayıcı kaydırmalarını yakala
         val isActiveSessionScroll = singleReelGuard.isSessionActive &&
-            inDmChatContext &&
+            activeSection == ActiveSection.DM &&
             !bottomBarVisible &&
             isPagerScroll
 
         if (isFullScreenReelViewer || isActiveSessionScroll) {
             val hasDmQuickReply = !bottomBarVisible &&
                 !searchTabSelected &&
-                !inExploreContext &&
                 NodeUtils.hasVisibleTextInRegion(
                     rootNode, 0.82f, 1f,
                     "mesaj gönder", "mesaj yaz", "send a message", "message..."
                 )
-            val hasExploreHeader = hasExactTopTitle(rootNode, "keşfet") || hasExactTopTitle(rootNode, "explore")
 
-            // Eğer video DM sohbetinden DEĞİL (örneğin Keşfet / Explore'dan) açıldıysa:
-            // İlk videoya dahi izin verme, anında GERİ tuşuyla Keşfet'e döndür!
-            val openedFromDm = (inDmChatContext || hasDmQuickReply) &&
+            val openedFromDm = (activeSection == ActiveSection.DM || hasDmQuickReply) &&
                 !searchTabSelected &&
-                !inExploreContext &&
-                !hasExploreHeader
+                activeSection != ActiveSection.EXPLORE
+
+            // A) Keşfet'ten (Explore) açılan Reels videosu -> İlk video dahil oynatma, Keşfet ızgarasına döndür
             if (!openedFromDm) {
                 singleReelGuard.reset()
+                // Alt bar görünürse GERİ basmak yerine Keşfet sekmesine tıkla (uygulamadan atma ihtimali %0)
+                if (bottomBarVisible) {
+                    return DetectionResult.detected(
+                        platform = platformName,
+                        reason = "Instagram Keşfet Reel -> Keşfet ızgarasına dön",
+                        preferTabSwitch = true,
+                        targetTabIds = listOf("search_tab", "feed_tab"),
+                        targetHomeTabKeywords = listOf("ara", "keşfet", "search", "explore", "ana sayfa", "home")
+                    )
+                }
+                // Alt bar gizliyse (tam ekran katman) yalnızca 1 kez GERİ bas
+                if (awaitingOverlayExit) {
+                    return DetectionResult.notDetected(platformName)
+                }
+                awaitingOverlayExit = true
                 return DetectionResult.detected(
                     platform = platformName,
-                    reason = "Instagram Keşfet Reel -> Geri",
+                    reason = "Instagram Keşfet tam ekran Reel -> Geri",
                     preferTabSwitch = false
                 )
             }
 
-            inDmChatContext = true
+            // B) DM sohbetinden açılan Reels videosu
+            activeSection = ActiveSection.DM
             val isDmReelAllowed = preferences.isInstagramDmReelsAllowedSync()
 
             if (!isDmReelAllowed) {
                 singleReelGuard.reset()
+                if (awaitingOverlayExit) {
+                    return DetectionResult.notDetected(platformName)
+                }
+                awaitingOverlayExit = true
                 return DetectionResult.detected(
                     platform = platformName,
                     reason = "Instagram DM tam ekran Reel -> Geri",
@@ -145,10 +193,14 @@ class InstagramReelsDetector(
                 )
             }
 
-            // DM İzni (Tek Video) modu AÇIK ve video DM'den açıldı:
+            // DM İzni (Tek Video) AÇIK: İlk videoya izin ver, kaydırınca 1 kez GERİ bas
             if (isPagerScroll) {
                 val verdict = singleReelGuard.onPagerScrolled(now)
                 if (verdict == SingleReelGuard.Verdict.BLOCK) {
+                    if (awaitingOverlayExit) {
+                        return DetectionResult.notDetected(platformName)
+                    }
+                    awaitingOverlayExit = true
                     return DetectionResult.detected(
                         platform = platformName,
                         reason = "Instagram DM Reels kaydırma engellendi (tek video sınırı)",
@@ -161,6 +213,10 @@ class InstagramReelsDetector(
             val fingerprint = extractVideoFingerprint(rootNode)
             val verdict = singleReelGuard.onViewerVisible(now, fingerprint)
             if (verdict == SingleReelGuard.Verdict.BLOCK) {
+                if (awaitingOverlayExit) {
+                    return DetectionResult.notDetected(platformName)
+                }
+                awaitingOverlayExit = true
                 return DetectionResult.detected(
                     platform = platformName,
                     reason = "Instagram DM sonraki videoya geçiş engellendi",
@@ -171,45 +227,31 @@ class InstagramReelsDetector(
             return DetectionResult.notDetected(platformName)
         }
 
-        // Eğer DM sohbet ekranındaysak (arama butonları veya mesaj yazma alanı görünüyorsa) DM bağlamını aktif et ve oturumu temizle
-        if (isDmChatConversation(rootNode)) {
-            inDmChatContext = true
-            inExploreContext = false
-            singleReelGuard.reset()
-        } else {
-            singleReelGuard.onViewerGone(now)
-        }
-
+        // Tam ekran oynatıcı kapandıysa kilidi sıfırla
+        awaitingOverlayExit = false
+        singleReelGuard.onViewerGone(now)
         return DetectionResult.notDetected(platformName)
     }
 
     /**
-     * DM'den veya Keşfet'ten açılan tam ekran Reels / video izleyicisini tespit eder.
-     * Hem açık viewId'leri hem de obfuscated (gizlenmiş) Instagram sürümleri için
-     * ekranın sağ kenarındaki dikey Reels aksiyon sütununu, üst "Reels"/"Keşfet" başlığını
-     * ve Keşfet içinde açılan video/gönderi oynatıcısını kontrol eder.
+     * Yalnızca gerçek tam ekran Reels (ClipsViewer) oynatıcısını tespit eder.
+     * Gizli (bellekte kalmış) fragment'ları veya ızgara/akış içi küçük video önizlemelerini ASLA eşleştirmez.
      */
     private fun isFullScreenClipsViewer(
         rootNode: AccessibilityNodeInfo,
         event: AccessibilityEvent?,
-        bottomBarVisible: Boolean,
-        searchTabSelected: Boolean
+        bottomBarVisible: Boolean
     ): Boolean {
-        // 1. Doğrudan Clips izleyici viewId'leri (Görünür alt bileşenler veya ViewPager)
-        val hasVisibleClipsId = NodeUtils.hasVisibleViewId(
+        // Keşfet arama çubuğu / 3'lü ızgara görünüyorsa ve sağ kenarda Reels buton sütunu yoksa izleyici değildir
+        if (isExploreGridOrSearchScreen(rootNode)) return false
+
+        // 1. Yalnızca GÖRÜNÜR tam ekran ClipsViewPager / ClipsViewerFragment bileşenleri
+        val hasVisibleClipsPager = NodeUtils.hasVisibleViewId(
             rootNode,
             "clips_viewer_view_pager",
-            "clips_viewer_fragment",
-            "clips_ufi",
-            "clips_author",
-            "clips_audio",
-            "clips_caption",
-            "clips_remix"
-        ) || (
-            NodeUtils.hasViewIdContaining(rootNode, "clips_viewer_view_pager", "clips_viewer_fragment") &&
-                NodeUtils.hasVisibleViewId(rootNode, "clips_video_container")
+            "clips_viewer_fragment"
         )
-        if (hasVisibleClipsId) return true
+        if (hasVisibleClipsPager) return true
 
         // 2. Pencere sınıf adı (ClipsViewer)
         val className = event?.className?.toString() ?: ""
@@ -219,8 +261,72 @@ class InstagramReelsDetector(
             return true
         }
 
-        // Hikaye (Story) izleyicisi veya başka bir kullanıcının profil ekranı açıksa Reels değildir
-        val isStoryViewer = NodeUtils.hasVisibleViewId(
+        // 3. Sağ kenardaki dikey Reels aksiyon sütunu (Beğen üstte + Yorum altta + Paylaş/Ses sağ kenarda)
+        if (hasRightSideReelActions(rootNode)) return true
+
+        // 4. Alt bar gizliyken üst barda açıkça "Reels" başlığı varsa
+        if (!bottomBarVisible && hasExactTopTitle(rootNode, "reels")) {
+            return true
+        }
+
+        return false
+    }
+
+    /**
+     * Ana Sayfa (Home Feed) üst barını veya hikaye tepsisini tespit eder.
+     */
+    private fun isHomeFeedScreen(rootNode: AccessibilityNodeInfo): Boolean {
+        return NodeUtils.hasVisibleViewId(
+            rootNode,
+            "reel_tray",
+            "MainFeedFragment",
+            "feed_timeline"
+        ) || NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0f, 0.22f,
+            "hikayen", "your story", "senin için", "for you"
+        )
+    }
+
+    /**
+     * Keşfet 3'lü küçük resim ızgarasını veya arama ekranını tespit eder.
+     * Sağ kenarda Reels aksiyon sütunu varken (Reels oynatıcısı açıkken) false döner.
+     */
+    private fun isExploreGridOrSearchScreen(rootNode: AccessibilityNodeInfo): Boolean {
+        if (hasRightSideReelActions(rootNode)) return false
+
+        if (NodeUtils.hasVisibleViewId(
+                rootNode,
+                "action_bar_search_edit_text",
+                "search_row"
+            )
+        ) {
+            return true
+        }
+
+        // Üst bölgede geniş Arama çubuğu ("Ara" / "Search") kontrolü (sağ üstteki küçük büyüteç ikonunu hariç tutar)
+        val winRect = Rect()
+        rootNode.getBoundsInScreen(winRect)
+        val w = winRect.width()
+        val h = winRect.height()
+        if (w <= 0 || h <= 0) return false
+
+        val rect = Rect()
+        return NodeUtils.anyNodeMatches(rootNode) { node ->
+            if (!node.isVisibleToUser) return@anyNodeMatches false
+            val t = node.text?.toString()?.trim()?.lowercase() ?: ""
+            val d = node.contentDescription?.toString()?.trim()?.lowercase() ?: ""
+            if (t != "ara" && t != "search" && d != "ara" && d != "search") {
+                return@anyNodeMatches false
+            }
+            node.getBoundsInScreen(rect)
+            rect.width() > 0 && rect.height() > 0 &&
+                rect.exactCenterY() in (h * 0.02f)..(h * 0.16f) &&
+                (rect.width() >= w * 0.30f || rect.exactCenterX() <= w * 0.65f)
+        }
+    }
+
+    private fun isStoryViewer(rootNode: AccessibilityNodeInfo): Boolean {
+        return NodeUtils.hasVisibleViewId(
             rootNode,
             "reel_viewer_media_container",
             "story_viewer"
@@ -228,96 +334,33 @@ class InstagramReelsDetector(
             rootNode, 0.80f, 1f,
             "hikayeye yanıt", "reply to story"
         )
-        if (isStoryViewer) return false
+    }
 
-        val isOtherUserProfile = NodeUtils.hasVisibleTextInRegion(
+    private fun isOtherUserProfile(rootNode: AccessibilityNodeInfo): Boolean {
+        return NodeUtils.hasVisibleTextInRegion(
             rootNode, 0.08f, 0.55f,
             "takipçi", "followers"
         ) && NodeUtils.hasVisibleTextInRegion(
             rootNode, 0.08f, 0.55f,
             "gönderi", "posts", "takip", "following"
         )
-        if (isOtherUserProfile) return false
+    }
 
-        // DM sohbet üst barındaki sesli/görüntülü arama butonları görünüyorsa henüz videoya tıklanmamıştır
-        if (hasDmCallHeader(rootNode)) return false
-
-        // 3. Sağ kenardaki dikey Reels aksiyon sütunu (Beğen + Yorum + Paylaş dikey dizilimi)
-        if (hasRightSideReelActions(rootNode)) return true
-
-        // 4. Alt bar gizliyken (DM/Reels içindeyken) veya Keşfet bağlamındayken:
-        //    - Üst barda "Reels" veya "< Keşfet" ("Explore") başlığı
-        //    - Veya altta "Orijinal ses" / "Original audio" etiketi
-        //    - Veya Keşfet'te ızgaradaki bir videoya tıklandığında açılan video/gönderi oynatıcısı
-        if (!bottomBarVisible || searchTabSelected) {
-            val hasTopReelsOrExploreTitle = hasExactTopTitle(rootNode, "reels") ||
-                hasExactTopTitle(rootNode, "keşfet") ||
-                hasExactTopTitle(rootNode, "explore")
-            val hasOriginalAudioLabel = NodeUtils.hasVisibleTextInRegion(
-                rootNode, 0.45f, 0.94f,
-                "orijinal ses", "original audio"
-            )
-            if (hasTopReelsOrExploreTitle || hasOriginalAudioLabel) return true
-
-            if (searchTabSelected && hasExploreOpenedVideoOrPost(rootNode)) {
-                return true
-            }
-        }
-
-        return false
+    private fun isShareSheet(rootNode: AccessibilityNodeInfo): Boolean {
+        return NodeUtils.hasVisibleViewId(
+            rootNode,
+            "direct_share_sheet",
+            "share_sheet"
+        )
     }
 
     /**
-     * Keşfet (Explore) sekmesinde 3'lü küçük resim ızgarasından bir videoya/Reels'a tıklandığında
-     * açılan oynatıcıyı veya Keşfet akışını tespit eder.
-     * Ana Keşfet ızgarasında veya arama çubuğunda Beğen + Yorum butonları ya da clips_video_container bulunmaz.
-     */
-    private fun hasExploreOpenedVideoOrPost(rootNode: AccessibilityNodeInfo): Boolean {
-        if (NodeUtils.hasVisibleViewId(
-                rootNode,
-                "clips_video_container",
-                "feed_video_container",
-                "row_feed_button_like",
-                "row_feed_button_comment"
-            )
-        ) {
-            return true
-        }
-
-        var hasLikeButton = false
-        var hasCommentButton = false
-        val h = NodeUtils.windowHeight(rootNode)
-        val rect = Rect()
-
-        NodeUtils.findNode(rootNode) { node ->
-            if (node.isVisibleToUser) {
-                node.getBoundsInScreen(rect)
-                val cy = rect.exactCenterY()
-                if (rect.width() > 0 && rect.height() > 0 && (h <= 0 || cy in (h * 0.18f)..(h * 0.90f))) {
-                    val t = node.text?.toString()?.trim()?.lowercase() ?: ""
-                    val d = node.contentDescription?.toString()?.trim()?.lowercase() ?: ""
-                    if (t == "beğen" || t == "like" || d == "beğen" || d == "like" ||
-                        d.startsWith("beğen") || d.startsWith("like")
-                    ) {
-                        hasLikeButton = true
-                    }
-                    if (t == "yorum yap" || t == "yorum" || t == "comment" ||
-                        d.contains("yorum") || d.contains("comment")
-                    ) {
-                        hasCommentButton = true
-                    }
-                }
-            }
-            hasLikeButton && hasCommentButton
-        }
-
-        return hasLikeButton && hasCommentButton
-    }
-
-    /**
-     * Instagram Reels tam ekran izleyicisinde ekranın sağ kenarında (x >= %72)
-     * dikey olarak sıralanmış Beğen, Yorum, Paylaş/Gönder butonları bulunur.
-     * Ana sayfa akışında bu butonlar sol taraftadır; DM sohbetinde ve Hikayelerde ise Yorum butonu yoktur.
+     * Instagram Reels tam ekran izleyicisinde ekranın sağ kenarında (left >= %68, width <= %28)
+     * dikey olarak aynı sütunda sıralanmış küçük ikon butonları bulunur:
+     *  - Üstte Beğen (likeY)
+     *  - Onun altında Yorum (commentY > likeY)
+     *  - Ve aynı sütunda Paylaş/Gönder/Ses
+     * Bu sıkı geometrik kontrol, DM sohbet balonlarını veya Ana Sayfa gönderilerini ASLA eşleştirmez.
      */
     private fun hasRightSideReelActions(rootNode: AccessibilityNodeInfo): Boolean {
         val winRect = Rect()
@@ -326,7 +369,9 @@ class InstagramReelsDetector(
         val h = winRect.height()
         if (w <= 0 || h <= 0) return false
 
+        var likeX: Float? = null
         var likeY: Float? = null
+        var commentX: Float? = null
         var commentY: Float? = null
         var shareOrAudioFound = false
         val rect = Rect()
@@ -336,9 +381,13 @@ class InstagramReelsDetector(
                 node.getBoundsInScreen(rect)
                 val cx = rect.exactCenterX()
                 val cy = rect.exactCenterY()
-                if (rect.width() > 0 && rect.height() > 0 &&
-                    cx >= w * 0.72f && cy in (h * 0.25f)..(h * 0.90f)
-                ) {
+                val isCompactRightEdgeIcon = rect.width() in 1..(w * 0.28f).toInt() &&
+                    rect.height() in 1..(h * 0.16f).toInt() &&
+                    rect.left >= w * 0.68f &&
+                    cx >= w * 0.72f &&
+                    cy in (h * 0.28f)..(h * 0.88f)
+
+                if (isCompactRightEdgeIcon) {
                     val text = node.text?.toString()?.lowercase() ?: ""
                     val desc = node.contentDescription?.toString()?.lowercase() ?: ""
                     val combined = "$text $desc"
@@ -347,12 +396,14 @@ class InstagramReelsDetector(
                             combined.contains("beğen") || combined.contains("like")
                         )
                     ) {
+                        likeX = cx
                         likeY = cy
                     }
                     if (commentY == null && (
                             combined.contains("yorum") || combined.contains("comment")
                         )
                     ) {
+                        commentX = cx
                         commentY = cy
                     }
                     if (combined.contains("paylaş") || combined.contains("share") ||
@@ -367,15 +418,15 @@ class InstagramReelsDetector(
             false // tüm ağacı tara
         }
 
-        val lY = likeY
-        val cY = commentY
-        if (lY != null && cY != null && abs(lY - cY) >= h * 0.035f) {
-            return true
-        }
-        if ((lY != null || cY != null) && shareOrAudioFound) {
-            return true
-        }
-        return false
+        val lX = likeX ?: return false
+        val lY = likeY ?: return false
+        val cX = commentX ?: return false
+        val cY = commentY ?: return false
+
+        val sameVerticalColumn = abs(lX - cX) <= w * 0.10f
+        val commentBelowLike = (cY - lY) in (h * 0.035f)..(h * 0.24f)
+
+        return sameVerticalColumn && commentBelowLike && shareOrAudioFound
     }
 
     private fun hasExactTopTitle(rootNode: AccessibilityNodeInfo, title: String): Boolean {
@@ -408,10 +459,17 @@ class InstagramReelsDetector(
         if (hasDmCallHeader(rootNode)) return true
         return NodeUtils.hasVisibleViewId(
             rootNode,
-            "row_thread_composer", "direct_thread"
+            "row_thread_composer",
+            "direct_thread",
+            "thread_title",
+            "direct_inbox",
+            "inbox_refreshable_thread_list_recyclerview"
         ) || NodeUtils.hasVisibleTextInRegion(
             rootNode, 0.82f, 1f,
-            "sesli mesaj", "voice message", "çıkartma", "sticker"
+            "sesli mesaj", "voice message", "çıkartma", "sticker", "mesaj...", "message..."
+        ) || NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0f, 0.25f,
+            "mesajlar", "messages", "sohbetler", "chats", "istekler", "requests"
         )
     }
 
@@ -470,7 +528,6 @@ class InstagramReelsDetector(
 
         if (!authorById.isNullOrEmpty()) return authorById
 
-        // Obfuscated sürümler için: Sol-alt yazar bölgesindeki tek kelimelik @kullanici_adi düğümü
         val winRect = Rect()
         rootNode.getBoundsInScreen(winRect)
         val w = winRect.width()

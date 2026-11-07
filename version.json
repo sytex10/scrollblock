@@ -1,6 +1,6 @@
 {
-  "versionCode": 25,
-  "versionName": "3.4",
-  "changelog": "• Instagram Keşfet (Explore) videoları: Keşfet ızgarasından tıklanan tüm Reels ve videolar ilk video dahil anında geri atılacak şekilde düzeltildi.\n• Play Protect koruması: Zararlı uygulama uyarısına neden olan paket yükleme izni tamamen kaldırıldı.\n• Uygulama içi güncelleme: Güncellemeler tarayıcı açmadan uygulama içinde indirilir ve kurulum sonrası APK otomatik silinir.",
+  "versionCode": 26,
+  "versionName": "3.5",
+  "changelog": "• Instagram kararlılık düzeltmesi: Ana Sayfa akışında veya Keşfet ızgarasında gezinirken uygulamadan atma sorunu tamamen giderildi.\n• Keşfet koruması: Keşfet'te videoya tıklandığında GERİ tuşu yerine güvenli sekme geçişi ve tekil çıkış kilidi ile uygulamadan atmadan ızgaraya döndürür.",
   "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
 }
