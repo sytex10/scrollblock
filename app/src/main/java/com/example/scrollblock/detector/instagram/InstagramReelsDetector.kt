@@ -1,14 +1,18 @@
-package com.example.scrollblock.detector
+package com.example.scrollblock.detector.instagram
 
 import android.graphics.Rect
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.example.scrollblock.detector.DetectionResult
+import com.example.scrollblock.detector.NodeUtils
+import com.example.scrollblock.detector.PlatformDetector
 import com.example.scrollblock.preferences.BlockPreferences
 import kotlin.math.abs
 
 /**
- * Instagram Reels Engelleyici:
+ * Instagram Reels Engelleyici (Tamamen İzole Modül - detector/instagram):
+ *  - Bu sınıftaki hiçbir değişiklik TikTok veya YouTube Shorts modüllerini etkilemez.
  *  - Alt bardaki Reels sekmesi seçiliyse -> Ana Sayfa sekmesine geçiş (uygulamadan ASLA ATMAZ).
  *  - Ana Sayfa akışı (alt bar gizlense bile normal kaydırma, gönderi/Reels izleme), Hikayeler,
  *    DM sohbet ekranı, Arama/Keşfet ızgarası ve Profil -> %100 SERBESTTİR ve ASLA GERİ BASMAZ.
@@ -21,7 +25,7 @@ import kotlin.math.abs
  */
 class InstagramReelsDetector(
     private val preferences: BlockPreferences,
-    private val singleReelGuard: SingleReelGuard = SingleReelGuard()
+    private val singleReelGuard: InstagramSingleReelGuard = InstagramSingleReelGuard()
 ) : PlatformDetector {
 
     override val platformName: String = "Instagram Reels"
@@ -196,7 +200,7 @@ class InstagramReelsDetector(
             // DM İzni (Tek Video) AÇIK: İlk videoya izin ver, kaydırınca 1 kez GERİ bas
             if (isPagerScroll) {
                 val verdict = singleReelGuard.onPagerScrolled(now)
-                if (verdict == SingleReelGuard.Verdict.BLOCK) {
+                if (verdict == InstagramSingleReelGuard.Verdict.BLOCK) {
                     if (awaitingOverlayExit) {
                         return DetectionResult.notDetected(platformName)
                     }
@@ -212,7 +216,7 @@ class InstagramReelsDetector(
 
             val fingerprint = extractVideoFingerprint(rootNode)
             val verdict = singleReelGuard.onViewerVisible(now, fingerprint)
-            if (verdict == SingleReelGuard.Verdict.BLOCK) {
+            if (verdict == InstagramSingleReelGuard.Verdict.BLOCK) {
                 if (awaitingOverlayExit) {
                     return DetectionResult.notDetected(platformName)
                 }
@@ -242,7 +246,6 @@ class InstagramReelsDetector(
         event: AccessibilityEvent?,
         bottomBarVisible: Boolean
     ): Boolean {
-        // Keşfet arama çubuğu / 3'lü ızgara görünüyorsa ve sağ kenarda Reels buton sütunu yoksa izleyici değildir
         if (isExploreGridOrSearchScreen(rootNode)) return false
 
         // 1. Yalnızca GÖRÜNÜR tam ekran ClipsViewPager / ClipsViewerFragment bileşenleri
@@ -272,9 +275,6 @@ class InstagramReelsDetector(
         return false
     }
 
-    /**
-     * Ana Sayfa (Home Feed) üst barını veya hikaye tepsisini tespit eder.
-     */
     private fun isHomeFeedScreen(rootNode: AccessibilityNodeInfo): Boolean {
         return NodeUtils.hasVisibleViewId(
             rootNode,
@@ -287,10 +287,6 @@ class InstagramReelsDetector(
         )
     }
 
-    /**
-     * Keşfet 3'lü küçük resim ızgarasını veya arama ekranını tespit eder.
-     * Sağ kenarda Reels aksiyon sütunu varken (Reels oynatıcısı açıkken) false döner.
-     */
     private fun isExploreGridOrSearchScreen(rootNode: AccessibilityNodeInfo): Boolean {
         if (hasRightSideReelActions(rootNode)) return false
 
@@ -303,7 +299,6 @@ class InstagramReelsDetector(
             return true
         }
 
-        // Üst bölgede geniş Arama çubuğu ("Ara" / "Search") kontrolü (sağ üstteki küçük büyüteç ikonunu hariç tutar)
         val winRect = Rect()
         rootNode.getBoundsInScreen(winRect)
         val w = winRect.width()
@@ -354,14 +349,6 @@ class InstagramReelsDetector(
         )
     }
 
-    /**
-     * Instagram Reels tam ekran izleyicisinde ekranın sağ kenarında (left >= %68, width <= %28)
-     * dikey olarak aynı sütunda sıralanmış küçük ikon butonları bulunur:
-     *  - Üstte Beğen (likeY)
-     *  - Onun altında Yorum (commentY > likeY)
-     *  - Ve aynı sütunda Paylaş/Gönder/Ses
-     * Bu sıkı geometrik kontrol, DM sohbet balonlarını veya Ana Sayfa gönderilerini ASLA eşleştirmez.
-     */
     private fun hasRightSideReelActions(rootNode: AccessibilityNodeInfo): Boolean {
         val winRect = Rect()
         rootNode.getBoundsInScreen(winRect)
@@ -415,7 +402,7 @@ class InstagramReelsDetector(
                     }
                 }
             }
-            false // tüm ağacı tara
+            false
         }
 
         val lX = likeX ?: return false
@@ -480,11 +467,6 @@ class InstagramReelsDetector(
         ) || hasExactTopTitle(rootNode, "yorumlar") || hasExactTopTitle(rootNode, "comments")
     }
 
-    /**
-     * Yalnızca tam ekran dikey video sayfalayıcısından (ViewPager / ViewPager2 / dikey RecyclerView)
-     * gelen gerçek sayfa geçiş kaydırmalarını kabul eder.
-     * Video süre çubuğu (SeekBar/ProgressBar) veya kayan müzik adı (TextView) olaylarını yok sayar.
-     */
     private fun isVerticalPagerScrollEvent(event: AccessibilityEvent?): Boolean {
         if (event == null || event.eventType != AccessibilityEvent.TYPE_VIEW_SCROLLED) return false
         val cls = event.className?.toString() ?: ""
@@ -510,11 +492,6 @@ class InstagramReelsDetector(
         return false
     }
 
-    /**
-     * Yalnızca videonun SABİT içerik üreticisi (kullanıcı adı / yazar) bilgisini döndürür.
-     * Altyazı, süre sayacı (0:14 -> 0:13) veya beğeni sayısı gibi video oynarken değişen metinleri
-     * DAHİL ETMEZ; böylece ilk video oynarken asla yanlışlıkla engelleme tetiklenmez.
-     */
     private fun extractVideoFingerprint(rootNode: AccessibilityNodeInfo?): String? {
         if (rootNode == null) return null
 
@@ -559,3 +536,4 @@ class InstagramReelsDetector(
         return handleNode?.text?.toString()?.trim()
     }
 }
+

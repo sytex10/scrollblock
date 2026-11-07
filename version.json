@@ -1,6 +1,6 @@
 {
-  "versionCode": 26,
-  "versionName": "3.5",
-  "changelog": "• Instagram kararlılık düzeltmesi: Ana Sayfa akışında veya Keşfet ızgarasında gezinirken uygulamadan atma sorunu tamamen giderildi.\n• Keşfet koruması: Keşfet'te videoya tıklandığında GERİ tuşu yerine güvenli sekme geçişi ve tekil çıkış kilidi ile uygulamadan atmadan ızgaraya döndürür.",
-  "apkUrl": "https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
+  "versionCode": 27,
+  "versionName": "3.6",
+  "changelog": "• Güncelleme indirme düzeltmesi: APK dosyası artık doğrudan genel İndirilenler (Dosyalarım) klasörüne 'ScrollBlock-guncelleme.apk' olarak kaydedilir ve kurulumdan sonra otomatik silinir.\n• Modüler mimari: Instagram, TikTok ve YouTube Shorts engelleyicileri birbirinden tamamen bağımsız klasörlere (instagram / tiktok / youtube) ayrıldı.",
+  "apkUrl": "https://raw.githubusercontent.com/sytex10/scrollblock/main/release/ScrollBlock-release.apk"
 }

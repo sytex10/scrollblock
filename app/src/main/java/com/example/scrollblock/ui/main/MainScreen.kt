@@ -417,6 +417,7 @@ fun MainScreen(
         if (remoteUpdateInfo != null && remoteUpdateInfo!!.versionCode > currentVersionCode) {
             val info = remoteUpdateInfo!!
             var isDownloadingMandatory by remember { mutableStateOf(false) }
+            var isDownloadCompleted by remember { mutableStateOf(false) }
             var mandatoryProgress by remember { mutableFloatStateOf(0f) }
 
             Dialog(
@@ -466,7 +467,31 @@ fun MainScreen(
                         }
                     }
 
-                    if (isDownloadingMandatory) {
+                    if (isDownloadCompleted) {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                text = "✓ İndirildi: İndirilenler / ${UpdateManager.DOWNLOAD_FILE_NAME} dosyasına dokunarak kurun. Kurulumdan sonra APK otomatik silinir.",
+                                fontSize = 12.sp,
+                                color = ActiveGreenText,
+                                lineHeight = 16.sp
+                            )
+                            Button(
+                                onClick = { UpdateManager.openSystemDownloads(context) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = AccentPrimary,
+                                    contentColor = NearBlack
+                                )
+                            ) {
+                                Text(
+                                    text = "İndirilenler Klasörünü Aç",
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    } else if (isDownloadingMandatory) {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             LinearProgressIndicator(
                                 progress = { mandatoryProgress },
@@ -487,6 +512,7 @@ fun MainScreen(
                         Button(
                             onClick = {
                                 isDownloadingMandatory = true
+                                isDownloadCompleted = false
                                 coroutineScope.launch {
                                     UpdateManager.downloadAndInstall(
                                         context = context,
@@ -494,6 +520,10 @@ fun MainScreen(
                                         targetVersionCode = info.versionCode,
                                         onProgress = { progressInt ->
                                             mandatoryProgress = progressInt / 100f
+                                        },
+                                        onDownloadCompleted = {
+                                            isDownloadingMandatory = false
+                                            isDownloadCompleted = true
                                         },
                                         onError = { errorMsg ->
                                             isDownloadingMandatory = false

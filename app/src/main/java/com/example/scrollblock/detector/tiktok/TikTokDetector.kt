@@ -1,14 +1,18 @@
-package com.example.scrollblock.detector
+package com.example.scrollblock.detector.tiktok
 
 import android.graphics.Rect
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.example.scrollblock.detector.DetectionResult
+import com.example.scrollblock.detector.NodeUtils
+import com.example.scrollblock.detector.PlatformDetector
 import com.example.scrollblock.preferences.BlockPreferences
 import kotlin.math.abs
 
 /**
- * TikTok Engelleyici:
+ * TikTok Engelleyici (Tamamen İzole Modül - detector/tiktok):
+ *  - Bu sınıftaki hiçbir değişiklik Instagram veya YouTube Shorts modüllerini etkilemez.
  *  - Ana Sayfa (Sizin İçin) video akışı -> Gelen Kutusu sekmesine geçiş (uygulamadan ATMAZ).
  *  - Gelen Kutusu, Sohbet mesaj listesi, Profil, Profil düzenleme, Ayarlar, Hikayeler, Arama -> %100 SERBESTTİR.
  *  - Sohbetten (DM) tıklandığında açılan tam ekran video oynatıcı:
@@ -17,7 +21,7 @@ import kotlin.math.abs
  */
 class TikTokDetector(
     private val preferences: BlockPreferences,
-    private val singleVideoGuard: SingleReelGuard = SingleReelGuard()
+    private val singleVideoGuard: TikTokSingleVideoGuard = TikTokSingleVideoGuard()
 ) : PlatformDetector {
 
     override val platformName: String = "TikTok"
@@ -33,11 +37,6 @@ class TikTokDetector(
     private val profileKeywords = listOf("profil", "profile")
     private val friendsKeywords = listOf("arkadaşlar", "friends")
 
-    /**
-     * Kullanıcının bir DM sohbeti (mesajlaşma ekranı) içinden gelip gelmediğini takip eder.
-     * Böylece Gelen Kutusu'ndan açılan Hikayeler (Stories) veya başka birinin profil sayfası
-     * asla DM videosu sanılarak engellenmez.
-     */
     private var inDmChatContext: Boolean = false
 
     override fun matchesPackage(packageName: String): Boolean {
@@ -69,7 +68,6 @@ class TikTokDetector(
         val homeSelected = NodeUtils.isNodeSelected(homeTab)
         val bottomBarVisible = inboxTab != null || homeTab != null || profileTab != null || friendsTab != null
 
-        // Ekranın üst kısmında görünen "Sizin İçin" sekmesi = kesin ana video akışı
         val forYouVisibleAtTop = NodeUtils.hasVisibleTextInRegion(
             rootNode, 0f, 0.22f,
             "sizin için", "for you"
@@ -95,7 +93,6 @@ class TikTokDetector(
         }
 
         // ---- 4. BAŞKA BİRİNİN PROFİLİ, HİKAYELER (STORIES), AYARLAR VE ARAMA ----
-        // Birinin profiline bakarken, profil düzenlerken veya Hikaye (Story) izlerken ASLA atma!
         if (isUserProfileOrSettings(rootNode) || isStoryOrSearchScreen(rootNode)) {
             inDmChatContext = false
             singleVideoGuard.reset()
@@ -110,7 +107,6 @@ class TikTokDetector(
         val isFullScreenVideo = !bottomBarVisible && isFullScreenDmVideoPlayer(rootNode)
         val isPagerScroll = isVerticalPagerScrollEvent(event) && !isCommentsSheetOpen(rootNode)
 
-        // Yalnızca DM sohbetinden açılan tam ekran videoları yakala (Hikaye veya profil gezintisini değil)
         val isDmVideoActive = (inDmChatContext || hasDmQuickReplyBar) && isFullScreenVideo
         val isActiveSessionScroll = singleVideoGuard.isSessionActive &&
             inDmChatContext &&
@@ -130,12 +126,9 @@ class TikTokDetector(
                 )
             }
 
-            // DM İzni (Tek Video) modu AÇIK:
-            // Yalnızca gerçek dikey sayfalayıcı (ViewPager / dikey RecyclerView) kaydırmalarını değerlendir.
-            // Video süre çubuğu (SeekBar), kayan müzik yazısı (TextView) vb. scroll olayları YOK SAYILIR.
             if (isPagerScroll) {
                 val verdict = singleVideoGuard.onPagerScrolled(now)
-                if (verdict == SingleReelGuard.Verdict.BLOCK) {
+                if (verdict == TikTokSingleVideoGuard.Verdict.BLOCK) {
                     return DetectionResult.detected(
                         platform = platformName,
                         reason = "TikTok DM video kaydırma engellendi (tek video sınırı)",
@@ -147,7 +140,7 @@ class TikTokDetector(
 
             val fingerprint = extractVideoFingerprint(rootNode)
             val verdict = singleVideoGuard.onViewerVisible(now, fingerprint)
-            if (verdict == SingleReelGuard.Verdict.BLOCK) {
+            if (verdict == TikTokSingleVideoGuard.Verdict.BLOCK) {
                 return DetectionResult.detected(
                     platform = platformName,
                     reason = "TikTok DM sonraki videoya geçiş engellendi",
@@ -158,8 +151,6 @@ class TikTokDetector(
             return DetectionResult.notDetected(platformName)
         }
 
-        // Tam ekran video oynatıcıda değilsek ve normal DM sohbet ekranındaysak:
-        // Kullanıcının DM sohbetinde olduğunu işaretle ve tek-video oturumunu yeni video için sıfırla
         val isChatConversation = NodeUtils.hasVisibleViewId(
             rootNode,
             "chat_input", "msg_box", "message_edit_text", "et_message", "chat_room"
@@ -175,10 +166,6 @@ class TikTokDetector(
         return DetectionResult.notDetected(platformName)
     }
 
-    /**
-     * Başka bir kullanıcının profil sayfasını, takipçi/takip edilen listesini veya ayarlar ekranını tespit eder.
-     * Bu ekranlarda kullanıcı serbestçe gezinebilir, kaydırabilir.
-     */
     private fun isUserProfileOrSettings(rootNode: AccessibilityNodeInfo): Boolean {
         val isSettingsOrEdit = NodeUtils.hasVisibleTextInRegion(
             rootNode, 0f, 1f,
@@ -187,7 +174,6 @@ class TikTokDetector(
         )
         if (isSettingsOrEdit) return true
 
-        // Başka birinin profil sayfasında üst/orta alanda "Takipçi" (Followers) ve "Beğeni" (Likes) / "Takip edilen" (Following) yer alır
         var profileStatCount = 0
         if (NodeUtils.hasVisibleTextInRegion(rootNode, 0.08f, 0.65f, "takipçi", "followers")) {
             profileStatCount++
@@ -200,16 +186,11 @@ class TikTokDetector(
         }
         if (profileStatCount >= 2) return true
 
-        // Profil sayfasındaki 3 sütunlu video ızgarası (küçük kare/dikdörtgen video önizlemeleri yan yana)
         if (hasProfileThumbnailGrid(rootNode)) return true
 
         return false
     }
 
-    /**
-     * Profil ekranlarındaki 3 sütunlu video küçük resim (thumbnail) ızgarasını tespit eder.
-     * Tam ekran video oynatıcıda yan yana 3 küçük video kutusu bulunmaz.
-     */
     private fun hasProfileThumbnailGrid(rootNode: AccessibilityNodeInfo): Boolean {
         val winRect = Rect()
         rootNode.getBoundsInScreen(winRect)
@@ -224,7 +205,6 @@ class TikTokDetector(
                 node.getBoundsInScreen(rect)
                 val nw = rect.width()
                 val nh = rect.height()
-                // 3 sütunlu profil ızgarası hücreleri ekran genişliğinin ~%28-%35'i kadardır
                 if (nw in (w * 0.26f).toInt()..(w * 0.36f).toInt() &&
                     nh in (h * 0.12f).toInt()..(h * 0.32f).toInt() &&
                     rect.top >= h * 0.18f
@@ -237,10 +217,6 @@ class TikTokDetector(
         return gridCellCount >= 3
     }
 
-    /**
-     * TikTok Hikaye (Story) izleyici, Arama veya Paylaşım ekranlarını tespit eder.
-     * Hikayelerde "Hikaye" / "Story" rozeti veya altta "Yorum ekle..." (Add comment...) alanı bulunur.
-     */
     private fun isStoryOrSearchScreen(rootNode: AccessibilityNodeInfo): Boolean {
         val hasStoryOrSearchId = NodeUtils.hasVisibleViewId(
             rootNode,
@@ -250,7 +226,6 @@ class TikTokDetector(
         )
         if (hasStoryOrSearchId) return true
 
-        // TikTok Hikaye (Story) ekranında altta "Yorum ekle..." veya ekranda "Hikaye" / "Story" etiketi bulunur
         val hasStoryCommentInput = NodeUtils.hasVisibleTextInRegion(
             rootNode, 0.78f, 1f,
             "yorum ekle", "bir yorum ekle", "add comment", "add a comment",
@@ -275,13 +250,7 @@ class TikTokDetector(
         }
     }
 
-    /**
-     * Alt bar gizliyken (DM içindeyken) tam ekran video oynatıcının açık olup olmadığını tespit eder.
-     * NOT: Tek başına ViewPager kontrolü KULLANILMAZ (çünkü kullanıcı profilleri de ViewPager içerir).
-     * Yalnızca gerçek tam ekran video oynatıcı bileşenleri ve sağ kenar video aksiyon sütunu kontrol edilir.
-     */
     private fun isFullScreenDmVideoPlayer(rootNode: AccessibilityNodeInfo): Boolean {
-        // 1. Bilinen TikTok video oynatıcı viewId'leri
         val hasKnownPlayerId = NodeUtils.hasVisibleViewId(
             rootNode,
             "aweme_player", "aweme_vertical_view_pager", "video_post_page"
@@ -314,7 +283,6 @@ class TikTokDetector(
                     val desc = node.contentDescription?.toString()?.trim() ?: ""
                     val combined = "$text $desc".lowercase()
 
-                    // Sağ kenar video aksiyon sütunu (Beğen, Yorum, Kaydet/Favori, Paylaş)
                     if (cx >= w * 0.74f && cy in (h * 0.25f)..(h * 0.86f)) {
                         if (combined.contains("beğen") || combined.contains("like") ||
                             combined.contains("yorum") || combined.contains("comment") ||
@@ -331,7 +299,6 @@ class TikTokDetector(
                         }
                     }
 
-                    // Sol-alt içerik üreticisi (@kullanici) veya orijinal ses etiketi
                     if (cx <= w * 0.72f && cy in (h * 0.48f)..(h * 0.88f)) {
                         if ((text.startsWith("@") && text.length >= 3) ||
                             combined.contains("orijinal ses") ||
@@ -342,17 +309,15 @@ class TikTokDetector(
                     }
                 }
             }
-            false // tüm ağacı tara
+            false
         }
 
-        // 2. Sağ kenarda dikey sıralı en az 2 video etkileşim butonu (Beğen / Yorum / Favori / Paylaş)
         if (rightActionYs.size >= 2) {
             val minY = rightActionYs.minOrNull() ?: 0f
             val maxY = rightActionYs.maxOrNull() ?: 0f
             if (abs(maxY - minY) >= h * 0.035f) return true
         }
 
-        // 3. Sağ şeritte dikey dizili en az 3 sayaç/ikon + sol altta @kullanıcı veya ses bilgisi
         if (rightEdgeStripYs.size >= 3 && hasCreatorHandleOrSound) {
             val minY = rightEdgeStripYs.minOrNull() ?: 0f
             val maxY = rightEdgeStripYs.maxOrNull() ?: 0f
@@ -372,11 +337,6 @@ class TikTokDetector(
         )
     }
 
-    /**
-     * Yalnızca tam ekran dikey video sayfalayıcısından (ViewPager / ViewPager2 / dikey RecyclerView)
-     * gelen gerçek sayfa geçiş kaydırmalarını kabul eder.
-     * Video süre çubuğu (SeekBar/ProgressBar) veya kayan müzik adı (TextView) olaylarını yok sayar.
-     */
     private fun isVerticalPagerScrollEvent(event: AccessibilityEvent?): Boolean {
         if (event == null || event.eventType != AccessibilityEvent.TYPE_VIEW_SCROLLED) return false
         val cls = event.className?.toString() ?: ""
@@ -402,11 +362,6 @@ class TikTokDetector(
         return false
     }
 
-    /**
-     * Yalnızca videonun SABİT içerik üreticisi (@kullanici_adi) bilgisini döndürür.
-     * Altyazı, süre sayacı (0:14 -> 0:13) veya beğeni sayısı gibi video oynarken değişen metinleri
-     * DAHİL ETMEZ; böylece ilk video oynarken asla yanlışlıkla engelleme tetiklenmez.
-     */
     private fun extractVideoFingerprint(rootNode: AccessibilityNodeInfo?): String? {
         if (rootNode == null) return null
 
@@ -437,3 +392,4 @@ class TikTokDetector(
         return authorNode?.text?.toString()?.trim()
     }
 }
+

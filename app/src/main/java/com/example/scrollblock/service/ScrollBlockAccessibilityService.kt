@@ -6,11 +6,11 @@ import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.example.scrollblock.detector.DetectionResult
-import com.example.scrollblock.detector.InstagramReelsDetector
 import com.example.scrollblock.detector.NodeUtils
 import com.example.scrollblock.detector.PlatformDetector
-import com.example.scrollblock.detector.TikTokDetector
-import com.example.scrollblock.detector.YouTubeShortsDetector
+import com.example.scrollblock.detector.instagram.InstagramReelsDetector
+import com.example.scrollblock.detector.tiktok.TikTokDetector
+import com.example.scrollblock.detector.youtube.YouTubeShortsDetector
 import com.example.scrollblock.preferences.BlockPreferences
 import com.example.scrollblock.updater.UpdateManager
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,8 +45,8 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         _isServiceRunning.value = true
-        // Güncelleme kurulduğunda servis yeniden bağlanır; indirilen geçici APK'yı otomatik temizle
-        UpdateManager.cleanupInstalledApks(applicationContext, forceAll = true)
+        // Güncelleme kurulduğunda servis yeniden bağlanır; kurulum tamamlandıysa indirilen geçici APK'yı otomatik temizle
+        UpdateManager.cleanupInstalledApks(applicationContext, forceAll = false)
         preferences = BlockPreferences.getInstance(applicationContext)
 
         detectors = listOf(

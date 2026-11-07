@@ -1,9 +1,16 @@
-package com.example.scrollblock.detector
+package com.example.scrollblock.detector.youtube
 
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.example.scrollblock.detector.DetectionResult
+import com.example.scrollblock.detector.NodeUtils
+import com.example.scrollblock.detector.PlatformDetector
 import com.example.scrollblock.preferences.BlockPreferences
 
+/**
+ * YouTube Shorts Engelleyici (Tamamen İzole Modül - detector/youtube):
+ *  - Bu sınıftaki hiçbir değişiklik Instagram veya TikTok modüllerini etkilemez.
+ */
 class YouTubeShortsDetector(
     private val preferences: BlockPreferences
 ) : PlatformDetector {
@@ -29,10 +36,10 @@ class YouTubeShortsDetector(
         // 1. ÖNCELİKLİ GÜVENLİK KONTROLÜ (Normal uzun video izleme ekranı):
         val hasNormalPlayerControls = NodeUtils.hasViewIdContaining(
             rootNode,
-            "time_bar",                     // Video ilerleme çubuğu
-            "player_collapse_button",       // Mini oynatıcıya küçültme oku
-            "fullscreen_button",            // Tam ekran butonu
-            "watch_panel"                   // Normal video altındaki yorum/öneri paneli
+            "time_bar",
+            "player_collapse_button",
+            "fullscreen_button",
+            "watch_panel"
         )
 
         val hasShortsContainer = NodeUtils.hasViewIdContaining(
@@ -47,7 +54,6 @@ class YouTubeShortsDetector(
             "reel_sound_pivot_button"
         )
 
-        // Standart video kontrolleri varsa ve belirgin bir Shorts konteyneri yoksa normal videodur
         if (hasNormalPlayerControls && !hasShortsContainer) {
             return DetectionResult.notDetected(platformName)
         }
@@ -103,3 +109,4 @@ class YouTubeShortsDetector(
         return DetectionResult.notDetected(platformName)
     }
 }
+

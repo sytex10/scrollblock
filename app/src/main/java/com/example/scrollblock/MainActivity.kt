@@ -27,8 +27,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Kurulum tamamlandıktan sonra uygulama açıldığında geçici güncelleme APK'sını otomatik sil
-        UpdateManager.cleanupInstalledApks(applicationContext, forceAll = true)
+        // Kurulum tamamlandıktan sonra (currentVersion >= pendingVersion olduğunda) geçici APK'yı otomatik sil
+        UpdateManager.cleanupInstalledApks(applicationContext, forceAll = false)
 
         enableEdgeToEdge()
 
