@@ -1,6 +1,6 @@
 {
-  "versionCode": 29,
-  "versionName": "3.8",
-  "changelog": "• UNSCROLL (Un + Scroll — Kaydırmayı bırak, sonsuz kaydırma döngüsünden çık): Uygulama ve web kontrol paneli yeni Unscroll kimliğine kavuştu.\n• Yorumları Engelle (Toksik Yorum Kalkanı): Instagram, TikTok ve YouTube için ayrı ayrı açılabilen Yorum Kalkanı eklendi.\n• Yeni klasör yapısı: Instagram (insta/), TikTok (tiktok/), YouTube (yt/) ve Web (web/) doğrudan ana klasör altında toplandı.",
+  "versionCode": 30,
+  "versionName": "3.9",
+  "changelog": "• SHORTBAN (Short + Ban): Uygulama ve web kontrol paneli yeni ShortBan kimliğine kavuştu.\n• Yorumları Engelle (Toksik Yorum Kalkanı): Instagram, TikTok ve YouTube için ayrı ayrı açılabilen Yorum Kalkanı eklendi.\n• Yeni klasör yapısı: Instagram (insta/), TikTok (tiktok/), YouTube (yt/) ve Web (web/) doğrudan ana klasör altında toplandı.",
   "apkUrl": "https://raw.githubusercontent.com/sytex10/scrollblock/main/release/ScrollBlock-release.apk"
 }

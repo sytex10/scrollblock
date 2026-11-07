@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Unscroll — Kısa Video & Yorum Kalkanı",
-  "version": "3.8.0",
-  "description": "Un + Scroll: Kaydırmayı bırak, sonsuz kaydırma döngüsünden çık. YouTube Shorts, Instagram Reels, TikTok ve toksik yorumları engeller.",
+  "name": "ShortBan — Kısa Video & Yorum Kalkanı",
+  "version": "3.9.0",
+  "description": "Short + Ban: YouTube Shorts, Instagram Reels, TikTok kısa video akışlarını ve toksik yorumları engeller.",
   "permissions": [
     "storage",
     "tabs",

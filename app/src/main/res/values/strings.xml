@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Unscroll</string>
-    <string name="accessibility_service_description">Unscroll (Un + Scroll — Kaydırmayı bırak, sonsuz kaydırma döngüsünden çık): Kısa video akışlarını (YouTube Shorts, Instagram Reels, TikTok) ve toksik yorum pencerelerini anında algılayıp kapatmak için yalnızca cihaz üzerinde çalışır. Hiçbir ekran görüntüsü veya veri kaydedilmez ya da iletilmez.</string>
+    <string name="app_name">ShortBan</string>
+    <string name="accessibility_service_description">ShortBan (Short + Ban — Kısa Videoları ve Toksik Yorumları Yasakla): Kısa video akışlarını (YouTube Shorts, Instagram Reels, TikTok) ve toksik yorum pencerelerini anında algılayıp kapatmak için yalnızca cihaz üzerinde çalışır. Hiçbir ekran görüntüsü veya veri kaydedilmez ya da iletilmez.</string>
 </resources>

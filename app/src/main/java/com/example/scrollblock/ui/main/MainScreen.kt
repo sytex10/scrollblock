@@ -477,7 +477,7 @@ fun MainScreen(
                     )
 
                     Text(
-                        text = "Unscroll v${info.versionName} güncellemesi mevcut.",
+                        text = "ShortBan v${info.versionName} güncellemesi mevcut.",
                         fontSize = 13.sp,
                         color = TextSecondary
                     )
@@ -618,7 +618,7 @@ private fun TopBarSection(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "unscroll",
+                text = "shortban",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,

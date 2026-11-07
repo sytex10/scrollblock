@@ -93,8 +93,8 @@ fun OnboardingScreen(
         listOf(
             OnboardingPageData(
                 stepLabel = "ADIM 01 / 04 · NASIL ÇALIŞIR?",
-                title = "Kaydırmayı Bırak, Sonsuz Döngüden Çık",
-                subtitle = "Unscroll uygulamaları tamamen kapatmaz; yalnızca sonsuz kısa video akışlarını ve toksik yorumları yakalayıp sizi güvenli sekmeye yönlendirir:",
+                title = "Kısa Videoları ve Yorumları Akıllıca Engelle",
+                subtitle = "ShortBan uygulamaları tamamen kapatmaz; yalnızca sonsuz kısa video akışlarını ve toksik yorumları yakalayıp sizi güvenli sekmeye yönlendirir:",
                 items = listOf(
                     OnboardingHighlightItem(
                         tag = "IG",
@@ -165,7 +165,7 @@ fun OnboardingScreen(
             OnboardingPageData(
                 stepLabel = "ADIM 04 / 04 · KURULUM (2. AŞAMA)",
                 title = "Erişilebilirlik Servisini Etkinleştirin",
-                subtitle = "Son olarak Unscroll'un kısa video akışlarını ve yorum pencerelerini algılayabilmesi için Erişilebilirlik Servisi'ni açın:",
+                subtitle = "Son olarak ShortBan'ın kısa video akışlarını ve yorum pencerelerini algılayabilmesi için Erişilebilirlik Servisi'ni açın:",
                 items = listOf(
                     OnboardingHighlightItem(
                         tag = "1",
@@ -174,13 +174,13 @@ fun OnboardingScreen(
                     ),
                     OnboardingHighlightItem(
                         tag = "2",
-                        title = "Unscroll'u Bulup Açık Konuma Getirin",
-                        body = "'İndirilen Uygulamalar' (veya Yüklü Servisler) menüsünden Unscroll'a girin ve servisi etkinleştirin."
+                        title = "ShortBan'ı Bulup Açık Konuma Getirin",
+                        body = "'İndirilen Uygulamalar' (veya Yüklü Servisler) menüsünden ShortBan'a girin ve servisi etkinleştirin."
                     ),
                     OnboardingHighlightItem(
                         tag = "%100",
                         title = "Tam Gizlilik ve Sıfır Veri Toplama",
-                        body = "Unscroll hiçbir kişisel verinizi, mesajınızı veya ekran görüntünüzü kaydetmez ve internete göndermez. Tüm tespit cihaz içinde anlık yapılır."
+                        body = "ShortBan hiçbir kişisel verinizi, mesajınızı veya ekran görüntünüzü kaydetmez ve internete göndermez. Tüm tespit cihaz içinde anlık yapılır."
                     )
                 ),
                 footerNote = "Servisi açtıktan sonra aşağıdaki 'Kurulumu Tamamla ve Başla' butonuna basarak ana ekrana geçebilirsiniz.",
@@ -214,7 +214,7 @@ fun OnboardingScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "unscroll",
+                        text = "shortban",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary,
