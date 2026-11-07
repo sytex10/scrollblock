@@ -433,41 +433,15 @@
     });
   }
 
-  // PC'den siteye girildiğinde eklenti bağlı değilse otomatik kurulum penceresini göster
-  const autoInstallModalBackdrop = document.getElementById("autoInstallModalBackdrop");
-  const dismissAutoInstallBtn = document.getElementById("dismissAutoInstallBtn");
-  const confirmAutoInstallBtn = document.getElementById("confirmAutoInstallBtn");
-
-  if (dismissAutoInstallBtn && autoInstallModalBackdrop) {
-    dismissAutoInstallBtn.addEventListener("click", () => {
-      autoInstallModalBackdrop.style.display = "none";
-      sessionStorage.setItem("shortban_pc_prompt_dismissed", "1");
-    });
-  }
-  if (confirmAutoInstallBtn && autoInstallModalBackdrop) {
-    confirmAutoInstallBtn.addEventListener("click", () => {
-      setTimeout(() => {
-        autoInstallModalBackdrop.style.display = "none";
-      }, 400);
-    });
-  }
-
-  const isDesktopDevice = !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
-  if (isDesktopDevice && autoInstallModalBackdrop && !sessionStorage.getItem("shortban_pc_prompt_dismissed")) {
-    setTimeout(() => {
-      if (!isExtensionConnected) {
-        autoInstallModalBackdrop.style.display = "flex";
-      }
-    }, 1200);
-  }
-
-  // GitHub üzerinden güncel Android sürüm bilgisini çek
+  // GitHub üzerinden güncel sürüm bilgisini çek
   fetch("https://raw.githubusercontent.com/sytex10/scrollblock/main/version.json?t=" + Date.now())
     .then((r) => r.json())
     .then((info) => {
       if (info && info.versionName) {
         document.getElementById("versionBadge").textContent = "v" + info.versionName;
         document.getElementById("androidVersionText").textContent = "v" + info.versionName + " · Güncel";
+        const pcVer = document.getElementById("pcVersionText");
+        if (pcVer) pcVer.textContent = "v" + info.versionName + " · Güncel";
       }
     })
     .catch(() => {});

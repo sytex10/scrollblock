@@ -210,9 +210,10 @@ object UpdateManager {
         context: Context,
         urlString: String,
         targetVersionCode: Int = -1,
-        onProgress: (Int) -> Unit,
+        autoOpenDownloads: Boolean = false,
+        onProgress: (Int) -> Unit = {},
         onDownloadCompleted: () -> Unit = {},
-        onError: (String) -> Unit
+        onError: (String) -> Unit = {}
     ) = withContext(Dispatchers.IO) {
         var input: InputStream? = null
         var output: OutputStream? = null
@@ -324,7 +325,9 @@ object UpdateManager {
             withContext(Dispatchers.Main) {
                 onProgress(100)
                 onDownloadCompleted()
-                openSystemDownloads(context)
+                if (autoOpenDownloads) {
+                    openSystemDownloads(context)
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Download error", e)

@@ -132,6 +132,8 @@ fun MainScreen(
 
     var remoteUpdateInfo by remember { mutableStateOf<UpdateManager.RemoteVersionInfo?>(null) }
     var isCheckingUpdate by remember { mutableStateOf(false) }
+    var isSilentUpdateReady by remember { mutableStateOf(false) }
+    var isSilentDownloading by remember { mutableStateOf(false) }
 
     val currentVersionCode = remember {
         try {
@@ -211,6 +213,39 @@ fun MainScreen(
                     }
                 }
             )
+
+            // 1.5 Arka Planda Sessiz İndirilen Güncelleme Hazır Bildirimi (Ekranı Kilitlemez)
+            if (isSilentUpdateReady && remoteUpdateInfo != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(ActiveGreenContainer)
+                        .border(1.dp, ActiveGreen.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                        .clickable { UpdateManager.openSystemDownloads(context) }
+                        .padding(horizontal = 14.dp, vertical = 11.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Yeni sürüm (v${remoteUpdateInfo!!.versionName}) arka planda indirildi",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = ActiveGreenText,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = "Kur",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = NearBlack,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(ActiveGreen)
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+            }
 
             // 2. Erişilebilirlik Uyarısı (Servis kapalıysa görünür)
             if (!isServiceActive) {
@@ -480,139 +515,25 @@ fun MainScreen(
             )
         }
 
-        // Güncelleme Zorunlu Modalı (Uygulama içinde indirir, kurulumdan sonra APK otomatik silinir)
+        // Arka Planda Sessiz Otomatik Güncelleme İndirici (Kullanıcıyı Rahatsız Eden Modal Yok)
         if (remoteUpdateInfo != null && remoteUpdateInfo!!.versionCode > currentVersionCode) {
             val info = remoteUpdateInfo!!
-            var isDownloadingMandatory by remember { mutableStateOf(false) }
-            var isDownloadCompleted by remember { mutableStateOf(false) }
-            var mandatoryProgress by remember { mutableFloatStateOf(0f) }
-
-            Dialog(
-                onDismissRequest = { },
-                properties = DialogProperties(
-                    dismissOnBackPress = false,
-                    dismissOnClickOutside = false
-                )
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(CardBackground)
-                        .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
-                        .padding(22.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    Text(
-                        text = "Yeni Sürüm Hazır (v${info.versionName})",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = TextPrimary
+            LaunchedEffect(info.versionCode) {
+                if (!isSilentDownloading && !isSilentUpdateReady) {
+                    isSilentDownloading = true
+                    UpdateManager.downloadAndInstall(
+                        context = context,
+                        urlString = info.apkUrl,
+                        targetVersionCode = info.versionCode,
+                        autoOpenDownloads = false,
+                        onDownloadCompleted = {
+                            isSilentDownloading = false
+                            isSilentUpdateReady = true
+                        },
+                        onError = {
+                            isSilentDownloading = false
+                        }
                     )
-
-                    Text(
-                        text = "ShortBan v${info.versionName} güncellemesi mevcut.",
-                        fontSize = 13.sp,
-                        color = TextSecondary
-                    )
-
-                    if (info.changelog.isNotEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(CardBackgroundElevated)
-                                .border(1.dp, HairlineDivider, RoundedCornerShape(10.dp))
-                                .padding(12.dp)
-                        ) {
-                            Text(
-                                text = info.changelog,
-                                fontSize = 12.sp,
-                                color = TextPrimary,
-                                lineHeight = 17.sp
-                            )
-                        }
-                    }
-
-                    if (isDownloadCompleted) {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text(
-                                text = "✓ İndirildi: İndirilenler / ${UpdateManager.DOWNLOAD_FILE_NAME} dosyasına dokunarak kurun. Kurulumdan sonra APK otomatik silinir.",
-                                fontSize = 12.sp,
-                                color = ActiveGreenText,
-                                lineHeight = 16.sp
-                            )
-                            Button(
-                                onClick = { UpdateManager.openSystemDownloads(context) },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = AccentPrimary,
-                                    contentColor = NearBlack
-                                )
-                            ) {
-                                Text(
-                                    text = "İndirilenler Klasörünü Aç",
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 14.sp
-                                )
-                            }
-                        }
-                    } else if (isDownloadingMandatory) {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            LinearProgressIndicator(
-                                progress = { mandatoryProgress },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(6.dp)
-                                    .clip(RoundedCornerShape(3.dp)),
-                                color = AccentPrimary,
-                                trackColor = CardBackgroundElevated
-                            )
-                            Text(
-                                text = "İndiriliyor: %${(mandatoryProgress * 100).toInt()} (Kurulum sonrası APK otomatik silinir)",
-                                fontSize = 11.sp,
-                                color = TextSecondary
-                            )
-                        }
-                    } else {
-                        Button(
-                            onClick = {
-                                isDownloadingMandatory = true
-                                isDownloadCompleted = false
-                                coroutineScope.launch {
-                                    UpdateManager.downloadAndInstall(
-                                        context = context,
-                                        urlString = info.apkUrl,
-                                        targetVersionCode = info.versionCode,
-                                        onProgress = { progressInt ->
-                                            mandatoryProgress = progressInt / 100f
-                                        },
-                                        onDownloadCompleted = {
-                                            isDownloadingMandatory = false
-                                            isDownloadCompleted = true
-                                        },
-                                        onError = { errorMsg ->
-                                            isDownloadingMandatory = false
-                                            Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-                                        }
-                                    )
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AccentPrimary,
-                                contentColor = NearBlack
-                            )
-                        ) {
-                            Text(
-                                text = "İndir ve Güncelle",
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
                 }
             }
         }
