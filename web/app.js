@@ -410,6 +410,29 @@
     }
   });
 
+  // Açık Rıza ve Gizlilik Politikası Modalı
+  const webPrivacyModalBackdrop = document.getElementById("webPrivacyModalBackdrop");
+  const openWebPrivacyModalRow = document.getElementById("openWebPrivacyModalRow");
+  const openWebPrivacyModalBtn = document.getElementById("openWebPrivacyModalBtn");
+  const closeWebPrivacyModalBtn = document.getElementById("closeWebPrivacyModalBtn");
+
+  if (openWebPrivacyModalRow && webPrivacyModalBackdrop) {
+    openWebPrivacyModalRow.addEventListener("click", () => {
+      webPrivacyModalBackdrop.style.display = "flex";
+    });
+  }
+  if (openWebPrivacyModalBtn && webPrivacyModalBackdrop) {
+    openWebPrivacyModalBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      webPrivacyModalBackdrop.style.display = "flex";
+    });
+  }
+  if (closeWebPrivacyModalBtn && webPrivacyModalBackdrop) {
+    closeWebPrivacyModalBtn.addEventListener("click", () => {
+      webPrivacyModalBackdrop.style.display = "none";
+    });
+  }
+
   // PC'den siteye girildiğinde eklenti bağlı değilse otomatik kurulum penceresini göster
   const autoInstallModalBackdrop = document.getElementById("autoInstallModalBackdrop");
   const dismissAutoInstallBtn = document.getElementById("dismissAutoInstallBtn");

@@ -1,7 +1,5 @@
 package com.example.scrollblock.ui.main
 
-import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.text.format.DateUtils
 import android.widget.Toast
@@ -478,12 +476,6 @@ fun MainScreen(
                     showPrivacyDialog = false
                     pendingOpenAccessibilityAfterDisclosure = false
                     AccessibilityUtils.openAccessibilitySettings(context)
-                },
-                onOpenWebPrivacyPolicy = {
-                    try {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://vsolken.com/privacy"))
-                        context.startActivity(intent)
-                    } catch (_: Exception) { }
                 }
             )
         }
@@ -1783,8 +1775,7 @@ private fun PinSetupDialog(
 private fun PrivacyAndDisclosureDialog(
     isPromptBeforePermission: Boolean,
     onDismiss: () -> Unit,
-    onAcceptAndOpenSettings: () -> Unit,
-    onOpenWebPrivacyPolicy: () -> Unit
+    onAcceptAndOpenSettings: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Column(
@@ -1797,17 +1788,17 @@ private fun PrivacyAndDisclosureDialog(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Erişilebilirlik İzni ve Gizlilik Beyanı",
+                text = "Açık Rıza ve Gizlilik Politikası Beyanı",
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary
             )
 
             Text(
-                text = "ShortBan, yalnızca seçtiğiniz uygulamalardaki (Instagram Reels, TikTok, YouTube Shorts) kısa video akışlarını ve yorum pencerelerini tespit edip sizi güvenli sekmeye yönlendirmek için Android AccessibilityService (Erişilebilirlik Servisi) API'sini kullanır.",
-                fontSize = 12.5.sp,
+                text = "ShortBan, yalnızca seçtiğiniz platformlardaki (Instagram Reels, TikTok, YouTube Shorts) kısa video akışlarını ve yorum pencerelerini tespit edip sizi güvenli sekmeye yönlendirmek için çalışır.",
+                fontSize = 12.sp,
                 color = TextSecondary,
-                lineHeight = 18.sp
+                lineHeight = 17.sp
             )
 
             Column(
@@ -1817,33 +1808,31 @@ private fun PrivacyAndDisclosureDialog(
                     .background(CardBackgroundElevated)
                     .border(1.dp, HairlineDivider, RoundedCornerShape(10.dp))
                     .padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "• Sıfır Veri Toplama: Hiçbir kişisel veriniz, mesajınız, şifreniz veya ekran görüntünüz kaydedilmez ve internete gönderilmez.",
+                    text = "1. Erişilebilirlik İzni Açık Rıza Beyanı:\nUygulama yalnızca hedef platformlarda (Instagram, TikTok, YouTube) kısa video ekranlarının veya yorum pencerelerinin açıldığını tespit etmek için Android AccessibilityService API'sini kullanarak arayüz kimliklerini anlık kontrol eder. YouTube Music ve diğer uygulamalara dokunulmaz.",
                     fontSize = 11.5.sp,
                     color = TextPrimary,
                     lineHeight = 16.sp
                 )
                 Text(
-                    text = "• Yalnızca Cihaz İçi İşlem: Tüm tespit anlık olarak telefonunuzun içinde gerçekleşir; YouTube Music ve diğer uygulamalara dokunulmaz.",
+                    text = "2. Sıfır Veri Toplama ve Aktarım Taahhüdü:\nHiçbir kişisel veriniz, mesajınız, şifreniz, ekran görüntünüz veya gezinme geçmişiniz kaydedilmez, toplanmaz, uzak sunuculara gönderilmez ve üçüncü taraflarla paylaşılmaz. Tüm işlemler %100 cihazınızın içinde gerçekleşir.",
                     fontSize = 11.5.sp,
                     color = TextPrimary,
                     lineHeight = 16.sp
                 )
-            }
-
-            OutlinedButton(
-                onClick = onOpenWebPrivacyPolicy,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
-                contentPadding = PaddingValues(vertical = 10.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
-            ) {
                 Text(
-                    text = "Web Gizlilik Politikasını Aç (vsolken.com/privacy)",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
+                    text = "3. Cihaz İçi Yerel Tercihler:\nKoruma anahtarları, mola süreleri, engellenen akış sayacı ve isteğe bağlı 4 haneli PIN kilidi yalnızca cihazınızın kendi yerel hafızasında saklanır.",
+                    fontSize = 11.5.sp,
+                    color = TextPrimary,
+                    lineHeight = 16.sp
+                )
+                Text(
+                    text = "4. Reklam ve Analitik Yoktur:\nShortBan içerisinde hiçbir reklam SDK'sı, kullanıcı takip aracı (tracker) veya üçüncü taraf analitik servisi bulunmamaktadır.",
+                    fontSize = 11.5.sp,
+                    color = TextPrimary,
+                    lineHeight = 16.sp
                 )
             }
 
@@ -1852,7 +1841,7 @@ private fun PrivacyAndDisclosureDialog(
                 horizontalArrangement = Arrangement.End
             ) {
                 TextButton(onClick = onDismiss) {
-                    Text(if (isPromptBeforePermission) "Vazgeç" else "Kapat", color = TextSecondary)
+                    Text(if (isPromptBeforePermission) "Vazgeç" else "Anladım ve Kapat", color = TextSecondary)
                 }
                 if (isPromptBeforePermission) {
                     Spacer(modifier = Modifier.width(6.dp))

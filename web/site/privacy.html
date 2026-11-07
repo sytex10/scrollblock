@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ShortBan — Gizlilik Politikası & Privacy Policy | vsolken.com/privacy</title>
+  <title>ShortBan — Gizlilik Politikası ve Açık Rıza Beyanı</title>
   <link rel="icon" type="image/jpeg" href="logo.jpg" />
   <link rel="stylesheet" href="style.css" />
   <style>
@@ -64,17 +64,17 @@
       <div class="brand-group">
         <img src="logo.jpg" alt="ShortBan Logo" class="brand-icon" width="38" height="38" style="border-radius: 9px; object-fit: cover;" />
         <span class="brand-logo"><span style="color: #ffffff;">SHORT</span><span style="color: #F21B2D;">BAN</span></span>
-        <span class="domain-tag">Gizlilik Politikası / Privacy Policy</span>
+        <span class="version-tag">Gizlilik Politikası ve Açık Rıza Beyanı</span>
       </div>
-      <a href="/shortban" class="btn-outline" style="text-decoration: none;">← Kontrol Paneline Dön</a>
+      <a href="index.html" class="btn-outline" style="text-decoration: none;">← Kontrol Paneline Dön</a>
     </header>
 
-    <!-- TÜRKÇE GİZLİLİK POLİTİKASI -->
+    <!-- TÜRKÇE AÇIK RIZA VE GİZLİLİK POLİTİKASI -->
     <section class="policy-card">
       <span class="eyebrow">TÜRKÇE · SON GÜNCELLEME: 8 KASIM 2026</span>
-      <h1>ShortBan Gizlilik Politikası ve Erişilebilirlik Beyanı</h1>
+      <h1>ShortBan Açık Rıza ve Gizlilik Politikası Beyanı</h1>
       <p>
-        <strong>ShortBan</strong> (<code>com.scrollblock.app</code> ve ShortBan Web/PC Tarayıcı Eklentisi), kullanıcıların dijital refahını ve odaklanmasını korumak amacıyla kısa video akışlarını (Instagram Reels, TikTok Sizin İçin akışı, YouTube Shorts) ve isteğe bağlı olarak yorum pencerelerini kısıtlayan bir odaklanma aracıdır. Gizliliğiniz bizim için en temel önceliktir.
+        <strong>ShortBan</strong>, kullanıcıların dijital refahını ve odaklanmasını korumak amacıyla kısa video akışlarını (Instagram Reels, TikTok Sizin İçin akışı, YouTube Shorts) ve isteğe bağlı olarak yorum pencerelerini kısıtlayan bir odaklanma aracıdır.
       </p>
 
       <div class="highlight-box">
@@ -83,44 +83,38 @@
         </p>
       </div>
 
-      <h2>1. Android Erişilebilirlik Servisi (AccessibilityService API) Kullanım Beyanı</h2>
+      <h2>1. Erişilebilirlik ve Tarayıcı İzni Açık Rıza Beyanı</h2>
       <p>
-        ShortBan Android uygulaması, temel işlevini yerine getirebilmek için Android'in <code>AccessibilityService</code> API'sini kullanır:
+        ShortBan, temel odaklanma işlevini yerine getirebilmek için yalnızca kullanıcının açıkça etkinleştirdiği platformları (Instagram, TikTok ve YouTube) kontrol eder:
       </p>
       <ul>
-        <li><strong>Neden Kullanılır?</strong> Yalnızca kullanıcının açıkça etkinleştirdiği platformlarda (Instagram, TikTok ve YouTube) ekranda bir kısa video oynatıcısının (Reels, Shorts, TikTok akışı) veya yorum penceresinin açılıp açılmadığını tespit etmek ve kullanıcıyı güvenli sekmeye yönlendirmek (veya Geri eylemi uygulamak) için kullanılır.</li>
-        <li><strong>Hangi Bilgiler İşlenir?</strong> Yalnızca hedef paket adları (<code>com.instagram.android</code>, <code>com.zhiliaoapp.musically</code>, <code>com.ss.android.ugc.trill</code>, <code>com.google.android.apps.youtube</code>) ve ekrandaki arayüz bileşenlerinin görünüm kimlikleri (View ID) cihaz belleğinde anlık olarak kontrol edilir.</li>
-        <li><strong>Veri Kaydı ve İletimi Yoktur:</strong> Erişilebilirlik servisi üzerinden okunan hiçbir pencere bilgisi, metin, kişisel mesaj veya ekran içeriği kaydedilmez, depolanmaz ve internet üzerinden hiçbir sunucuya aktarılmaz.</li>
-        <li><strong>Ses Kaydı veya Sistem Değişikliği Yoktur:</strong> Uygulama kullanıcı izni olmadan sistem ayarlarını değiştirmez, ses kaydı almaz ve Android gizlilik korumalarını aşmaz.</li>
+        <li><strong>Neden Kullanılır?</strong> Yalnızca seçtiğiniz platformlarda ekranda bir kısa video oynatıcısının (Reels, Shorts, TikTok akışı) veya yorum penceresinin açılıp açılmadığını tespit etmek ve sizi güvenli sekmeye yönlendirmek için kullanılır.</li>
+        <li><strong>Hangi Bilgiler İşlenir?</strong> Yalnızca hedef platformların ekran bileşen kimlikleri cihaz belleğinde anlık olarak kontrol edilir. YouTube Music ve diğer uygulamalara kesinlikle dokunulmaz.</li>
+        <li><strong>Veri Kaydı ve İletimi Yoktur:</strong> Ekranda görüntülenen hiçbir metin, kişisel mesaj veya içerik kaydedilmez, depolanmaz ve internet üzerinden hiçbir sunucuya aktarılmaz.</li>
       </ul>
 
-      <h2>2. Cihaz İçinde Saklanan Veriler (Local Storage / SharedPreferences)</h2>
+      <h2>2. Cihaz İçi Yerel Tercihler</h2>
       <p>
-        Uygulama yalnızca kullanıcının kendi tercihlerini (hangi platformların engelleneceği, günlük mola süresi/limiti, engellenen toplam akış sayacı ve isteğe bağlı 4 haneli PIN kodunun SHA-256 özeti) cihazın kendi yerel hafızasında (<code>SharedPreferences</code> / <code>chrome.storage.local</code>) saklar. Uygulamayı sildiğinizde bu veriler tamamen silinir.
+        Uygulama yalnızca kullanıcının kendi tercihlerini (hangi platformların engelleneceği, günlük mola süresi/limiti, engellenen toplam akış sayacı ve isteğe bağlı 4 haneli PIN kodunun özeti) cihazın kendi yerel hafızasında saklar. Uygulamayı kaldırdığınızda bu veriler tamamen silinir.
       </p>
 
-      <h2>3. Üçüncü Taraf Hizmetler, Reklam ve Analitik</h2>
+      <h2>3. Reklam ve Analitik Yoktur</h2>
       <p>
-        ShortBan içerisinde hiçbir reklam SDK'sı, kullanıcı takip aracı (tracker) veya üçüncü taraf analitik servisi bulunmamaktadır. Yalnızca uygulama sürüm kontrolü için GitHub üzerindeki herkese açık <code>version.json</code> dosyası sorgulanabilir; bu sorguda hiçbir kullanıcı veya cihaz verisi gönderilmez.
+        ShortBan içerisinde hiçbir reklam SDK'sı, kullanıcı takip aracı (tracker) veya üçüncü taraf analitik servisi bulunmamaktadır.
       </p>
 
       <h2>4. Çocukların ve Ebeveynlerin Gizliliği</h2>
       <p>
-        ShortBan, ebeveyn kontrolü amacıyla kullanılan 4 haneli PIN kilidini yalnızca cihaz içinde şifrelenmiş (SHA-256 hash) olarak tutar. Çocuklar dahil hiçbir kullanıcıdan kişisel bilgi talep edilmez.
-      </p>
-
-      <h2>5. İletişim</h2>
-      <p>
-        Gizlilik politikamızla ilgili her türlü soru ve talebiniz için GitHub deposu (<a href="https://github.com/sytex10/scrollblock" style="color: #6ee7b7;">github.com/sytex10/scrollblock</a>) veya <strong>vsolken.com/shortban</strong> üzerinden bizimle iletişime geçebilirsiniz.
+        ShortBan, ebeveyn kontrolü amacıyla kullanılan 4 haneli PIN kilidini yalnızca cihaz içinde şifrelenmiş olarak tutar. Çocuklar dahil hiçbir kullanıcıdan kişisel bilgi talep edilmez.
       </p>
     </section>
 
-    <!-- ENGLISH PRIVACY POLICY (FOR GOOGLE PLAY REVIEWERS) -->
+    <!-- ENGLISH PRIVACY POLICY & PROMINENT DISCLOSURE -->
     <section class="policy-card">
       <span class="eyebrow">ENGLISH · LAST UPDATED: NOVEMBER 8, 2026</span>
       <h1>ShortBan Privacy Policy & Accessibility Service Disclosure</h1>
       <p>
-        <strong>ShortBan</strong> (<code>com.scrollblock.app</code> and ShortBan Browser Extension) is a digital wellbeing and focus utility designed to help users block addictive short-form video feeds (Instagram Reels, TikTok For You feed, YouTube Shorts) and optional comment sections.
+        <strong>ShortBan</strong> is a digital wellbeing and focus utility designed to help users block addictive short-form video feeds (Instagram Reels, TikTok For You feed, YouTube Shorts) and optional comment sections.
       </p>
 
       <div class="highlight-box">
@@ -129,7 +123,7 @@
         </p>
       </div>
 
-      <h2>1. Prominent Disclosure for Android AccessibilityService API</h2>
+      <h2>1. Prominent Disclosure for AccessibilityService API</h2>
       <ul>
         <li><strong>Purpose of Use:</strong> ShortBan uses the Android <code>AccessibilityService</code> API solely to detect when a short-form video player (Instagram Reels, TikTok feed, YouTube Shorts) or comment sheet is opened on the screen, and to automatically redirect the user back to a safe tab or perform a back navigation action according to the user's settings.</li>
         <li><strong>On-Device Processing Only:</strong> The service only inspects UI view identifiers within the target apps (Instagram, TikTok, YouTube) in volatile memory. It completely ignores YouTube Music, banking apps, keyboards, and all other apps on the device.</li>
@@ -138,15 +132,9 @@
 
       <h2>2. Local Preferences & Data Safety</h2>
       <p>
-        User settings (toggle states, break timers, block counters, and the local SHA-256 hash of the optional 4-digit PIN) are stored strictly on the device using Android <code>SharedPreferences</code>. No analytics SDKs, ad networks, or tracking libraries are included in the app.
-      </p>
-
-      <h2>3. Contact</h2>
-      <p>
-        If you have any questions regarding this Privacy Policy, please reach out via <a href="https://github.com/sytex10/scrollblock" style="color: #6ee7b7;">github.com/sytex10/scrollblock</a> or <strong>https://vsolken.com/shortban</strong>.
+        User settings (toggle states, break timers, block counters, and the local hash of the optional 4-digit PIN) are stored strictly on the device. No analytics SDKs, ad networks, or tracking libraries are included in the app.
       </p>
     </section>
   </div>
 </body>
 </html>
-

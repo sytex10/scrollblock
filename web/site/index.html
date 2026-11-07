@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ShortBan — Kısa Video & Yorum Kalkanı | vsolken.com/shortban</title>
+  <title>ShortBan — Kısa Video & Yorum Kalkanı</title>
   <link rel="icon" type="image/jpeg" href="logo.jpg" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -14,8 +14,7 @@
       <div class="brand-group">
         <img src="logo.jpg" alt="ShortBan Logo" class="brand-icon" width="38" height="38" style="border-radius: 9px; object-fit: cover;" />
         <span class="brand-logo"><span style="color: #ffffff;">SHORT</span><span style="color: #F21B2D;">BAN</span></span>
-        <span id="versionBadge" class="version-tag">v4.1</span>
-        <span class="domain-tag">vsolken.com/shortban</span>
+        <span id="versionBadge" class="version-tag">v4.2</span>
       </div>
       <div id="extensionStatusPill" class="status-pill warning">
         <span class="status-dot"></span>
@@ -41,7 +40,7 @@
         <div class="dl-box android-box">
           <div class="dl-top">
             <span class="dl-badge emerald">ANDROID UYGULAMASI</span>
-            <span id="androidVersionText" class="dl-ver">v4.1 · Güncel</span>
+            <span id="androidVersionText" class="dl-ver">v4.2 · Güncel</span>
           </div>
           <h3 class="dl-title">ShortBan Android APK</h3>
           <p class="dl-desc">
@@ -62,7 +61,7 @@
         <div class="dl-box pc-box">
           <div class="dl-top">
             <span class="dl-badge neutral">OTOMATİK KURULUM & GÜNCELLEME</span>
-            <span class="dl-ver">v4.1 PC · Manifest V3</span>
+            <span class="dl-ver">v4.2 · Güncel</span>
           </div>
           <h3 class="dl-title">ShortBan Bilgisayar Eklentisi</h3>
           <p class="dl-desc">
@@ -162,12 +161,12 @@
 
       <!-- SAĞ SÜTUN: KORUMA PLATFORMLARI + PIN KİLİDİ -->
       <div class="col">
-        <div class="section-header">KORUMA PLATFORMLARI (İZOLASYONLU MODÜLLER)</div>
+        <div class="section-header">KORUMA PLATFORMLARI</div>
         <div class="card platforms-card">
           <!-- 1. Instagram -->
           <div class="platform-row">
             <div class="platform-info">
-              <div class="platform-name">Instagram <span class="module-tag">scrollblock/insta</span></div>
+              <div class="platform-name">Instagram</div>
               <div class="platform-desc">Reels sekmesini ve Keşfet videolarını engeller (uygulamadan atmaz)</div>
             </div>
             <label class="minimal-switch">
@@ -205,7 +204,7 @@
           <!-- 2. TikTok -->
           <div class="platform-row">
             <div class="platform-info">
-              <div class="platform-name">TikTok <span class="module-tag">scrollblock/tiktok</span></div>
+              <div class="platform-name">TikTok</div>
               <div class="platform-desc">Sizin İçin akışını Mesajlar'a yönlendirir, profillere dokunmaz</div>
             </div>
             <label class="minimal-switch">
@@ -243,7 +242,7 @@
           <!-- 3. YouTube Shorts -->
           <div class="platform-row">
             <div class="platform-info">
-              <div class="platform-name">YouTube Shorts <span class="module-tag">scrollblock/yt</span></div>
+              <div class="platform-name">YouTube Shorts</div>
               <div class="platform-desc">Shorts oynatıcısını ve raflarını kapatır, normal uzun videolar çalışır</div>
             </div>
             <label class="minimal-switch">
@@ -277,6 +276,16 @@
               <span class="slider"></span>
             </label>
           </div>
+
+          <div class="divider"></div>
+
+          <div class="platform-row" id="openWebPrivacyModalRow" style="cursor: pointer;">
+            <div class="platform-info">
+              <div class="platform-name">Gizlilik Politikası ve Açık Rıza Beyanı</div>
+              <div class="platform-desc">Sıfır veri toplama taahhüdü ve izin kullanım detaylarını görüntüleyin.</div>
+            </div>
+            <button id="openWebPrivacyModalBtn" class="chip-btn">Oku</button>
+          </div>
         </div>
       </div>
     </div>
@@ -298,6 +307,38 @@
         <div class="modal-actions">
           <button id="pinCancelBtn" class="btn-outline">İptal</button>
           <button id="pinConfirmBtn" class="btn-primary">Onayla</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEB AÇIK RIZA VE GİZLİLİK POLİTİKASI MODALI (MOBİL UYGULAMADAKİ İLE BİREBİR AYNI METİN) -->
+    <div id="webPrivacyModalBackdrop" class="modal-backdrop" style="display: none;">
+      <div class="modal-card" style="max-width: 540px; max-height: 85vh; overflow-y: auto;">
+        <h3 class="card-title">Açık Rıza ve Gizlilik Politikası Beyanı</h3>
+        <p class="card-sub" style="color: #d4d4d8; line-height: 1.6;">
+          <strong>ShortBan</strong>, yalnızca seçtiğiniz platformlardaki (Instagram Reels, TikTok, YouTube Shorts) kısa video akışlarını ve yorum pencerelerini tespit edip sizi güvenli sekmeye yönlendirmek için çalışır.
+        </p>
+        <div style="background: #17171c; border: 1px solid #26262e; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; font-size: 12.5px; color: #d4d4d8; line-height: 1.55;">
+          <div>
+            <strong style="color: #ffffff;">1. Erişilebilirlik ve Tarayıcı İzni Açık Rıza Beyanı:</strong><br />
+            Uygulama yalnızca hedef platformlarda (Instagram, TikTok, YouTube) kısa video ekranlarının veya yorum pencerelerinin açıldığını tespit etmek için arayüz kimliklerini anlık kontrol eder. YouTube Music ve diğer uygulamalara dokunulmaz.
+          </div>
+          <div>
+            <strong style="color: #ffffff;">2. Sıfır Veri Toplama ve Aktarım Taahhüdü:</strong><br />
+            Hiçbir kişisel veriniz, mesajınız, şifreniz, ekran görüntünüz veya gezinme geçmişiniz kaydedilmez, toplanmaz, uzak sunuculara gönderilmez ve üçüncü taraflarla paylaşılmaz. Tüm işlemler %100 cihazınızın içinde gerçekleşir.
+          </div>
+          <div>
+            <strong style="color: #ffffff;">3. Cihaz İçi Yerel Tercihler:</strong><br />
+            Koruma anahtarları, mola süreleri, engellenen akış sayacı ve isteğe bağlı 4 haneli PIN kilidi yalnızca cihazınızın kendi yerel hafızasında saklanır.
+          </div>
+          <div>
+            <strong style="color: #ffffff;">4. Reklam ve Analitik Yoktur:</strong><br />
+            ShortBan içerisinde hiçbir reklam SDK'sı, kullanıcı takip aracı (tracker) veya üçüncü taraf analitik servisi bulunmamaktadır.
+          </div>
+        </div>
+        <div class="modal-actions">
+          <a href="privacy.html" class="btn-outline" style="text-decoration: none;">Tam Sayfa Görünümü</a>
+          <button id="closeWebPrivacyModalBtn" class="btn-primary">Anladım ve Kapat</button>
         </div>
       </div>
     </div>
@@ -332,11 +373,10 @@
     </div>
 
     <footer class="footer">
-      <span>ShortBan v4.1 · vsolken.com/shortban · Kısa Video & Toksik Yorum Kalkanı · <a href="privacy.html" style="color: #9e9ea8; text-decoration: underline;">Gizlilik Politikası (Privacy Policy)</a></span>
+      <span>ShortBan v4.2 · Kısa Video & Toksik Yorum Kalkanı · <a href="privacy.html" style="color: #9e9ea8; text-decoration: underline;">Gizlilik Politikası ve Açık Rıza Beyanı</a></span>
     </footer>
   </div>
 
   <script src="app.js"></script>
 </body>
 </html>
-
