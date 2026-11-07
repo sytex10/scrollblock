@@ -1,6 +1,7 @@
 /**
  * ShortBan PC — Instagram Reels, Keşfet & Yorum Engelleyici (Tamamen İzole Modül: scrollblock/insta)
- *  - "Yorumları Engelle (Yorum Kalkanı)" AÇIK ise: Yorumlar açıldığında yorum alanı bembeyaz (#FFFFFF) boş kalır.
+ *  - "Yorumları Engelle (Yorum Kalkanı)" AÇIK ise: Yorumlar açıldığında yalnızca sağdaki/alttaki yorum alanı
+ *    bembeyaz (#FFFFFF) boş kalır; çoklu/kaydırmalı (carousel) gönderi fotoğraflarına (ul._acay) kesinlikle dokunmaz!
  */
 (function () {
   "use strict";
@@ -22,20 +23,20 @@
         commentStyleEl = document.createElement("style");
         commentStyleEl.id = "shortban-instagram-comment-shield";
         commentStyleEl.textContent = `
+          /* Yalnızca yorum listesi kapsayıcılarını bembeyaz yap (kaydırmalı foto/video ul._acay hariç) */
           ul._a9z6,
-          div._ae5q,
-          div[role="dialog"] ul {
+          ul._a9ym,
+          div._ae5q {
             background: #FFFFFF !important;
             background-color: #FFFFFF !important;
-            min-height: 180px !important;
             pointer-events: none !important;
           }
           ul._a9z6 *,
+          ul._a9ym *,
           div._ae5q *,
           section._aamu form,
           form textarea[aria-label*="yorum" i],
-          form textarea[aria-label*="comment" i],
-          div[role="dialog"] ul * {
+          form textarea[aria-label*="comment" i] {
             visibility: hidden !important;
             opacity: 0 !important;
             pointer-events: none !important;
