@@ -12,7 +12,7 @@
     <header class="topbar">
       <div class="brand-group">
         <span class="brand-logo">scrollblock</span>
-        <span id="versionBadge" class="version-tag">v3.6</span>
+        <span id="versionBadge" class="version-tag">v3.7</span>
         <span class="domain-tag">vsolken.com</span>
       </div>
       <div id="extensionStatusPill" class="status-pill warning">
@@ -39,7 +39,7 @@
         <div class="dl-box android-box">
           <div class="dl-top">
             <span class="dl-badge emerald">ANDROID UYGULAMASI</span>
-            <span id="androidVersionText" class="dl-ver">v3.6 · Güncel</span>
+            <span id="androidVersionText" class="dl-ver">v3.7 · Güncel</span>
           </div>
           <h3 class="dl-title">ScrollBlock Android APK</h3>
           <p class="dl-desc">
@@ -60,7 +60,7 @@
         <div class="dl-box pc-box">
           <div class="dl-top">
             <span class="dl-badge neutral">CHROME · EDGE · BRAVE · OPERA</span>
-            <span class="dl-ver">v3.6 PC · Manifest V3</span>
+            <span class="dl-ver">v3.7 PC · Manifest V3</span>
           </div>
           <h3 class="dl-title">ScrollBlock Bilgisayar Eklentisi</h3>
           <p class="dl-desc">
@@ -158,7 +158,7 @@
           <!-- 1. Instagram -->
           <div class="platform-row">
             <div class="platform-info">
-              <div class="platform-name">Instagram <span class="module-tag">detector/instagram</span></div>
+              <div class="platform-name">Instagram <span class="module-tag">scrollblock/insta</span></div>
               <div class="platform-desc">Reels sekmesini ve Keşfet videolarını engeller (uygulamadan atmaz)</div>
             </div>
             <label class="minimal-switch">
@@ -179,12 +179,24 @@
             </label>
           </div>
 
+          <div class="dm-sub-row">
+            <div class="dm-bar"></div>
+            <div class="platform-info">
+              <div class="dm-title">Yorumları engelle (Yorum Kalkanı)</div>
+              <div class="dm-desc">Gönderi ve Reels yorumlar penceresini otomatik olarak kapatır ve gizler.</div>
+            </div>
+            <label class="minimal-switch">
+              <input type="checkbox" id="webToggleInstagramComments" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
           <div class="divider"></div>
 
           <!-- 2. TikTok -->
           <div class="platform-row">
             <div class="platform-info">
-              <div class="platform-name">TikTok <span class="module-tag">detector/tiktok</span></div>
+              <div class="platform-name">TikTok <span class="module-tag">scrollblock/tiktok</span></div>
               <div class="platform-desc">Sizin İçin akışını Mesajlar'a yönlendirir, profillere dokunmaz</div>
             </div>
             <label class="minimal-switch">
@@ -205,16 +217,40 @@
             </label>
           </div>
 
+          <div class="dm-sub-row">
+            <div class="dm-bar"></div>
+            <div class="platform-info">
+              <div class="dm-title">Yorumları engelle (Yorum Kalkanı)</div>
+              <div class="dm-desc">TikTok video yorumları penceresini otomatik olarak kapatır ve gizler.</div>
+            </div>
+            <label class="minimal-switch">
+              <input type="checkbox" id="webToggleTikTokComments" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
           <div class="divider"></div>
 
           <!-- 3. YouTube Shorts -->
           <div class="platform-row">
             <div class="platform-info">
-              <div class="platform-name">YouTube Shorts <span class="module-tag">detector/youtube</span></div>
+              <div class="platform-name">YouTube Shorts <span class="module-tag">scrollblock/yt</span></div>
               <div class="platform-desc">Shorts oynatıcısını ve raflarını kapatır, normal uzun videolar çalışır</div>
             </div>
             <label class="minimal-switch">
               <input type="checkbox" id="webToggleYouTube" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="dm-sub-row">
+            <div class="dm-bar"></div>
+            <div class="platform-info">
+              <div class="dm-title">Yorumları engelle (Yorum Kalkanı)</div>
+              <div class="dm-desc">Uzun videolarda ve Shorts'ta yorumlar bölümünü otomatik olarak kapatır ve gizler.</div>
+            </div>
+            <label class="minimal-switch">
+              <input type="checkbox" id="webToggleYouTubeComments" />
               <span class="slider"></span>
             </label>
           </div>

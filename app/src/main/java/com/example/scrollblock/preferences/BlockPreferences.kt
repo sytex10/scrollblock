@@ -27,6 +27,15 @@ class BlockPreferences(context: Context) {
     private val _isTikTokDmVideosAllowed = MutableStateFlow(isTikTokDmVideosAllowedSync())
     val isTikTokDmVideosAllowed: StateFlow<Boolean> = _isTikTokDmVideosAllowed.asStateFlow()
 
+    private val _isInstagramCommentsBlocked = MutableStateFlow(isInstagramCommentsBlockedSync())
+    val isInstagramCommentsBlocked: StateFlow<Boolean> = _isInstagramCommentsBlocked.asStateFlow()
+
+    private val _isTikTokCommentsBlocked = MutableStateFlow(isTikTokCommentsBlockedSync())
+    val isTikTokCommentsBlocked: StateFlow<Boolean> = _isTikTokCommentsBlocked.asStateFlow()
+
+    private val _isYouTubeCommentsBlocked = MutableStateFlow(isYouTubeCommentsBlockedSync())
+    val isYouTubeCommentsBlocked: StateFlow<Boolean> = _isYouTubeCommentsBlocked.asStateFlow()
+
     private val _totalBlockedCount = MutableStateFlow(getTotalBlockedCountSync())
     val totalBlockedCount: StateFlow<Int> = _totalBlockedCount.asStateFlow()
 
@@ -70,6 +79,15 @@ class BlockPreferences(context: Context) {
     fun isTikTokDmVideosAllowedSync(): Boolean =
         prefs.getBoolean(KEY_TIKTOK_DM_VIDEOS_ALLOWED, true)
 
+    fun isInstagramCommentsBlockedSync(): Boolean =
+        prefs.getBoolean(KEY_INSTAGRAM_COMMENTS_BLOCKED, false)
+
+    fun isTikTokCommentsBlockedSync(): Boolean =
+        prefs.getBoolean(KEY_TIKTOK_COMMENTS_BLOCKED, false)
+
+    fun isYouTubeCommentsBlockedSync(): Boolean =
+        prefs.getBoolean(KEY_YOUTUBE_COMMENTS_BLOCKED, false)
+
     fun getTotalBlockedCountSync(): Int =
         prefs.getInt(KEY_TOTAL_BLOCKED_COUNT, 0)
 
@@ -102,6 +120,21 @@ class BlockPreferences(context: Context) {
     fun setTikTokDmVideosAllowed(allowed: Boolean) {
         prefs.edit().putBoolean(KEY_TIKTOK_DM_VIDEOS_ALLOWED, allowed).apply()
         _isTikTokDmVideosAllowed.value = allowed
+    }
+
+    fun setInstagramCommentsBlocked(blocked: Boolean) {
+        prefs.edit().putBoolean(KEY_INSTAGRAM_COMMENTS_BLOCKED, blocked).apply()
+        _isInstagramCommentsBlocked.value = blocked
+    }
+
+    fun setTikTokCommentsBlocked(blocked: Boolean) {
+        prefs.edit().putBoolean(KEY_TIKTOK_COMMENTS_BLOCKED, blocked).apply()
+        _isTikTokCommentsBlocked.value = blocked
+    }
+
+    fun setYouTubeCommentsBlocked(blocked: Boolean) {
+        prefs.edit().putBoolean(KEY_YOUTUBE_COMMENTS_BLOCKED, blocked).apply()
+        _isYouTubeCommentsBlocked.value = blocked
     }
 
     // --- Mola / Cooldown Yönetimi ---
@@ -253,6 +286,9 @@ class BlockPreferences(context: Context) {
         private const val KEY_TIKTOK_ENABLED = "pref_tiktok_feed_enabled"
         private const val KEY_INSTAGRAM_DM_REELS_ALLOWED = "pref_instagram_dm_reels_allowed"
         private const val KEY_TIKTOK_DM_VIDEOS_ALLOWED = "pref_tiktok_dm_videos_allowed"
+        private const val KEY_INSTAGRAM_COMMENTS_BLOCKED = "pref_instagram_comments_blocked"
+        private const val KEY_TIKTOK_COMMENTS_BLOCKED = "pref_tiktok_comments_blocked"
+        private const val KEY_YOUTUBE_COMMENTS_BLOCKED = "pref_youtube_comments_blocked"
         private const val KEY_TOTAL_BLOCKED_COUNT = "pref_total_blocked_count"
         private const val KEY_LAST_BLOCKED_PLATFORM = "pref_last_blocked_platform"
         private const val KEY_LAST_BLOCKED_TIMESTAMP = "pref_last_blocked_timestamp"

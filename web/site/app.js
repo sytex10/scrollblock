@@ -13,9 +13,12 @@
   const defaultState = {
     isInstagramEnabled: true,
     isInstagramDmAllowed: true,
+    isInstagramCommentsBlocked: false,
     isTikTokEnabled: true,
     isTikTokDmAllowed: true,
+    isTikTokCommentsBlocked: false,
     isYouTubeEnabled: true,
+    isYouTubeCommentsBlocked: false,
     totalBlockedCount: 0,
     lastBlockedPlatform: "",
     lastBlockedTimestamp: 0,
@@ -54,13 +57,16 @@
 
   const webToggleInstagram = document.getElementById("webToggleInstagram");
   const webToggleInstagramDm = document.getElementById("webToggleInstagramDm");
+  const webToggleInstagramComments = document.getElementById("webToggleInstagramComments");
   const webIgDmRow = document.getElementById("webIgDmRow");
 
   const webToggleTikTok = document.getElementById("webToggleTikTok");
   const webToggleTikTokDm = document.getElementById("webToggleTikTokDm");
+  const webToggleTikTokComments = document.getElementById("webToggleTikTokComments");
   const webTtDmRow = document.getElementById("webTtDmRow");
 
   const webToggleYouTube = document.getElementById("webToggleYouTube");
+  const webToggleYouTubeComments = document.getElementById("webToggleYouTubeComments");
   const webTogglePin = document.getElementById("webTogglePin");
   const pinStatusDesc = document.getElementById("pinStatusDesc");
 
@@ -184,13 +190,16 @@
 
     webToggleInstagram.checked = state.isInstagramEnabled !== false;
     webToggleInstagramDm.checked = state.isInstagramDmAllowed !== false;
+    webToggleInstagramComments.checked = Boolean(state.isInstagramCommentsBlocked);
     webIgDmRow.style.display = webToggleInstagram.checked ? "flex" : "none";
 
     webToggleTikTok.checked = state.isTikTokEnabled !== false;
     webToggleTikTokDm.checked = state.isTikTokDmAllowed !== false;
+    webToggleTikTokComments.checked = Boolean(state.isTikTokCommentsBlocked);
     webTtDmRow.style.display = webToggleTikTok.checked ? "flex" : "none";
 
     webToggleYouTube.checked = state.isYouTubeEnabled !== false;
+    webToggleYouTubeComments.checked = Boolean(state.isYouTubeCommentsBlocked);
 
     webTogglePin.checked = Boolean(state.isPinEnabled && state.pinCode);
     pinStatusDesc.textContent = webTogglePin.checked
@@ -304,6 +313,42 @@
       });
     } else {
       saveState({ isYouTubeEnabled: true });
+    }
+  });
+
+  webToggleInstagramComments.addEventListener("change", () => {
+    const target = webToggleInstagramComments.checked;
+    if (!target) {
+      webToggleInstagramComments.checked = true;
+      executeProtected("Instagram Yorum Kalkanı", "Yorum kalkanını kapatmak için PIN girin.", () => {
+        saveState({ isInstagramCommentsBlocked: false });
+      });
+    } else {
+      saveState({ isInstagramCommentsBlocked: true });
+    }
+  });
+
+  webToggleTikTokComments.addEventListener("change", () => {
+    const target = webToggleTikTokComments.checked;
+    if (!target) {
+      webToggleTikTokComments.checked = true;
+      executeProtected("TikTok Yorum Kalkanı", "Yorum kalkanını kapatmak için PIN girin.", () => {
+        saveState({ isTikTokCommentsBlocked: false });
+      });
+    } else {
+      saveState({ isTikTokCommentsBlocked: true });
+    }
+  });
+
+  webToggleYouTubeComments.addEventListener("change", () => {
+    const target = webToggleYouTubeComments.checked;
+    if (!target) {
+      webToggleYouTubeComments.checked = true;
+      executeProtected("YouTube Yorum Kalkanı", "Yorum kalkanını kapatmak için PIN girin.", () => {
+        saveState({ isYouTubeCommentsBlocked: false });
+      });
+    } else {
+      saveState({ isYouTubeCommentsBlocked: true });
     }
   });
 

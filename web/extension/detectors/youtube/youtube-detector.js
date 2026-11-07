@@ -1,6 +1,7 @@
 /**
- * ScrollBlock PC — YouTube Shorts Engelleyici (Tamamen İzole Modül: detectors/youtube)
- *  - Bu dosyadaki hiçbir değişiklik Instagram veya TikTok modüllerini etkilemez.
+ * ScrollBlock PC — YouTube Shorts & Yorum Engelleyici (Tamamen İzole Modül: scrollblock/yt)
+ *  - Bu dosyadaki hiçbir değişiklik Instagram (scrollblock/insta) veya TikTok (scrollblock/tiktok) modüllerini etkilemez.
+ *  - "Yorumları Engelle (Yorum Kalkanı)" AÇIK ise: YouTube videolarının altındaki yorum bölümünü (#comments) gizler.
  *  - youtube.com/shorts/* adreslerini anında yakalar ve YouTube Ana Sayfasına yönlendirir.
  *  - Ana sayfa ve yan menüdeki Shorts raflarını/sekmesini gizler; normal uzun videolara (%100) dokunmaz.
  */
@@ -10,13 +11,10 @@
   const PLATFORM_NAME = "YouTube Shorts";
   let lastBlockTime = 0;
   let styleElement = null;
+  let commentStyleElement = null;
 
-  function isProtectedAndActive(state) {
-    if (!state) return true;
-    if (state.isBreakActive && Date.now() < (state.breakEndTimeMs || 0)) {
-      return false;
-    }
-    return state.isYouTubeEnabled !== false;
+  function isBreakRunning(state) {
+    return Boolean(state && state.isBreakActive && Date.now() < (state.breakEndTimeMs || 0));
   }
 
   function applyShortsShelfHiding(enabled) {
@@ -40,11 +38,39 @@
     }
   }
 
+  function applyYouTubeCommentShield(blocked) {
+    if (blocked) {
+      if (!commentStyleElement) {
+        commentStyleElement = document.createElement("style");
+        commentStyleElement.id = "scrollblock-youtube-comment-shield";
+        commentStyleElement.textContent = `
+          #comments,
+          ytd-comments,
+          ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-comments-section"] {
+            display: none !important;
+          }
+        `;
+        (document.head || document.documentElement).appendChild(commentStyleElement);
+      }
+    } else if (commentStyleElement) {
+      commentStyleElement.remove();
+      commentStyleElement = null;
+    }
+  }
+
   function checkAndBlockYoutubeShorts() {
     chrome.storage.local.get(
-      ["isYouTubeEnabled", "isBreakActive", "breakEndTimeMs"],
+      ["isYouTubeEnabled", "isYouTubeCommentsBlocked", "isBreakActive", "breakEndTimeMs"],
       (state) => {
-        const active = isProtectedAndActive(state);
+        if (isBreakRunning(state)) {
+          applyShortsShelfHiding(false);
+          applyYouTubeCommentShield(false);
+          return;
+        }
+
+        applyYouTubeCommentShield(Boolean(state && state.isYouTubeCommentsBlocked));
+
+        const active = !state || state.isYouTubeEnabled !== false;
         applyShortsShelfHiding(active);
         if (!active) return;
 
@@ -75,4 +101,3 @@
     checkAndBlockYoutubeShorts();
   });
 })();
-

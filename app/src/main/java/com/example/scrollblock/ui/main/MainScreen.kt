@@ -98,6 +98,9 @@ fun MainScreen(
     val isTikTokEnabled by viewModel.isTikTokEnabled.collectAsStateWithLifecycle()
     val isInstagramDmReelsAllowed by viewModel.isInstagramDmReelsAllowed.collectAsStateWithLifecycle()
     val isTikTokDmVideosAllowed by viewModel.isTikTokDmVideosAllowed.collectAsStateWithLifecycle()
+    val isInstagramCommentsBlocked by viewModel.isInstagramCommentsBlocked.collectAsStateWithLifecycle()
+    val isTikTokCommentsBlocked by viewModel.isTikTokCommentsBlocked.collectAsStateWithLifecycle()
+    val isYouTubeCommentsBlocked by viewModel.isYouTubeCommentsBlocked.collectAsStateWithLifecycle()
 
     val totalBlockedCount by viewModel.totalBlockedCount.collectAsStateWithLifecycle()
     val lastBlockedPlatform by viewModel.lastBlockedPlatform.collectAsStateWithLifecycle()
@@ -289,6 +292,16 @@ fun MainScreen(
                         viewModel.setInstagramDmReelsAllowed(false)
                     }
                 },
+                isInstagramCommentsBlocked = isInstagramCommentsBlocked,
+                onInstagramCommentsToggle = { blocked ->
+                    if (!blocked) {
+                        executeProtectedAction(subtitle = "Instagram yorum kalkanını kapatmak için PIN girin.") {
+                            viewModel.setInstagramCommentsBlocked(false)
+                        }
+                    } else {
+                        viewModel.setInstagramCommentsBlocked(true)
+                    }
+                },
                 isTikTokEnabled = isTikTokEnabled,
                 onTikTokToggle = { enabled ->
                     if (!enabled) {
@@ -309,6 +322,16 @@ fun MainScreen(
                         viewModel.setTikTokDmVideosAllowed(false)
                     }
                 },
+                isTikTokCommentsBlocked = isTikTokCommentsBlocked,
+                onTikTokCommentsToggle = { blocked ->
+                    if (!blocked) {
+                        executeProtectedAction(subtitle = "TikTok yorum kalkanını kapatmak için PIN girin.") {
+                            viewModel.setTikTokCommentsBlocked(false)
+                        }
+                    } else {
+                        viewModel.setTikTokCommentsBlocked(true)
+                    }
+                },
                 isYouTubeEnabled = isYouTubeEnabled,
                 onYouTubeToggle = { enabled ->
                     if (!enabled) {
@@ -317,6 +340,16 @@ fun MainScreen(
                         }
                     } else {
                         viewModel.setYouTubeEnabled(true)
+                    }
+                },
+                isYouTubeCommentsBlocked = isYouTubeCommentsBlocked,
+                onYouTubeCommentsToggle = { blocked ->
+                    if (!blocked) {
+                        executeProtectedAction(subtitle = "YouTube yorum kalkanını kapatmak için PIN girin.") {
+                            viewModel.setYouTubeCommentsBlocked(false)
+                        }
+                    } else {
+                        viewModel.setYouTubeCommentsBlocked(true)
                     }
                 }
             )
@@ -1037,12 +1070,18 @@ private fun PlatformsGroupCard(
     onInstagramToggle: (Boolean) -> Unit,
     isInstagramDmReelsAllowed: Boolean,
     onInstagramDmReelsToggle: (Boolean) -> Unit,
+    isInstagramCommentsBlocked: Boolean,
+    onInstagramCommentsToggle: (Boolean) -> Unit,
     isTikTokEnabled: Boolean,
     onTikTokToggle: (Boolean) -> Unit,
     isTikTokDmVideosAllowed: Boolean,
     onTikTokDmVideosToggle: (Boolean) -> Unit,
+    isTikTokCommentsBlocked: Boolean,
+    onTikTokCommentsToggle: (Boolean) -> Unit,
     isYouTubeEnabled: Boolean,
-    onYouTubeToggle: (Boolean) -> Unit
+    onYouTubeToggle: (Boolean) -> Unit,
+    isYouTubeCommentsBlocked: Boolean,
+    onYouTubeCommentsToggle: (Boolean) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -1068,6 +1107,13 @@ private fun PlatformsGroupCard(
             )
         }
 
+        DmSubSettingRow(
+            title = "Yorumları engelle (Yorum Kalkanı)",
+            subtitle = "Gönderi ve Reels yorumlar penceresi açıldığında otomatik olarak kapatır.",
+            checked = isInstagramCommentsBlocked,
+            onCheckedChange = onInstagramCommentsToggle
+        )
+
         HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
 
         // 2. TikTok
@@ -1087,6 +1133,13 @@ private fun PlatformsGroupCard(
             )
         }
 
+        DmSubSettingRow(
+            title = "Yorumları engelle (Yorum Kalkanı)",
+            subtitle = "Video yorumları penceresi açıldığında otomatik olarak kapatır.",
+            checked = isTikTokCommentsBlocked,
+            onCheckedChange = onTikTokCommentsToggle
+        )
+
         HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
 
         // 3. YouTube Shorts
@@ -1095,6 +1148,13 @@ private fun PlatformsGroupCard(
             subtitle = "Shorts oynatıcısını kapatır, normal uzun videolar çalışır",
             checked = isYouTubeEnabled,
             onCheckedChange = onYouTubeToggle
+        )
+
+        DmSubSettingRow(
+            title = "Yorumları engelle (Yorum Kalkanı)",
+            subtitle = "Uzun videolarda ve Shorts'ta yorumlar paneli açıldığında otomatik kapatır.",
+            checked = isYouTubeCommentsBlocked,
+            onCheckedChange = onYouTubeCommentsToggle
         )
     }
 }

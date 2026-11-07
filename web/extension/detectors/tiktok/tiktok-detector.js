@@ -1,6 +1,7 @@
 /**
- * ScrollBlock PC — TikTok Engelleyici (Tamamen İzole Modül: detectors/tiktok)
- *  - Bu dosyadaki hiçbir değişiklik Instagram veya YouTube Shorts modüllerini etkilemez.
+ * ScrollBlock PC — TikTok & Yorum Engelleyici (Tamamen İzole Modül: scrollblock/tiktok)
+ *  - Bu dosyadaki hiçbir değişiklik Instagram (scrollblock/insta) veya YouTube (scrollblock/yt) modüllerini etkilemez.
+ *  - "Yorumları Engelle (Yorum Kalkanı)" AÇIK ise: TikTok video yorumlarını ve yorum çekmecesini gizler.
  *  - TikTok Ana Sayfa (Sizin İçin / For You) ve Keşfet akışını -> Mesajlar (/messages) ekranına yönlendirir.
  *  - Mesajlar (/messages), Kullanıcı Profilleri (/@kullanici), Hikayeler ve Ayarlar -> %100 Serbesttir.
  *  - DM'den (/messages) açılan tam ekran videolarda:
@@ -14,13 +15,33 @@
   let lastBlockTime = 0;
   let inDmContext = false;
   let allowedDmVideoPath = null;
+  let commentStyleEl = null;
 
-  function isProtectedAndActive(state) {
-    if (!state) return true;
-    if (state.isBreakActive && Date.now() < (state.breakEndTimeMs || 0)) {
-      return false;
+  function isBreakRunning(state) {
+    return Boolean(state && state.isBreakActive && Date.now() < (state.breakEndTimeMs || 0));
+  }
+
+  function applyTikTokCommentShield(blocked) {
+    if (blocked) {
+      if (!commentStyleEl) {
+        commentStyleEl = document.createElement("style");
+        commentStyleEl.id = "scrollblock-tiktok-comment-shield";
+        commentStyleEl.textContent = `
+          [data-e2e="comment-list"],
+          [data-e2e="comment-level-1"],
+          [data-e2e="comment-input"],
+          [class*="DivCommentListContainer"],
+          [class*="DivCommentContainer"],
+          [class*="DivCommentFooter"] {
+            display: none !important;
+          }
+        `;
+        (document.head || document.documentElement).appendChild(commentStyleEl);
+      }
+    } else if (commentStyleEl) {
+      commentStyleEl.remove();
+      commentStyleEl = null;
     }
-    return state.isTikTokEnabled !== false;
   }
 
   function recordAndRedirect(targetUrl, reason) {
@@ -38,9 +59,22 @@
 
   function evaluateTikTokPage() {
     chrome.storage.local.get(
-      ["isTikTokEnabled", "isTikTokDmAllowed", "isBreakActive", "breakEndTimeMs"],
+      [
+        "isTikTokEnabled",
+        "isTikTokDmAllowed",
+        "isTikTokCommentsBlocked",
+        "isBreakActive",
+        "breakEndTimeMs"
+      ],
       (state) => {
-        if (!isProtectedAndActive(state)) return;
+        if (isBreakRunning(state)) {
+          applyTikTokCommentShield(false);
+          return;
+        }
+
+        applyTikTokCommentShield(Boolean(state && state.isTikTokCommentsBlocked));
+
+        if (state && state.isTikTokEnabled === false) return;
 
         const path = window.location.pathname || "/";
 
@@ -55,15 +89,13 @@
         if (path.startsWith("/@")) {
           const isSingleVideoUrl = path.includes("/video/");
           if (!isSingleVideoUrl) {
-            // Kullanıcı profili ızgarası -> Serbest
             inDmContext = false;
             allowedDmVideoPath = null;
             return;
           }
 
-          // Eğer DM sohbetinden tıklandıysa tek-video kuralını uygula
           if (inDmContext) {
-            const dmAllowed = state.isTikTokDmAllowed !== false;
+            const dmAllowed = !state || state.isTikTokDmAllowed !== false;
             if (!dmAllowed) {
               recordAndRedirect("https://www.tiktok.com/messages", "TikTok DM Video (Kapalı) -> Mesajlar");
               return;
@@ -87,7 +119,7 @@
           return;
         }
 
-        // 4. Ana Sayfa (Sizin İçin / Following / Explore / Live) -> Mesajlar (Gelen Kutusu) sekmesine yönlendir
+        // 4. Ana Sayfa (Sizin İçin / Following / Explore / Live) -> Mesajlar sekmesine yönlendir
         if (
           path === "/" ||
           path.startsWith("/foryou") ||
@@ -111,4 +143,3 @@
     evaluateTikTokPage();
   });
 })();
-

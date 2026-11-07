@@ -11,8 +11,15 @@ android {
         applicationId = "com.scrollblock.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 27
-        versionName = "3.6"
+        versionCode = 28
+        versionName = "3.7"
+    }
+
+    sourceSets {
+        getByName("main") {
+            java.directories.addAll(listOf("../insta", "../tiktok", "../yt"))
+            kotlin.directories.addAll(listOf("../insta", "../tiktok", "../yt"))
+        }
     }
 
     signingConfigs {

@@ -11,8 +11,9 @@ import com.example.scrollblock.preferences.BlockPreferences
 import kotlin.math.abs
 
 /**
- * Instagram Reels Engelleyici (Tamamen İzole Modül - detector/instagram):
- *  - Bu sınıftaki hiçbir değişiklik TikTok veya YouTube Shorts modüllerini etkilemez.
+ * Instagram Reels & Yorum Engelleyici (Tamamen İzole Modül - scrollblock/insta):
+ *  - Bu klasördeki hiçbir değişiklik TikTok (scrollblock/tiktok) veya YouTube (scrollblock/yt) modüllerini etkilemez.
+ *  - "Yorumları Engelle" AÇIK ise: Gönderi veya Reels yorum penceresi açıldığı an 1 kez GERİ basarak kapatır.
  *  - Alt bardaki Reels sekmesi seçiliyse -> Ana Sayfa sekmesine geçiş (uygulamadan ASLA ATMAZ).
  *  - Ana Sayfa akışı (alt bar gizlense bile normal kaydırma, gönderi/Reels izleme), Hikayeler,
  *    DM sohbet ekranı, Arama/Keşfet ızgarası ve Profil -> %100 SERBESTTİR ve ASLA GERİ BASMAZ.
@@ -25,7 +26,8 @@ import kotlin.math.abs
  */
 class InstagramReelsDetector(
     private val preferences: BlockPreferences,
-    private val singleReelGuard: InstagramSingleReelGuard = InstagramSingleReelGuard()
+    private val singleReelGuard: InstagramSingleReelGuard = InstagramSingleReelGuard(),
+    private val commentBlocker: InstagramCommentBlocker = InstagramCommentBlocker()
 ) : PlatformDetector {
 
     override val platformName: String = "Instagram Reels"
@@ -52,13 +54,26 @@ class InstagramReelsDetector(
         return packageName.lowercase().contains("instagram")
     }
 
-    override fun isEnabled(): Boolean = preferences.isInstagramEnabledSync()
+    override fun isEnabled(): Boolean =
+        preferences.isInstagramEnabledSync() || preferences.isInstagramCommentsBlockedSync()
 
     override fun detectShortFeed(
         rootNode: AccessibilityNodeInfo?,
         event: AccessibilityEvent?
     ): DetectionResult {
         if (rootNode == null) return DetectionResult.notDetected(platformName)
+
+        // ---- 0. YORUM KALKANI KONTROLÜ (Yorumları Engelle açıksa yorum penceresini kapat) ----
+        commentBlocker.evaluate(rootNode, preferences.isInstagramCommentsBlockedSync())?.let { commentResult ->
+            return commentResult
+        }
+
+        // Reels engelleme kapalıysa (sadece yorum engelleme açıksa) burada dur
+        if (!preferences.isInstagramEnabledSync()) {
+            awaitingOverlayExit = false
+            singleReelGuard.reset()
+            return DetectionResult.notDetected(platformName)
+        }
 
         val now = SystemClock.uptimeMillis()
 
@@ -136,7 +151,7 @@ class InstagramReelsDetector(
 
         // ---- 3. TAM EKRAN REELS İZLEYİCİSİ (DM veya Keşfet'ten açılan tam ekran Reels) ----
         val isFullScreenReelViewer = isFullScreenClipsViewer(rootNode, event, bottomBarVisible)
-        val isPagerScroll = isVerticalPagerScrollEvent(event) && !isCommentsSheetOpen(rootNode)
+        val isPagerScroll = isVerticalPagerScrollEvent(event) && !commentBlocker.isCommentsSheetOpen(rootNode)
 
         val isActiveSessionScroll = singleReelGuard.isSessionActive &&
             activeSection == ActiveSection.DM &&
@@ -237,10 +252,6 @@ class InstagramReelsDetector(
         return DetectionResult.notDetected(platformName)
     }
 
-    /**
-     * Yalnızca gerçek tam ekran Reels (ClipsViewer) oynatıcısını tespit eder.
-     * Gizli (bellekte kalmış) fragment'ları veya ızgara/akış içi küçük video önizlemelerini ASLA eşleştirmez.
-     */
     private fun isFullScreenClipsViewer(
         rootNode: AccessibilityNodeInfo,
         event: AccessibilityEvent?,
@@ -248,7 +259,6 @@ class InstagramReelsDetector(
     ): Boolean {
         if (isExploreGridOrSearchScreen(rootNode)) return false
 
-        // 1. Yalnızca GÖRÜNÜR tam ekran ClipsViewPager / ClipsViewerFragment bileşenleri
         val hasVisibleClipsPager = NodeUtils.hasVisibleViewId(
             rootNode,
             "clips_viewer_view_pager",
@@ -256,7 +266,6 @@ class InstagramReelsDetector(
         )
         if (hasVisibleClipsPager) return true
 
-        // 2. Pencere sınıf adı (ClipsViewer)
         val className = event?.className?.toString() ?: ""
         if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
             className.contains("ClipsViewer", ignoreCase = true)
@@ -264,10 +273,8 @@ class InstagramReelsDetector(
             return true
         }
 
-        // 3. Sağ kenardaki dikey Reels aksiyon sütunu (Beğen üstte + Yorum altta + Paylaş/Ses sağ kenarda)
         if (hasRightSideReelActions(rootNode)) return true
 
-        // 4. Alt bar gizliyken üst barda açıkça "Reels" başlığı varsa
         if (!bottomBarVisible && hasExactTopTitle(rootNode, "reels")) {
             return true
         }
@@ -458,13 +465,6 @@ class InstagramReelsDetector(
             rootNode, 0f, 0.25f,
             "mesajlar", "messages", "sohbetler", "chats", "istekler", "requests"
         )
-    }
-
-    private fun isCommentsSheetOpen(rootNode: AccessibilityNodeInfo): Boolean {
-        return NodeUtils.hasVisibleViewId(
-            rootNode,
-            "comment_composer", "layout_comment_thread"
-        ) || hasExactTopTitle(rootNode, "yorumlar") || hasExactTopTitle(rootNode, "comments")
     }
 
     private fun isVerticalPagerScrollEvent(event: AccessibilityEvent?): Boolean {

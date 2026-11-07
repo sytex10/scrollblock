@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "ScrollBlock — Kısa Video & Akış Kalkanı",
-  "version": "3.6.0",
-  "description": "YouTube Shorts, Instagram Reels ve TikTok kısa video akışlarını bilgisayarda engeller. DM tek-video izni, Mola modu ve PIN koruması içerir.",
+  "version": "3.7.0",
+  "description": "YouTube Shorts, Instagram Reels ve TikTok kısa video akışlarını ve toksik yorumları engeller. DM tek-video izni, Yorum Kalkanı, Mola modu ve PIN koruması içerir.",
   "permissions": [
     "storage",
     "tabs",

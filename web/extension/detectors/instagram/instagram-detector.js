@@ -1,6 +1,7 @@
 /**
- * ScrollBlock PC — Instagram Reels & Keşfet Engelleyici (Tamamen İzole Modül: detectors/instagram)
- *  - Bu dosyadaki hiçbir değişiklik TikTok veya YouTube Shorts modüllerini etkilemez.
+ * ScrollBlock PC — Instagram Reels, Keşfet & Yorum Engelleyici (Tamamen İzole Modül: scrollblock/insta)
+ *  - Bu dosyadaki hiçbir değişiklik TikTok (scrollblock/tiktok) veya YouTube (scrollblock/yt) modüllerini etkilemez.
+ *  - "Yorumları Engelle (Yorum Kalkanı)" AÇIK ise: Gönderi yorumlarını ve yorum yazma kutusunu gizler.
  *  - Alt/sol menüdeki Reels sekmesini (/reels/*) -> Ana Sayfa'ya (instagram.com) yönlendirir.
  *  - Keşfet (/explore/*) içinden açılan videoları -> İlk video dahil anında Keşfet ızgarasına döndürür.
  *  - DM sohbetinden (/direct/t/*) tıklanan Reels videoları:
@@ -16,13 +17,33 @@
   let inDmContext = false;
   let allowedDmReelUrl = null;
   let lastKnownSafeUrl = "https://www.instagram.com/";
+  let commentStyleEl = null;
 
-  function isProtectedAndActive(state) {
-    if (!state) return true;
-    if (state.isBreakActive && Date.now() < (state.breakEndTimeMs || 0)) {
-      return false;
+  function isBreakRunning(state) {
+    return Boolean(state && state.isBreakActive && Date.now() < (state.breakEndTimeMs || 0));
+  }
+
+  function applyInstagramCommentShield(blocked) {
+    if (blocked) {
+      if (!commentStyleEl) {
+        commentStyleEl = document.createElement("style");
+        commentStyleEl.id = "scrollblock-instagram-comment-shield";
+        commentStyleEl.textContent = `
+          ul._a9z6,
+          div._ae5q,
+          section._aamu form,
+          form textarea[aria-label*="yorum" i],
+          form textarea[aria-label*="comment" i],
+          div[role="dialog"] ul {
+            display: none !important;
+          }
+        `;
+        (document.head || document.documentElement).appendChild(commentStyleEl);
+      }
+    } else if (commentStyleEl) {
+      commentStyleEl.remove();
+      commentStyleEl = null;
     }
-    return state.isInstagramEnabled !== false;
   }
 
   function recordAndRedirect(targetUrl, reason) {
@@ -40,9 +61,22 @@
 
   function evaluateInstagramPage() {
     chrome.storage.local.get(
-      ["isInstagramEnabled", "isInstagramDmAllowed", "isBreakActive", "breakEndTimeMs"],
+      [
+        "isInstagramEnabled",
+        "isInstagramDmAllowed",
+        "isInstagramCommentsBlocked",
+        "isBreakActive",
+        "breakEndTimeMs"
+      ],
       (state) => {
-        if (!isProtectedAndActive(state)) return;
+        if (isBreakRunning(state)) {
+          applyInstagramCommentShield(false);
+          return;
+        }
+
+        applyInstagramCommentShield(Boolean(state && state.isInstagramCommentsBlocked));
+
+        if (state && state.isInstagramEnabled === false) return;
 
         const href = window.location.href;
         const path = window.location.pathname || "/";
@@ -82,14 +116,12 @@
 
         // 4. Doğrudan Reels sekmesi (/reels/ veya /reel/...)
         if (isReelPath) {
-          // Eğer DM sohbetinden (/direct/...) tıklandıysa:
           if (inDmContext) {
-            const dmAllowed = state.isInstagramDmAllowed !== false;
+            const dmAllowed = !state || state.isInstagramDmAllowed !== false;
             if (!dmAllowed) {
               recordAndRedirect(lastKnownSafeUrl || "https://www.instagram.com/direct/inbox/", "Instagram DM Reel (Kapalı) -> Sohbete Dön");
               return;
             }
-            // İlk DM Reels videosuna izin ver; URL değişirse (2. videoya kaydırılırsa) sohbete döndür!
             if (!allowedDmReelUrl) {
               allowedDmReelUrl = path;
               return;
@@ -102,7 +134,6 @@
             return;
           }
 
-          // DM dışından (Sol menüdeki Reels sekmesi veya Keşfet) açıldıysa anında Ana Sayfa'ya yönlendir
           recordAndRedirect("https://www.instagram.com/", "Instagram Reels Sekmesi -> Ana Sayfa");
           return;
         }
@@ -125,4 +156,3 @@
     evaluateInstagramPage();
   });
 })();
-

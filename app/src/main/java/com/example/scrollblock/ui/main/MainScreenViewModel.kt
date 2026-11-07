@@ -28,6 +28,9 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
     val isTikTokEnabled: StateFlow<Boolean> = preferences.isTikTokEnabled
     val isInstagramDmReelsAllowed: StateFlow<Boolean> = preferences.isInstagramDmReelsAllowed
     val isTikTokDmVideosAllowed: StateFlow<Boolean> = preferences.isTikTokDmVideosAllowed
+    val isInstagramCommentsBlocked: StateFlow<Boolean> = preferences.isInstagramCommentsBlocked
+    val isTikTokCommentsBlocked: StateFlow<Boolean> = preferences.isTikTokCommentsBlocked
+    val isYouTubeCommentsBlocked: StateFlow<Boolean> = preferences.isYouTubeCommentsBlocked
 
     // İstatistikler
     val totalBlockedCount: StateFlow<Int> = preferences.totalBlockedCount
@@ -93,6 +96,18 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
 
     fun setTikTokDmVideosAllowed(allowed: Boolean) {
         preferences.setTikTokDmVideosAllowed(allowed)
+    }
+
+    fun setInstagramCommentsBlocked(blocked: Boolean) {
+        preferences.setInstagramCommentsBlocked(blocked)
+    }
+
+    fun setTikTokCommentsBlocked(blocked: Boolean) {
+        preferences.setTikTokCommentsBlocked(blocked)
+    }
+
+    fun setYouTubeCommentsBlocked(blocked: Boolean) {
+        preferences.setYouTubeCommentsBlocked(blocked)
     }
 
     fun resetStatistics() {

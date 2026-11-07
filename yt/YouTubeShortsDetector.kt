@@ -8,11 +8,13 @@ import com.example.scrollblock.detector.PlatformDetector
 import com.example.scrollblock.preferences.BlockPreferences
 
 /**
- * YouTube Shorts Engelleyici (Tamamen İzole Modül - detector/youtube):
- *  - Bu sınıftaki hiçbir değişiklik Instagram veya TikTok modüllerini etkilemez.
+ * YouTube Shorts & Yorum Engelleyici (Tamamen İzole Modül - scrollblock/yt):
+ *  - Bu klasördeki hiçbir değişiklik Instagram (scrollblock/insta) veya TikTok (scrollblock/tiktok) modüllerini etkilemez.
+ *  - "Yorumları Engelle" AÇIK ise: Açılan yorumlar panelini otomatik olarak kapatır (video oynamaya devam eder).
  */
 class YouTubeShortsDetector(
-    private val preferences: BlockPreferences
+    private val preferences: BlockPreferences,
+    private val commentBlocker: YouTubeCommentBlocker = YouTubeCommentBlocker()
 ) : PlatformDetector {
 
     override val platformName: String = "YouTube Shorts"
@@ -23,13 +25,24 @@ class YouTubeShortsDetector(
         return p.contains("youtube")
     }
 
-    override fun isEnabled(): Boolean = preferences.isYouTubeEnabledSync()
+    override fun isEnabled(): Boolean =
+        preferences.isYouTubeEnabledSync() || preferences.isYouTubeCommentsBlockedSync()
 
     override fun detectShortFeed(
         rootNode: AccessibilityNodeInfo?,
         event: AccessibilityEvent?
     ): DetectionResult {
         if (rootNode == null) {
+            return DetectionResult.notDetected(platformName)
+        }
+
+        // ---- 0. YORUM KALKANI KONTROLÜ (Uzun videolarda ve Shorts'ta yorum panelini kapatır) ----
+        commentBlocker.evaluate(rootNode, preferences.isYouTubeCommentsBlockedSync())?.let { commentResult ->
+            return commentResult
+        }
+
+        // Shorts engelleme kapalıysa (sadece yorum engelleme açıksa) burada dur
+        if (!preferences.isYouTubeEnabledSync()) {
             return DetectionResult.notDetected(platformName)
         }
 

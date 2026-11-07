@@ -11,8 +11,9 @@ import com.example.scrollblock.preferences.BlockPreferences
 import kotlin.math.abs
 
 /**
- * TikTok Engelleyici (Tamamen İzole Modül - detector/tiktok):
- *  - Bu sınıftaki hiçbir değişiklik Instagram veya YouTube Shorts modüllerini etkilemez.
+ * TikTok & Yorum Engelleyici (Tamamen İzole Modül - scrollblock/tiktok):
+ *  - Bu klasördeki hiçbir değişiklik Instagram (scrollblock/insta) veya YouTube (scrollblock/yt) modüllerini etkilemez.
+ *  - "Yorumları Engelle" AÇIK ise: Yorumlar penceresi açıldığı an 1 kez GERİ basarak kapatır.
  *  - Ana Sayfa (Sizin İçin) video akışı -> Gelen Kutusu sekmesine geçiş (uygulamadan ATMAZ).
  *  - Gelen Kutusu, Sohbet mesaj listesi, Profil, Profil düzenleme, Ayarlar, Hikayeler, Arama -> %100 SERBESTTİR.
  *  - Sohbetten (DM) tıklandığında açılan tam ekran video oynatıcı:
@@ -21,7 +22,8 @@ import kotlin.math.abs
  */
 class TikTokDetector(
     private val preferences: BlockPreferences,
-    private val singleVideoGuard: TikTokSingleVideoGuard = TikTokSingleVideoGuard()
+    private val singleVideoGuard: TikTokSingleVideoGuard = TikTokSingleVideoGuard(),
+    private val commentBlocker: TikTokCommentBlocker = TikTokCommentBlocker()
 ) : PlatformDetector {
 
     override val platformName: String = "TikTok"
@@ -47,13 +49,26 @@ class TikTokDetector(
             p.contains("aweme")
     }
 
-    override fun isEnabled(): Boolean = preferences.isTikTokEnabledSync()
+    override fun isEnabled(): Boolean =
+        preferences.isTikTokEnabledSync() || preferences.isTikTokCommentsBlockedSync()
 
     override fun detectShortFeed(
         rootNode: AccessibilityNodeInfo?,
         event: AccessibilityEvent?
     ): DetectionResult {
         if (rootNode == null) return DetectionResult.notDetected(platformName)
+
+        // ---- 0. YORUM KALKANI KONTROLÜ (Yorumları Engelle açıksa yorum penceresini kapat) ----
+        commentBlocker.evaluate(rootNode, preferences.isTikTokCommentsBlockedSync())?.let { commentResult ->
+            return commentResult
+        }
+
+        // TikTok akış engelleme kapalıysa (sadece yorum engelleme açıksa) burada dur
+        if (!preferences.isTikTokEnabledSync()) {
+            inDmChatContext = false
+            singleVideoGuard.reset()
+            return DetectionResult.notDetected(platformName)
+        }
 
         val now = SystemClock.uptimeMillis()
 
@@ -105,7 +120,7 @@ class TikTokDetector(
             "mesaj gönder", "mesaj yaz", "send a message", "type a message", "message..."
         )
         val isFullScreenVideo = !bottomBarVisible && isFullScreenDmVideoPlayer(rootNode)
-        val isPagerScroll = isVerticalPagerScrollEvent(event) && !isCommentsSheetOpen(rootNode)
+        val isPagerScroll = isVerticalPagerScrollEvent(event) && !commentBlocker.isCommentsSheetOpen(rootNode)
 
         val isDmVideoActive = (inDmChatContext || hasDmQuickReplyBar) && isFullScreenVideo
         val isActiveSessionScroll = singleVideoGuard.isSessionActive &&
@@ -226,12 +241,11 @@ class TikTokDetector(
         )
         if (hasStoryOrSearchId) return true
 
-        val hasStoryCommentInput = NodeUtils.hasVisibleTextInRegion(
+        val hasStoryReplyInput = NodeUtils.hasVisibleTextInRegion(
             rootNode, 0.78f, 1f,
-            "yorum ekle", "bir yorum ekle", "add comment", "add a comment",
             "hikayeye yanıt", "reply to story"
         )
-        if (hasStoryCommentInput) return true
+        if (hasStoryReplyInput) return true
 
         return hasExactStoryBadge(rootNode)
     }
@@ -325,16 +339,6 @@ class TikTokDetector(
         }
 
         return false
-    }
-
-    private fun isCommentsSheetOpen(rootNode: AccessibilityNodeInfo): Boolean {
-        return NodeUtils.hasVisibleViewId(
-            rootNode,
-            "comment_list", "comment_container"
-        ) || NodeUtils.hasVisibleTextInRegion(
-            rootNode, 0.20f, 0.45f,
-            "yorumlar", "comments"
-        )
     }
 
     private fun isVerticalPagerScrollEvent(event: AccessibilityEvent?): Boolean {

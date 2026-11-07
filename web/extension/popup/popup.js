@@ -6,13 +6,16 @@
 
   const toggleInstagram = document.getElementById("toggleInstagram");
   const toggleInstagramDm = document.getElementById("toggleInstagramDm");
+  const toggleInstagramComments = document.getElementById("toggleInstagramComments");
   const igDmSubRow = document.getElementById("igDmSubRow");
 
   const toggleTikTok = document.getElementById("toggleTikTok");
   const toggleTikTokDm = document.getElementById("toggleTikTokDm");
+  const toggleTikTokComments = document.getElementById("toggleTikTokComments");
   const ttDmSubRow = document.getElementById("ttDmSubRow");
 
   const toggleYouTube = document.getElementById("toggleYouTube");
+  const toggleYouTubeComments = document.getElementById("toggleYouTubeComments");
 
   const breakInactiveView = document.getElementById("breakInactiveView");
   const breakActiveView = document.getElementById("breakActiveView");
@@ -32,13 +35,16 @@
 
     toggleInstagram.checked = state.isInstagramEnabled !== false;
     toggleInstagramDm.checked = state.isInstagramDmAllowed !== false;
+    toggleInstagramComments.checked = Boolean(state.isInstagramCommentsBlocked);
     igDmSubRow.style.display = toggleInstagram.checked ? "flex" : "none";
 
     toggleTikTok.checked = state.isTikTokEnabled !== false;
     toggleTikTokDm.checked = state.isTikTokDmAllowed !== false;
+    toggleTikTokComments.checked = Boolean(state.isTikTokCommentsBlocked);
     ttDmSubRow.style.display = toggleTikTok.checked ? "flex" : "none";
 
     toggleYouTube.checked = state.isYouTubeEnabled !== false;
+    toggleYouTubeComments.checked = Boolean(state.isYouTubeCommentsBlocked);
 
     const isBreak = state.isBreakActive && Date.now() < (state.breakEndTimeMs || 0);
     if (isBreak) {
@@ -71,14 +77,23 @@
   toggleInstagramDm.addEventListener("change", () => {
     updateState({ isInstagramDmAllowed: toggleInstagramDm.checked });
   });
+  toggleInstagramComments.addEventListener("change", () => {
+    updateState({ isInstagramCommentsBlocked: toggleInstagramComments.checked });
+  });
   toggleTikTok.addEventListener("change", () => {
     updateState({ isTikTokEnabled: toggleTikTok.checked });
   });
   toggleTikTokDm.addEventListener("change", () => {
     updateState({ isTikTokDmAllowed: toggleTikTokDm.checked });
   });
+  toggleTikTokComments.addEventListener("change", () => {
+    updateState({ isTikTokCommentsBlocked: toggleTikTokComments.checked });
+  });
   toggleYouTube.addEventListener("change", () => {
     updateState({ isYouTubeEnabled: toggleYouTube.checked });
+  });
+  toggleYouTubeComments.addEventListener("change", () => {
+    updateState({ isYouTubeCommentsBlocked: toggleYouTubeComments.checked });
   });
 
   startBreakBtn.addEventListener("click", () => {

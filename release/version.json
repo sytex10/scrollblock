@@ -1,6 +1,6 @@
 {
-  "versionCode": 27,
-  "versionName": "3.6",
-  "changelog": "• Güncelleme indirme düzeltmesi: APK dosyası artık doğrudan genel İndirilenler (Dosyalarım) klasörüne 'ScrollBlock-guncelleme.apk' olarak kaydedilir ve kurulumdan sonra otomatik silinir.\n• Modüler mimari: Instagram, TikTok ve YouTube Shorts engelleyicileri birbirinden tamamen bağımsız klasörlere (instagram / tiktok / youtube) ayrıldı.",
+  "versionCode": 28,
+  "versionName": "3.7",
+  "changelog": "• YENİ ÖZELLİK — Yorumları Engelle (Toksik Yorum Kalkanı): Instagram, TikTok ve YouTube için ayrı ayrı açılabilen Yorum Kalkanı eklendi; yorumlar penceresi açıldığı an otomatik kapatır.\n• Yeni klasör yapısı: Instagram (insta/), TikTok (tiktok/) ve YouTube (yt/) modülleri doğrudan ana scrollblock klasörü altına taşındı.",
   "apkUrl": "https://raw.githubusercontent.com/sytex10/scrollblock/main/release/ScrollBlock-release.apk"
 }

@@ -6,9 +6,12 @@
 const DEFAULT_STATE = {
   isInstagramEnabled: true,
   isInstagramDmAllowed: true,
+  isInstagramCommentsBlocked: false,
   isTikTokEnabled: true,
   isTikTokDmAllowed: true,
+  isTikTokCommentsBlocked: false,
   isYouTubeEnabled: true,
+  isYouTubeCommentsBlocked: false,
   totalBlockedCount: 0,
   lastBlockedPlatform: "",
   lastBlockedTimestamp: 0,
