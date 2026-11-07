@@ -110,7 +110,7 @@
   });
 
   openWebDashboard.addEventListener("click", () => {
-    chrome.tabs.create({ url: "https://vsolken.com" });
+    chrome.tabs.create({ url: "https://vsolken.com/shortban" });
   });
 
   function refresh() {

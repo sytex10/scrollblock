@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -51,6 +52,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import com.example.scrollblock.R
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -614,23 +617,33 @@ private fun TopBarSection(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(9.dp)
         ) {
-            Text(
-                text = "shortban",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary,
-                letterSpacing = (-0.8).sp
+            Image(
+                painter = painterResource(id = R.drawable.ic_shortban_logo),
+                contentDescription = "ShortBan Logo",
+                modifier = Modifier.size(30.dp)
             )
-            Text(
-                text = "v$versionName",
-                fontSize = 11.sp,
-                fontFamily = FontFamily.Monospace,
-                color = TextMuted,
-                modifier = Modifier.padding(bottom = 3.dp)
-            )
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "shortban",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    letterSpacing = (-0.8).sp
+                )
+                Text(
+                    text = "v$versionName",
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = TextMuted,
+                    modifier = Modifier.padding(bottom = 3.dp)
+                )
+            }
         }
 
         val pillBg by animateColorAsState(

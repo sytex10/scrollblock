@@ -1,6 +1,6 @@
 {
-  "versionCode": 30,
-  "versionName": "3.9",
-  "changelog": "• SHORTBAN (Short + Ban): Uygulama ve web kontrol paneli yeni ShortBan kimliğine kavuştu.\n• Yorumları Engelle (Toksik Yorum Kalkanı): Instagram, TikTok ve YouTube için ayrı ayrı açılabilen Yorum Kalkanı eklendi.\n• Yeni klasör yapısı: Instagram (insta/), TikTok (tiktok/), YouTube (yt/) ve Web (web/) doğrudan ana klasör altında toplandı.",
+  "versionCode": 31,
+  "versionName": "4.0",
+  "changelog": "• Yeni ShortBan Logosu: Hem Android ana ekran ikonuna, hem uygulama üst barına hem de web sitesine (vsolken.com/shortban) özel ShortBan kalkan logosu eklendi.\n• Yorumları Engelle (Toksik Yorum Kalkanı): Instagram, TikTok ve YouTube için ayrı ayrı açılabilen Yorum Kalkanı.\n• Modüler yapı: insta/, tiktok/, yt/ ve web/ doğrudan ana klasör altında.",
   "apkUrl": "https://raw.githubusercontent.com/sytex10/scrollblock/main/release/ScrollBlock-release.apk"
 }

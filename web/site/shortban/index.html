@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShortBan — Kısa Video & Yorum Kalkanı | vsolken.com/shortban</title>
+  <link rel="icon" type="image/svg+xml" href="logo.svg" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page-wrapper">
+    <!-- ÜST BAR -->
+    <header class="topbar">
+      <div class="brand-group">
+        <img src="logo.svg" alt="ShortBan Logo" class="brand-icon" width="32" height="32" />
+        <span class="brand-logo">shortban</span>
+        <span id="versionBadge" class="version-tag">v4.0</span>
+        <span class="domain-tag">vsolken.com/shortban</span>
+      </div>
+      <div id="extensionStatusPill" class="status-pill warning">
+        <span class="status-dot"></span>
+        <span id="extensionStatusText">Web Modu · PC Eklentisi Bekleniyor</span>
+      </div>
+    </header>
+
+    <!-- İNDİRME MERKEZİ (ANDROID APK + BİLGİSAYAR EKLENTİSİ) -->
+    <section class="hero-card">
+      <div class="hero-header">
+        <div>
+          <span class="eyebrow">SHORT + BAN · KISA VİDEO & YORUM KALKANI</span>
+          <h1 class="hero-title">Kısa Videoları ve Toksik Yorumları Yasakla.</h1>
+          <p class="hero-subtitle">
+            Instagram Reels, TikTok, YouTube Shorts akışlarını ve toksik yorum pencerelerini uygulamadan atmadan engeller;
+            normal uzun videoları, mesajlaşmayı ve DM'den gönderilen ilk videoyu serbest bırakır.
+          </p>
+        </div>
+      </div>
+
+      <div class="download-grid">
+        <!-- 1. ANDROID APK KARTI -->
+        <div class="dl-box android-box">
+          <div class="dl-top">
+            <span class="dl-badge emerald">ANDROID UYGULAMASI</span>
+            <span id="androidVersionText" class="dl-ver">v4.0 · Güncel</span>
+          </div>
+          <h3 class="dl-title">ShortBan Android APK</h3>
+          <p class="dl-desc">
+            Play Protect uyumlu, Yorum Kalkanı, uygulama içi güncelleme ve otomatik APK temizleme destekli Android sürümü.
+          </p>
+          <a
+            id="androidDownloadLink"
+            href="https://github.com/sytex10/scrollblock/raw/main/release/ScrollBlock-release.apk"
+            class="btn-primary"
+            target="_blank"
+            rel="noopener"
+          >
+            Android İçin İndir (.APK)
+          </a>
+        </div>
+
+        <!-- 2. BİLGİSAYAR TARAYICI EKLENTİSİ KARTI -->
+        <div class="dl-box pc-box">
+          <div class="dl-top">
+            <span class="dl-badge neutral">CHROME · EDGE · BRAVE · OPERA</span>
+            <span class="dl-ver">v4.0 PC · Manifest V3</span>
+          </div>
+          <h3 class="dl-title">ShortBan Bilgisayar Eklentisi</h3>
+          <p class="dl-desc">
+            Bilgisayardan girilen YouTube Shorts, Instagram Reels, TikTok akışlarını ve yorumları bu web paneliyle senkronize engeller.
+          </p>
+          <div class="dl-actions">
+            <a
+              href="downloads/ScrollBlock-PC-Extension.zip"
+              download="ScrollBlock-PC-Extension.zip"
+              class="btn-secondary"
+            >
+              Bilgisayar Eklentisini İndir (.ZIP)
+            </a>
+            <button id="toggleGuideBtn" class="btn-outline">Kurulum Rehberi</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PC EKLENTİ KURULUM REHBERİ (AÇILIR KUTU) -->
+      <div id="pcInstallGuide" class="guide-box" style="display: none;">
+        <h4>Bilgisayara 30 Saniyede Nasıl Kurulur?</h4>
+        <ol>
+          <li>Yukarıdaki <strong>Bilgisayar Eklentisini İndir (.ZIP)</strong> butonuna basıp dosyayı bir klasöre çıkartın.</li>
+          <li>Tarayıcınızın adres çubuğuna <code>chrome://extensions</code> (veya Edge için <code>edge://extensions</code>) yazıp sağ üstten <strong>Geliştirici Modu</strong>'nu açın.</li>
+          <li>Sol üstteki <strong>Paketlenmemiş öğe yükle (Load unpacked)</strong> butonuna tıklayıp çıkarttığınız klasörü seçin. Bu sayfa anında <strong>"PC Eklentisi Aktif"</strong> durumuna geçecektir!</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- CANLI WEB KONTROL PANELİ (MOBİL UYGULAMA İLE BİREBİR AYNI MİMARİ) -->
+    <div class="dashboard-grid">
+      <!-- SOL SÜTUN: İSTATİSTİK + MOLA VE DİNLENME -->
+      <div class="col">
+        <div class="section-header">GÖSTERGE PANELİ</div>
+        <div class="card stats-card">
+          <div class="stats-top">
+            <div>
+              <p class="card-muted">Bilgisayarda Engellenen Toplam Akış</p>
+              <div id="totalBlockedCount" class="big-counter">0</div>
+            </div>
+            <button id="resetStatsBtn" class="chip-btn">Sıfırla</button>
+          </div>
+          <p id="lastBlockedText" class="card-sub">Henüz hiçbir kısa video akışı engellenmedi</p>
+        </div>
+
+        <div class="section-header">MOLA VE DİNLENME (COOLDOWN)</div>
+        <div class="card break-card">
+          <div id="breakNormalPanel">
+            <div class="row-between">
+              <div>
+                <h3 class="card-title">Geçici Mola Modu</h3>
+                <p class="card-sub">Belirli bir süre için bilgisayar engelini geçici olarak duraklatın.</p>
+              </div>
+              <span id="dailyLimitBadge" class="mono-badge">0/3 kullanıldı</span>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="chip-group-block">
+              <label class="group-label">Mola Süresi Seçin</label>
+              <div class="chip-row" id="durationChipRow">
+                <button data-min="5" class="select-chip selected">5 dk</button>
+                <button data-min="10" class="select-chip">10 dk</button>
+                <button data-min="15" class="select-chip">15 dk</button>
+                <button data-min="30" class="select-chip">30 dk</button>
+              </div>
+            </div>
+
+            <div class="chip-group-block">
+              <label class="group-label">Günlük Mola Hakkı Sınırı</label>
+              <div class="chip-row" id="limitChipRow">
+                <button data-limit="1" class="select-chip">1 kez</button>
+                <button data-limit="3" class="select-chip selected">3 kez</button>
+                <button data-limit="5" class="select-chip">5 kez</button>
+                <button data-limit="0" class="select-chip">Sınırsız</button>
+              </div>
+            </div>
+
+            <button id="startBreakWebBtn" class="btn-primary full-width">5 Dakika Mola Başlat</button>
+          </div>
+
+          <div id="breakActivePanel" style="display: none;">
+            <span class="signal-label">MOLA AKTİF — KALAN SÜRE</span>
+            <div id="webBreakCountdown" class="big-counter">05:00</div>
+            <p class="card-sub">Engelleme geçici olarak durduruldu. Süre dolunca otomatik olarak tekrar devreye girecektir.</p>
+            <button id="endBreakWebBtn" class="btn-danger full-width">Molayı Bitir ve Korumaya Dön</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAĞ SÜTUN: KORUMA PLATFORMLARI + PIN KİLİDİ -->
+      <div class="col">
+        <div class="section-header">KORUMA PLATFORMLARI (İZOLASYONLU MODÜLLER)</div>
+        <div class="card platforms-card">
+          <!-- 1. Instagram -->
+          <div class="platform-row">
+            <div class="platform-info">
+              <div class="platform-name">Instagram <span class="module-tag">scrollblock/insta</span></div>
+              <div class="platform-desc">Reels sekmesini ve Keşfet videolarını engeller (uygulamadan atmaz)</div>
+            </div>
+            <label class="minimal-switch">
+              <input type="checkbox" id="webToggleInstagram" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div id="webIgDmRow" class="dm-sub-row">
+            <div class="dm-bar"></div>
+            <div class="platform-info">
+              <div class="dm-title">DM'den gelen ilk Reels'a izin ver</div>
+              <div class="dm-desc">Yalnızca sohbetten açılan ilk videoya izin verir; sonraki videoya kaydırdığınız an kapatır.</div>
+            </div>
+            <label class="minimal-switch">
+              <input type="checkbox" id="webToggleInstagramDm" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="dm-sub-row">
+            <div class="dm-bar"></div>
+            <div class="platform-info">
+              <div class="dm-title">Yorumları engelle (Yorum Kalkanı)</div>
+              <div class="dm-desc">Gönderi ve Reels yorumlar penceresini otomatik olarak kapatır ve gizler.</div>
+            </div>
+            <label class="minimal-switch">
+              <input type="checkbox" id="webToggleInstagramComments" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- 2. TikTok -->
+          <div class="platform-row">
+            <div class="platform-info">
+              <div class="platform-name">TikTok <span class="module-tag">scrollblock/tiktok</span></div>
+              <div class="platform-desc">Sizin İçin akışını Mesajlar'a yönlendirir, profillere dokunmaz</div>
+            </div>
+            <label class="minimal-switch">
+              <input type="checkbox" id="webToggleTikTok" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div id="webTtDmRow" class="dm-sub-row">
+            <div class="dm-bar"></div>
+            <div class="platform-info">
+              <div class="dm-title">DM'den gelen ilk videoya izin ver</div>
+              <div class="dm-desc">Sohbetten açılan ilk video izlenir; sonraki videoya kaydırınca sohbete döner.</div>
+            </div>
+            <label class="minimal-switch">
+              <input type="checkbox" id="webToggleTikTokDm" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="dm-sub-row">
+            <div class="dm-bar"></div>
+            <div class="platform-info">
+              <div class="dm-title">Yorumları engelle (Yorum Kalkanı)</div>
+              <div class="dm-desc">TikTok video yorumları penceresini otomatik olarak kapatır ve gizler.</div>
+            </div>
+            <label class="minimal-switch">
+              <input type="checkbox" id="webToggleTikTokComments" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- 3. YouTube Shorts -->
+          <div class="platform-row">
+            <div class="platform-info">
+              <div class="platform-name">YouTube Shorts <span class="module-tag">scrollblock/yt</span></div>
+              <div class="platform-desc">Shorts oynatıcısını ve raflarını kapatır, normal uzun videolar çalışır</div>
+            </div>
+            <label class="minimal-switch">
+              <input type="checkbox" id="webToggleYouTube" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="dm-sub-row">
+            <div class="dm-bar"></div>
+            <div class="platform-info">
+              <div class="dm-title">Yorumları engelle (Yorum Kalkanı)</div>
+              <div class="dm-desc">Uzun videolarda ve Shorts'ta yorumlar bölümünü otomatik olarak kapatır ve gizler.</div>
+            </div>
+            <label class="minimal-switch">
+              <input type="checkbox" id="webToggleYouTubeComments" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="section-header">GÜVENLİK VE SİSTEM</div>
+        <div class="card security-card">
+          <div class="platform-row">
+            <div class="platform-info">
+              <div class="platform-name">Ebeveyn / Güvenlik PIN Kilidi</div>
+              <div id="pinStatusDesc" class="platform-desc">Ayarları ve molayı 4 haneli şifreyle koruma altına alın.</div>
+            </div>
+            <label class="minimal-switch">
+              <input type="checkbox" id="webTogglePin" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PIN MODALI -->
+    <div id="pinModalBackdrop" class="modal-backdrop" style="display: none;">
+      <div class="modal-card">
+        <h3 id="pinModalTitle" class="card-title">PIN Doğrulaması</h3>
+        <p id="pinModalSub" class="card-sub">Devam etmek için 4 haneli PIN kodunuzu girin.</p>
+        <input
+          type="password"
+          id="pinInput"
+          maxlength="4"
+          inputmode="numeric"
+          placeholder="4 haneli PIN"
+          class="pin-input"
+        />
+        <p id="pinErrorText" class="error-text" style="display: none;"></p>
+        <div class="modal-actions">
+          <button id="pinCancelBtn" class="btn-outline">İptal</button>
+          <button id="pinConfirmBtn" class="btn-primary">Onayla</button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <span>ShortBan v4.0 · vsolken.com/shortban · Kısa Video & Toksik Yorum Kalkanı</span>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+

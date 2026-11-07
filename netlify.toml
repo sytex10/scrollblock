@@ -1,10 +1,19 @@
 [build]
   publish = "web/site"
-  command = ""
+
+[[redirects]]
+  from = "/shortban/*"
+  to = "/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/shortban"
+  to = "/index.html"
+  status = 200
 
 [[headers]]
-  for = "/downloads/*"
+  for = "/*"
   [headers.values]
-    Content-Disposition = "attachment"
-    Cache-Control = "no-cache"
-
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
