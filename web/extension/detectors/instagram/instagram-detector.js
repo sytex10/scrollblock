@@ -13,27 +13,34 @@
   let lastKnownSafeUrl = "https://www.instagram.com/";
   let commentStyleEl = null;
 
+  // Eski sürümden kalan stil etiketi varsa temizle
+  const legacyStyle = document.getElementById("scrollblock-instagram-comment-shield");
+  if (legacyStyle) legacyStyle.remove();
+
   function isBreakRunning(state) {
     return Boolean(state && state.isBreakActive && Date.now() < (state.breakEndTimeMs || 0));
   }
 
   function applyInstagramCommentShield(blocked) {
+    const oldEl = document.getElementById("scrollblock-instagram-comment-shield");
+    if (oldEl) oldEl.remove();
+
     if (blocked) {
       if (!commentStyleEl) {
         commentStyleEl = document.createElement("style");
         commentStyleEl.id = "shortban-instagram-comment-shield";
         commentStyleEl.textContent = `
           /* Yalnızca yorum listesi kapsayıcılarını bembeyaz yap (kaydırmalı foto/video ul._acay hariç) */
-          ul._a9z6,
-          ul._a9ym,
+          ul._a9z6:not(._acay),
+          ul._a9ym:not(._acay),
           div._ae5q {
             background: #FFFFFF !important;
             background-color: #FFFFFF !important;
             pointer-events: none !important;
           }
-          ul._a9z6 *,
-          ul._a9ym *,
-          div._ae5q *,
+          ul._a9z6:not(._acay) *,
+          ul._a9ym:not(._acay) *,
+          div._ae5q ul._a9z6 *,
           section._aamu form,
           form textarea[aria-label*="yorum" i],
           form textarea[aria-label*="comment" i] {

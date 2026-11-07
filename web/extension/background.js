@@ -1,11 +1,12 @@
 /**
  * ShortBan PC — Arka Plan Servis Çalışanı (Service Worker)
  * Varsayılan ayarları yönetir, Mola (Cooldown) süresini takip eder, engelleme sayacını kaydeder
- * ve GitHub üzerinden otomatik güncelleme / sürüm kontrolü yapar.
+ * ve diskteki dosyalar güncellendiğinde eklentiyi otomatik olarak yeniden yükler (chrome.runtime.reload).
  */
 
-const CURRENT_EXTENSION_VERSION = "4.1";
+const CURRENT_EXTENSION_VERSION = chrome.runtime.getManifest().version || "4.4.0";
 const VERSION_JSON_URL = "https://raw.githubusercontent.com/sytex10/scrollblock/main/version.json";
+let initialDiskManifestVersion = CURRENT_EXTENSION_VERSION;
 
 const DEFAULT_STATE = {
   isInstagramEnabled: true,
@@ -40,7 +41,18 @@ function todayDateKey() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function checkRemoteUpdate() {
+function checkRemoteAndDiskUpdate() {
+  // 1. Disk üzerindeki manifest.json güncellendiyse eklentiyi otomatik yeniden yükle
+  fetch(chrome.runtime.getURL("manifest.json") + "?t=" + Date.now(), { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((diskManifest) => {
+      if (diskManifest && diskManifest.version && diskManifest.version !== initialDiskManifestVersion) {
+        chrome.runtime.reload();
+      }
+    })
+    .catch(() => {});
+
+  // 2. GitHub üzerindeki güncel sürüm bilgisini kontrol et
   fetch(`${VERSION_JSON_URL}?t=${Date.now()}`, { cache: "no-store" })
     .then((res) => (res.ok ? res.json() : null))
     .then((info) => {
@@ -64,21 +76,21 @@ chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.local.set(merged);
   });
   chrome.alarms.create("scrollblock_break_check", { periodInMinutes: 0.25 });
-  chrome.alarms.create("shortban_update_check", { periodInMinutes: 15 });
-  checkRemoteUpdate();
+  chrome.alarms.create("shortban_update_check", { periodInMinutes: 1 });
+  checkRemoteAndDiskUpdate();
 });
 
 chrome.runtime.onStartup.addListener(() => {
   chrome.alarms.create("scrollblock_break_check", { periodInMinutes: 0.25 });
-  chrome.alarms.create("shortban_update_check", { periodInMinutes: 15 });
-  checkRemoteUpdate();
+  chrome.alarms.create("shortban_update_check", { periodInMinutes: 1 });
+  checkRemoteAndDiskUpdate();
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "scrollblock_break_check") {
     checkBreakExpiration();
   } else if (alarm.name === "shortban_update_check") {
-    checkRemoteUpdate();
+    checkRemoteAndDiskUpdate();
   }
 });
 
@@ -136,7 +148,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.type === "CHECK_UPDATE_NOW") {
-    checkRemoteUpdate();
+    checkRemoteAndDiskUpdate();
     sendResponse({ ok: true });
     return true;
   }
