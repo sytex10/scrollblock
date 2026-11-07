@@ -446,6 +446,17 @@ fun MainScreen(
                         isCheckingUpdate = false
                         if (info != null && info.versionCode > currentVersionCode) {
                             remoteUpdateInfo = info
+                            Toast.makeText(context, "Yeni sürüm (v${info.versionName}) indiriliyor...", Toast.LENGTH_SHORT).show()
+                            UpdateManager.downloadAndInstall(
+                                context = context,
+                                urlString = info.apkUrl,
+                                targetVersionCode = info.versionCode,
+                                autoOpenDownloads = true,
+                                onDownloadCompleted = {
+                                    isSilentDownloading = false
+                                    isSilentUpdateReady = true
+                                }
+                            )
                         } else {
                             Toast.makeText(context, "Sürüm güncel (v$currentVersionName)", Toast.LENGTH_SHORT).show()
                         }

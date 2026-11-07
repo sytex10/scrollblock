@@ -1,6 +1,6 @@
 {
-  "versionCode": 33,
-  "versionName": "4.2",
-  "changelog": "• Açık Rıza ve Gizlilik Politikası: Hem mobil uygulamaya hem web paneline yerleşik Açık Rıza ve Gizlilik Politikası Beyanı eklendi.\n• Yeni SHORTBAN Logosu & YouTube Music Muafiyeti: YouTube Music, Studio ve Kids tamamen muaf tutuldu.\n• PC Yorum Kalkanı & Çoklu Gönderi Düzeltmesi: Instagram çoklu (kaydırmalı) gönderilerde fotoğraf görünürlüğü korundu, yorum alanı bembeyaz (#FFFFFF) gizlendi.",
+  "versionCode": 34,
+  "versionName": "4.3",
+  "changelog": "• Arka Planda Sessiz Otomatik Güncelleme: Rahatsız edici güncelleme penceresi kaldırıldı; yeni sürümler arka planda sessizce indirilir.\n• Açık Rıza ve Gizlilik Politikası: Hem mobil uygulamaya hem web paneline yerleşik Açık Rıza Beyanı eklendi.\n• Yeni SHORTBAN Logosu & YouTube Music Muafiyeti.",
   "apkUrl": "https://raw.githubusercontent.com/sytex10/scrollblock/main/release/ScrollBlock-release.apk"
 }
