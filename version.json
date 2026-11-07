@@ -1,6 +1,6 @@
 {
-  "versionCode": 32,
-  "versionName": "4.1",
-  "changelog": "• Yeni SHORTBAN Logosu: Gönderdiğiniz orijinal ShortBan logosu Android uygulama ikonuna, üst bara, web sitesine ve PC eklentisine entegre edildi.\n• YouTube Music Muafiyeti: YouTube Music, YouTube Studio ve YouTube Kids hem Android hem PC'de tamamen muaf tutuldu.\n• PC Yorum Kalkanı (Beyaz Ekran): PC'de yorumlar açıldığında yorum alanı bembeyaz (#FFFFFF) kalır ve hiçbir yorum görünmez.\n• Tek Tıkla PC Kurulumu ve Otomatik Güncelleme: Geliştirici moduyla uğraşmadan tek tıkla kurulum (.CMD) ve arka plan otomatik güncelleme servisi eklendi.",
+  "versionCode": 33,
+  "versionName": "4.2",
+  "changelog": "• Google Play Hazırlığı & Gizlilik Politikası: Uygulama içi Erişilebilirlik Açık Rıza Beyanı (Prominent Disclosure) ve Gizlilik Politikası (vsolken.com/privacy) eklendi.\n• Yeni SHORTBAN Logosu & YouTube Music Muafiyeti: YouTube Music, Studio ve Kids tamamen muaf tutuldu.\n• PC Yorum Kalkanı & Çoklu Gönderi Düzeltmesi: Instagram çoklu (kaydırmalı) gönderilerde fotoğraf görünürlüğü korundu, yorum alanı bembeyaz (#FFFFFF) gizlendi.",
   "apkUrl": "https://raw.githubusercontent.com/sytex10/scrollblock/main/release/ScrollBlock-release.apk"
 }

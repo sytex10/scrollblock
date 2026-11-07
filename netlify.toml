@@ -2,6 +2,16 @@
   publish = "web/site"
 
 [[redirects]]
+  from = "/privacy"
+  to = "/privacy.html"
+  status = 200
+
+[[redirects]]
+  from = "/shortban/privacy"
+  to = "/privacy.html"
+  status = 200
+
+[[redirects]]
   from = "/shortban/*"
   to = "/:splat"
   status = 200

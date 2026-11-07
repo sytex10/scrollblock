@@ -1,5 +1,7 @@
 package com.example.scrollblock.ui.main
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.text.format.DateUtils
 import android.widget.Toast
@@ -125,6 +127,8 @@ fun MainScreen(
     var onPinVerifiedAction by remember { mutableStateOf<() -> Unit>({}) }
 
     var showPinSetupDialog by remember { mutableStateOf(false) }
+    var showPrivacyDialog by remember { mutableStateOf(false) }
+    var pendingOpenAccessibilityAfterDisclosure by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
 
@@ -204,7 +208,8 @@ fun MainScreen(
                 onStatusClick = {
                     viewModel.refreshServiceStatus()
                     if (!isServiceActive) {
-                        AccessibilityUtils.openAccessibilitySettings(context)
+                        pendingOpenAccessibilityAfterDisclosure = true
+                        showPrivacyDialog = true
                     }
                 }
             )
@@ -213,7 +218,10 @@ fun MainScreen(
             if (!isServiceActive) {
                 PermissionSetupBanner(
                     onOpenAppDetails = { AccessibilityUtils.openAppDetailsSettings(context) },
-                    onOpenAccessibilitySettings = { AccessibilityUtils.openAccessibilitySettings(context) },
+                    onOpenAccessibilitySettings = {
+                        pendingOpenAccessibilityAfterDisclosure = true
+                        showPrivacyDialog = true
+                    },
                     onRefresh = { viewModel.refreshServiceStatus() }
                 )
             }
@@ -384,10 +392,19 @@ fun MainScreen(
                 },
                 isServiceActive = isServiceActive,
                 onOpenAccessibilitySettings = {
-                    AccessibilityUtils.openAccessibilitySettings(context)
+                    if (!isServiceActive) {
+                        pendingOpenAccessibilityAfterDisclosure = true
+                        showPrivacyDialog = true
+                    } else {
+                        AccessibilityUtils.openAccessibilitySettings(context)
+                    }
                 },
                 onReopenOnboarding = {
                     viewModel.reopenOnboarding()
+                },
+                onOpenPrivacyPolicy = {
+                    pendingOpenAccessibilityAfterDisclosure = false
+                    showPrivacyDialog = true
                 },
                 onCheckUpdate = {
                     isCheckingUpdate = true
@@ -445,6 +462,28 @@ fun MainScreen(
                     } else {
                         Toast.makeText(context, "PIN 4 rakamdan oluşmalıdır.", Toast.LENGTH_SHORT).show()
                     }
+                }
+            )
+        }
+
+        // Google Play Uyumlu Erişilebilirlik Açık Rıza Beyanı & Gizlilik Politikası Diyaloğu
+        if (showPrivacyDialog) {
+            PrivacyAndDisclosureDialog(
+                isPromptBeforePermission = pendingOpenAccessibilityAfterDisclosure,
+                onDismiss = {
+                    showPrivacyDialog = false
+                    pendingOpenAccessibilityAfterDisclosure = false
+                },
+                onAcceptAndOpenSettings = {
+                    showPrivacyDialog = false
+                    pendingOpenAccessibilityAfterDisclosure = false
+                    AccessibilityUtils.openAccessibilitySettings(context)
+                },
+                onOpenWebPrivacyPolicy = {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://vsolken.com/privacy"))
+                        context.startActivity(intent)
+                    } catch (_: Exception) { }
                 }
             )
         }
@@ -1279,6 +1318,7 @@ private fun SystemSecurityCard(
     isServiceActive: Boolean,
     onOpenAccessibilitySettings: () -> Unit,
     onReopenOnboarding: () -> Unit,
+    onOpenPrivacyPolicy: () -> Unit,
     onCheckUpdate: () -> Unit,
     isCheckingUpdate: Boolean
 ) {
@@ -1412,6 +1452,48 @@ private fun SystemSecurityCard(
 
             Text(
                 text = "Rehber",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = TextPrimary,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(CardBackgroundElevated)
+                    .padding(horizontal = 10.dp, vertical = 5.dp)
+            )
+        }
+
+        HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
+
+        // 3.5 Gizlilik Politikası ve Erişilebilirlik Beyanı (Google Play Zorunlu Alan)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onOpenPrivacyPolicy() }
+                .padding(horizontal = 18.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = "Gizlilik Politikası ve Erişilebilirlik Beyanı",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TextPrimary
+                )
+                Text(
+                    text = "Sıfır veri toplama taahhüdü ve izin kullanım detayları",
+                    fontSize = 12.sp,
+                    color = TextSecondary
+                )
+            }
+
+            Text(
+                text = "Oku",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = TextPrimary,
@@ -1691,6 +1773,99 @@ private fun PinSetupDialog(
                     )
                 ) {
                     Text("Kaydet", fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrivacyAndDisclosureDialog(
+    isPromptBeforePermission: Boolean,
+    onDismiss: () -> Unit,
+    onAcceptAndOpenSettings: () -> Unit,
+    onOpenWebPrivacyPolicy: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(CardBackground)
+                .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "Erişilebilirlik İzni ve Gizlilik Beyanı",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+
+            Text(
+                text = "ShortBan, yalnızca seçtiğiniz uygulamalardaki (Instagram Reels, TikTok, YouTube Shorts) kısa video akışlarını ve yorum pencerelerini tespit edip sizi güvenli sekmeye yönlendirmek için Android AccessibilityService (Erişilebilirlik Servisi) API'sini kullanır.",
+                fontSize = 12.5.sp,
+                color = TextSecondary,
+                lineHeight = 18.sp
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(CardBackgroundElevated)
+                    .border(1.dp, HairlineDivider, RoundedCornerShape(10.dp))
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = "• Sıfır Veri Toplama: Hiçbir kişisel veriniz, mesajınız, şifreniz veya ekran görüntünüz kaydedilmez ve internete gönderilmez.",
+                    fontSize = 11.5.sp,
+                    color = TextPrimary,
+                    lineHeight = 16.sp
+                )
+                Text(
+                    text = "• Yalnızca Cihaz İçi İşlem: Tüm tespit anlık olarak telefonunuzun içinde gerçekleşir; YouTube Music ve diğer uygulamalara dokunulmaz.",
+                    fontSize = 11.5.sp,
+                    color = TextPrimary,
+                    lineHeight = 16.sp
+                )
+            }
+
+            OutlinedButton(
+                onClick = onOpenWebPrivacyPolicy,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                contentPadding = PaddingValues(vertical = 10.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
+            ) {
+                Text(
+                    text = "Web Gizlilik Politikasını Aç (vsolken.com/privacy)",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text(if (isPromptBeforePermission) "Vazgeç" else "Kapat", color = TextSecondary)
+                }
+                if (isPromptBeforePermission) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Button(
+                        onClick = onAcceptAndOpenSettings,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AccentPrimary,
+                            contentColor = NearBlack
+                        )
+                    ) {
+                        Text("Kabul Et ve Ayarları Aç", fontWeight = FontWeight.SemiBold, fontSize = 12.5.sp)
+                    }
                 }
             }
         }
