@@ -30,11 +30,14 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -95,7 +98,7 @@ fun OnboardingScreen(
     val pages = remember {
         listOf(
             OnboardingPageData(
-                stepLabel = "ADIM 01 / 04 · NASIL ÇALIŞIR?",
+                stepLabel = "ADIM 01 / 05 · NASIL ÇALIŞIR?",
                 title = "Kısa Videoları ve Yorumları Akıllıca Engelle",
                 subtitle = "ShortBan uygulamaları tamamen kapatmaz; yalnızca sonsuz kısa video akışlarını ve toksik yorumları yakalayıp sizi güvenli sekmeye yönlendirir:",
                 items = listOf(
@@ -112,15 +115,15 @@ fun OnboardingScreen(
                     OnboardingHighlightItem(
                         tag = "YT",
                         title = "YouTube Shorts -> Normal Video",
-                        body = "Yalnızca tam ekran dikey Shorts oynatıcısını kapatır. Normal uzun YouTube videolarını, aramayı ve aboneliklerinizi kesintisiz kullanabilirsiniz."
+                        body = "Yalnızca tam ekran dikey Shorts oynatıcısını kapatır. Normal uzun YouTube videolarını, YouTube Music'i ve aboneliklerinizi kesintisiz kullanabilirsiniz."
                     )
                 ),
                 footerNote = "Art arda hızlıca (spam) tıklasanız bile anti-spam koruması devreye girer ve kısa video akışının açılmasına izin vermez."
             ),
             OnboardingPageData(
-                stepLabel = "ADIM 02 / 04 · ÖZELLİKLER",
-                title = "DM Tek Video İzni, Mola ve PIN Koruması",
-                subtitle = "Günlük kullanımınızı kısıtlamadan iradenizi korumanız için tasarlanan 3 özel araç:",
+                stepLabel = "ADIM 02 / 05 · ÖZELLİKLER",
+                title = "Yorum Kalkanı, DM İzni, Mola ve PIN",
+                subtitle = "Günlük kullanımınızı kısıtlamadan iradenizi korumanız için tasarlanan özel araçlar:",
                 items = listOf(
                     OnboardingHighlightItem(
                         tag = "DM",
@@ -130,7 +133,7 @@ fun OnboardingScreen(
                     OnboardingHighlightItem(
                         tag = "MOLA",
                         title = "Ayarlanabilir Mola & Günlük Sınır",
-                        body = "İhtiyacınız olduğunda 5, 10, 15 veya 30 dakikalık geçici mola başlatabilirsiniz. Günlük mola sayısını (ör. günde en fazla 1 kez) sınırlandırabilirsiniz. Süre bitince koruma kendiliğinden başlar."
+                        body = "İhtiyacınız olduğunda 5, 10, 15 veya 30 dakikalık geçici mola başlatabilirsiniz. Günlük mola sayısını sınırlandırabilirsiniz. Süre bitince koruma kendiliğinden başlar."
                     ),
                     OnboardingHighlightItem(
                         tag = "PIN",
@@ -141,7 +144,30 @@ fun OnboardingScreen(
                 footerNote = "Tüm bu kuralları ana ekrandan tek dokunuşla dilediğiniz gibi özelleştirebilirsiniz."
             ),
             OnboardingPageData(
-                stepLabel = "ADIM 03 / 04 · KURULUM (1. AŞAMA)",
+                stepLabel = "ADIM 03 / 05 · AÇIK RIZA VE GİZLİLİK",
+                title = "Açık Rıza ve Gizlilik Politikası Beyanı",
+                subtitle = "ShortBan'ı kullanmaya başlamadan önce Erişilebilirlik izni ve gizlilik ilkelerimiz:",
+                items = listOf(
+                    OnboardingHighlightItem(
+                        tag = "1",
+                        title = "Erişilebilirlik İzni Açık Rıza Beyanı",
+                        body = "Uygulama yalnızca hedef platformlarda (Instagram, TikTok, YouTube) kısa video ekranlarının veya yorum pencerelerinin açıldığını tespit etmek için Android AccessibilityService API'sini kullanarak arayüz kimliklerini anlık kontrol eder. YouTube Music ve diğer uygulamalara dokunulmaz."
+                    ),
+                    OnboardingHighlightItem(
+                        tag = "2",
+                        title = "Sıfır Veri Toplama ve Aktarım Taahhüdü",
+                        body = "Hiçbir kişisel veriniz, mesajınız, şifreniz, ekran görüntünüz veya gezinme geçmişiniz kaydedilmez, toplanmaz, uzak sunuculara gönderilmez ve üçüncü taraflarla paylaşılmaz. Tüm işlemler %100 cihazınızın içinde gerçekleşir."
+                    ),
+                    OnboardingHighlightItem(
+                        tag = "3",
+                        title = "Cihaz İçi Yerel Tercihler & Sıfır Reklam",
+                        body = "Koruma anahtarları, mola süreleri, engellenen akış sayacı ve 4 haneli PIN kilidi yalnızca cihazınızın kendi yerel hafızasında saklanır. Hiçbir reklam SDK'sı veya takip aracı (tracker) bulunmaz."
+                    )
+                ),
+                footerNote = "Sonraki adıma geçerek ve Erişilebilirlik Servisi'ni etkinleştirerek bu Açık Rıza ve Gizlilik Politikası Beyanı'nı okuduğunuzu ve kabul ettiğinizi onaylamış olursunuz."
+            ),
+            OnboardingPageData(
+                stepLabel = "ADIM 04 / 05 · KURULUM (1. AŞAMA)",
                 title = "Android 13+ Kısıtlı Ayar Kilidini Açma",
                 subtitle = "Android 13 ve üzeri cihazlarda APK ile kurulan uygulamalar için sistem güvenlik kilidi bulunur. Erişilebilirlik izni verebilmek için önce şu 3 adımı uygulayın:",
                 items = listOf(
@@ -166,14 +192,14 @@ fun OnboardingScreen(
                 actionType = OnboardingActionType.OPEN_APP_DETAILS
             ),
             OnboardingPageData(
-                stepLabel = "ADIM 04 / 04 · KURULUM (2. AŞAMA)",
+                stepLabel = "ADIM 05 / 05 · KURULUM (2. AŞAMA)",
                 title = "Erişilebilirlik Servisini Etkinleştirin",
                 subtitle = "Son olarak ShortBan'ın kısa video akışlarını ve yorum pencerelerini algılayabilmesi için Erişilebilirlik Servisi'ni açın:",
                 items = listOf(
                     OnboardingHighlightItem(
                         tag = "1",
                         title = "Erişilebilirlik Ayarlarını Açın",
-                        body = "Aşağıdaki '2. Adım: Erişilebilirlik Ayarlarını Aç' butonuna dokunun."
+                        body = "Aşağıdaki '2. Adım: Erişilebilirlik Ayarlarını Aç' butonuna dokunun ve Açık Rıza Beyanı'nı onaylayın."
                     ),
                     OnboardingHighlightItem(
                         tag = "2",
@@ -194,6 +220,7 @@ fun OnboardingScreen(
     }
 
     var currentStep by remember { mutableIntStateOf(0) }
+    var showOnboardingDisclosureDialog by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
 
     Surface(
@@ -308,7 +335,7 @@ fun OnboardingScreen(
                     )
 
                     // Son adımda canlı servis durum rozeti
-                    if (pageIndex == 3) {
+                    if (pageIndex == pages.size - 1) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -401,7 +428,7 @@ fun OnboardingScreen(
                                     OnboardingActionType.OPEN_APP_DETAILS ->
                                         AccessibilityUtils.openAppDetailsSettings(context)
                                     OnboardingActionType.OPEN_ACCESSIBILITY ->
-                                        AccessibilityUtils.openAccessibilitySettings(context)
+                                        showOnboardingDisclosureDialog = true
                                     OnboardingActionType.NONE -> {}
                                 }
                             },
@@ -495,10 +522,87 @@ fun OnboardingScreen(
                         contentPadding = PaddingValues(vertical = 13.dp)
                     ) {
                         Text(
-                            text = if (currentStep < pages.size - 1) "Sonraki Adım" else "Kurulumu Tamamla ve Başla",
+                            text = if (currentStep == 2) {
+                                "Kabul Et ve Devam Et"
+                            } else if (currentStep < pages.size - 1) {
+                                "Sonraki Adım"
+                            } else {
+                                "Kurulumu Tamamla ve Başla"
+                            },
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold
                         )
+                    }
+                }
+            }
+        }
+
+        if (showOnboardingDisclosureDialog) {
+            Dialog(onDismissRequest = { showOnboardingDisclosureDialog = false }) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Açık Rıza ve Gizlilik Politikası Beyanı",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = "ShortBan, yalnızca seçtiğiniz platformlardaki (Instagram Reels, TikTok, YouTube Shorts) kısa video akışlarını ve yorum pencerelerini tespit edip sizi güvenli sekmeye yönlendirmek için Android AccessibilityService API'sini kullanır.",
+                        fontSize = 12.sp,
+                        color = TextSecondary,
+                        lineHeight = 17.sp
+                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(CardBackgroundElevated)
+                            .border(1.dp, HairlineDivider, RoundedCornerShape(10.dp))
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "• Sıfır Veri Toplama: Hiçbir kişisel veriniz, mesajınız, şifreniz veya ekran görüntünüz kaydedilmez ve internete gönderilmez.",
+                            fontSize = 11.5.sp,
+                            color = TextPrimary,
+                            lineHeight = 16.sp
+                        )
+                        Text(
+                            text = "• Yalnızca Cihaz İçi İşlem: Tüm tespit anlık olarak telefonunuzun içinde gerçekleşir; YouTube Music ve diğer uygulamalara dokunulmaz.",
+                            fontSize = 11.5.sp,
+                            color = TextPrimary,
+                            lineHeight = 16.sp
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = { showOnboardingDisclosureDialog = false }) {
+                            Text("Vazgeç", color = TextSecondary)
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Button(
+                            onClick = {
+                                showOnboardingDisclosureDialog = false
+                                AccessibilityUtils.openAccessibilitySettings(context)
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = AccentPrimary,
+                                contentColor = NearBlack
+                            )
+                        ) {
+                            Text("Kabul Et ve Ayarları Aç", fontWeight = FontWeight.SemiBold, fontSize = 12.5.sp)
+                        }
                     }
                 }
             }

@@ -1,6 +1,6 @@
 {
-  "versionCode": 34,
-  "versionName": "4.3",
-  "changelog": "• Arka Planda Sessiz Otomatik Güncelleme: Rahatsız edici güncelleme penceresi kaldırıldı; yeni sürümler arka planda sessizce indirilir.\n• Açık Rıza ve Gizlilik Politikası: Hem mobil uygulamaya hem web paneline yerleşik Açık Rıza Beyanı eklendi.\n• Yeni SHORTBAN Logosu & YouTube Music Muafiyeti.",
+  "versionCode": 35,
+  "versionName": "4.4",
+  "changelog": "• İlk Kurulum Rehberine (Onboarding) Açık Rıza & Gizlilik Politikası Eklendi: Uygulamayı ilk kez indiren kullanıcıya rehberin 3. adımında tam Açık Rıza ve Gizlilik Politikası Beyanı ('Kabul Et ve Devam Et') sunulur.\n• Arka Planda Sessiz Otomatik Güncelleme & Yeni SHORTBAN Logosu.",
   "apkUrl": "https://raw.githubusercontent.com/sytex10/scrollblock/main/release/ScrollBlock-release.apk"
 }
