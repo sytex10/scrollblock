@@ -5,12 +5,14 @@ import android.os.SystemClock
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.example.scrollblock.android12.core.Android12ServiceRouter
 import com.example.scrollblock.detector.DetectionResult
 import com.example.scrollblock.detector.NodeUtils
 import com.example.scrollblock.detector.PlatformDetector
 import com.example.scrollblock.detector.instagram.InstagramReelsDetector
 import com.example.scrollblock.detector.tiktok.TikTokDetector
 import com.example.scrollblock.detector.youtube.YouTubeShortsDetector
+import com.example.scrollblock.overlay.ShortEntryOverlayManager
 import com.example.scrollblock.preferences.BlockPreferences
 import com.example.scrollblock.updater.UpdateManager
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +31,7 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
 
     private lateinit var preferences: BlockPreferences
     private lateinit var detectors: List<PlatformDetector>
+    private var overlayManager: ShortEntryOverlayManager? = null
 
     private var lastActionTime: Long = 0L
     private var lastEvalTime: Long = 0L
@@ -48,12 +51,18 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
         // Güncelleme kurulduğunda servis yeniden bağlanır; kurulum tamamlandıysa indirilen geçici APK'yı otomatik temizle
         UpdateManager.cleanupInstalledApks(applicationContext, forceAll = false)
         preferences = BlockPreferences.getInstance(applicationContext)
+        overlayManager = ShortEntryOverlayManager(this)
 
-        detectors = listOf(
-            YouTubeShortsDetector(preferences),
-            InstagramReelsDetector(preferences),
-            TikTokDetector(preferences)
-        )
+        detectors = if (Android12ServiceRouter.isAndroid12OrBelow()) {
+            Log.i(TAG, "Initializing isolated Android 12 and below (SDK <= 32) detector modules")
+            Android12ServiceRouter.createAndroid12Detectors(preferences)
+        } else {
+            listOf(
+                YouTubeShortsDetector(preferences),
+                InstagramReelsDetector(preferences),
+                TikTokDetector(preferences)
+            )
+        }
         Log.i(TAG, "ScrollBlock Accessibility Service connected and active")
     }
 
@@ -61,15 +70,35 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
         if (event == null) return
 
         val packageName = event.packageName?.toString() ?: return
-        val detector = detectors.firstOrNull { it.matchesPackage(packageName) } ?: return
-        if (!detector.isEnabled()) return
+        // Kendi overlay katmanımızdan gelen olayları yoksay
+        if (packageName == applicationContext.packageName) return
 
-        // Mola / Cooldown kontrolü
-        if (preferences.isBreakActiveSync()) {
+        val eventType = event.eventType
+        val detector = detectors.firstOrNull { it.matchesPackage(packageName) }
+
+        if (detector == null) {
+            // Kullanıcı hedef uygulamadan başka bir uygulamaya geçtiyse (örn. Ana Ekran, WhatsApp) maskeyi temizle
+            if (eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
+                !packageName.contains("systemui", ignoreCase = true) &&
+                !packageName.contains("inputmethod", ignoreCase = true) &&
+                !packageName.contains("keyboard", ignoreCase = true)
+            ) {
+                overlayManager?.clearAllOverlays()
+            }
             return
         }
 
-        val eventType = event.eventType
+        // Mola / Cooldown kontrolü
+        if (preferences.isBreakActiveSync()) {
+            overlayManager?.clearAllOverlays()
+            return
+        }
+
+        if (!detector.isEnabled() && !preferences.isHideShortEntriesEnabledSync()) {
+            overlayManager?.clearAllOverlays()
+            return
+        }
+
         if (eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
             eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
             eventType != AccessibilityEvent.TYPE_VIEW_SCROLLED
@@ -85,9 +114,25 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
         ) return
         lastEvalTime = now
 
-        val rootNode = rootInActiveWindow ?: return
+        val rootNode = rootInActiveWindow ?: run {
+            overlayManager?.clearAllOverlays()
+            return
+        }
 
         try {
+            // 1. Kısa Video Girişlerini Gizle (Arayüz Koruma Sistemi — Overlay)
+            overlayManager?.updateForWindow(
+                rootNode = rootNode,
+                packageName = packageName,
+                isEnabled = preferences.isHideShortEntriesEnabledSync(),
+                blockInstagram = preferences.isInstagramEnabledSync(),
+                blockYoutube = preferences.isYouTubeEnabledSync(),
+                blockTiktok = preferences.isTikTokEnabledSync()
+            )
+
+            // 2. Mevcut Akış ve Yorum Engelleme Motoru
+            if (!detector.isEnabled()) return
+
             val result = detector.detectShortFeed(rootNode, event)
             if (!result.isShortFeed) {
                 return
@@ -129,10 +174,12 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
     }
 
     override fun onInterrupt() {
+        overlayManager?.clearAllOverlays()
         Log.w(TAG, "ScrollBlock Accessibility Service interrupted")
     }
 
     override fun onDestroy() {
+        overlayManager?.clearAllOverlays()
         super.onDestroy()
         _isServiceRunning.value = false
         Log.i(TAG, "ScrollBlock Accessibility Service destroyed")

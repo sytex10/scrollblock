@@ -24,6 +24,22 @@ class YouTubeCommentBlocker {
             return null
         }
 
+        // Eğer kullanıcı normal bir uzun video izliyorsa ve sadece yorumları okumak istiyorsa
+        // normal videolardaki yorum panelini kapatma (kullanıcı sadece Shorts yorumlarını veya Shorts akışını engellemek istiyor).
+        // Ancak tam ekran Shorts oynatılırken yorum açılırsa müdahale et.
+        val hasNormalVideoPlayer = NodeUtils.hasViewIdContaining(
+            rootNode,
+            "time_bar",
+            "player_collapse_button",
+            "fullscreen_button",
+            "watch_panel",
+            "watch_while_time_bar_view"
+        )
+        if (hasNormalVideoPlayer) {
+            awaitingCommentSheetClose = false
+            return null
+        }
+
         if (isExpandedCommentsPanelOpen(rootNode)) {
             if (awaitingCommentSheetClose) {
                 return DetectionResult.notDetected("YouTube Yorum Kalkanı")

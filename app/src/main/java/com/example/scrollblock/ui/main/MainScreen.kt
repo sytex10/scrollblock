@@ -67,6 +67,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.scrollblock.android12.core.Android12PermissionGuide
 import com.example.scrollblock.preferences.BreakPolicy
 import com.example.scrollblock.security.PinManager
 import com.example.scrollblock.theme.AccentPrimary
@@ -104,6 +105,7 @@ fun MainScreen(
     val isInstagramCommentsBlocked by viewModel.isInstagramCommentsBlocked.collectAsStateWithLifecycle()
     val isTikTokCommentsBlocked by viewModel.isTikTokCommentsBlocked.collectAsStateWithLifecycle()
     val isYouTubeCommentsBlocked by viewModel.isYouTubeCommentsBlocked.collectAsStateWithLifecycle()
+    val isHideShortEntriesEnabled by viewModel.isHideShortEntriesEnabled.collectAsStateWithLifecycle()
 
     val totalBlockedCount by viewModel.totalBlockedCount.collectAsStateWithLifecycle()
     val lastBlockedPlatform by viewModel.lastBlockedPlatform.collectAsStateWithLifecycle()
@@ -395,6 +397,16 @@ fun MainScreen(
                     } else {
                         viewModel.setYouTubeCommentsBlocked(true)
                     }
+                },
+                isHideShortEntriesEnabled = isHideShortEntriesEnabled,
+                onHideShortEntriesToggle = { enabled ->
+                    if (!enabled) {
+                        executeProtectedAction(subtitle = "Kısa video girişlerini gizleme korumasını kapatmak için PIN girin.") {
+                            viewModel.setHideShortEntriesEnabled(false)
+                        }
+                    } else {
+                        viewModel.setHideShortEntriesEnabled(true)
+                    }
                 }
             )
 
@@ -676,6 +688,13 @@ private fun PermissionSetupBanner(
     onOpenAccessibilitySettings: () -> Unit,
     onRefresh: () -> Unit
 ) {
+    if (Android12PermissionGuide.isAndroid12OrBelow()) {
+        Android12PermissionGuide.MainScreenWarningCard(
+            onOpenAccessibility = onOpenAccessibilitySettings
+        )
+        return
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -703,7 +722,7 @@ private fun PermissionSetupBanner(
                     color = TextPrimary
                 )
                 Text(
-                    text = "Kısa videoları algılayıp yönlendirmek için servisi açın.",
+                    text = "Android 13+ Kısıtlı Ayarlar kilidini açmak için aşağıdaki sırayı izleyin.",
                     fontSize = 12.sp,
                     color = TextSecondary
                 )
@@ -725,32 +744,18 @@ private fun PermissionSetupBanner(
         HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
 
         Text(
-            text = "Android 13+ kullanıyorsanız önce Uygulama Bilgisi ekranında sağ üstteki (⋮) menüsünden 'Kısıtlı ayarlara izin ver' seçeneğini etkinleştirin.",
+            text = "1. Önce '1. Erişilebilirlik' butonuna basıp listeden ShortBan'a bir kez dokunun ('Kısıtlı Ayar' uyarısı çıkmalı; aksi halde üç nokta görünmez).\n" +
+                "2. Ardından '2. Uygulama Bilgisi' ekranında sağ üstteki (⋮) menüsünden 'Kısıtlı ayarlara izin ver' deyin.\n" +
+                "3. Tekrar Erişilebilirlik menüsüne dönüp ShortBan anahtarını açın.",
             fontSize = 12.sp,
             color = TextSecondary,
-            lineHeight = 16.sp
+            lineHeight = 17.sp
         )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            OutlinedButton(
-                onClick = onOpenAppDetails,
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(10.dp),
-                contentPadding = PaddingValues(vertical = 10.dp, horizontal = 8.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
-            ) {
-                Text(
-                    text = "1. Uygulama Bilgisi",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
             Button(
                 onClick = onOpenAccessibilitySettings,
                 modifier = Modifier.weight(1f),
@@ -762,9 +767,25 @@ private fun PermissionSetupBanner(
                 )
             ) {
                 Text(
-                    text = "2. Erişilebilirliği Aç",
+                    text = "1. Erişilebilirlik",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            OutlinedButton(
+                onClick = onOpenAppDetails,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(10.dp),
+                contentPadding = PaddingValues(vertical = 10.dp, horizontal = 8.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
+            ) {
+                Text(
+                    text = "2. Uygulama Bilgisi (⋮)",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -1068,7 +1089,9 @@ private fun PlatformsGroupCard(
     isYouTubeEnabled: Boolean,
     onYouTubeToggle: (Boolean) -> Unit,
     isYouTubeCommentsBlocked: Boolean,
-    onYouTubeCommentsToggle: (Boolean) -> Unit
+    onYouTubeCommentsToggle: (Boolean) -> Unit,
+    isHideShortEntriesEnabled: Boolean,
+    onHideShortEntriesToggle: (Boolean) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -1077,6 +1100,16 @@ private fun PlatformsGroupCard(
             .background(CardBackground)
             .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
     ) {
+        // 0. Arayüz Koruma Sistemi — Kısa Video Girişlerini Gizle (Bağımsız Anahtar)
+        PlatformToggleRow(
+            title = "Kısa Video Girişlerini Gizle",
+            subtitle = "Instagram Reels, YouTube Shorts ve TikTok kısa video giriş butonlarını tema rengiyle gizler ve dokunmayı engeller",
+            checked = isHideShortEntriesEnabled,
+            onCheckedChange = onHideShortEntriesToggle
+        )
+
+        HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
+
         // 1. Instagram
         PlatformToggleRow(
             title = "Instagram",
@@ -1743,7 +1776,7 @@ private fun PrivacyAndDisclosureDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "1. Erişilebilirlik İzni Açık Rıza Beyanı:\nUygulama yalnızca hedef platformlarda (Instagram, TikTok, YouTube) kısa video ekranlarının veya yorum pencerelerinin açıldığını tespit etmek için Android AccessibilityService API'sini kullanarak arayüz kimliklerini anlık kontrol eder. YouTube Music ve diğer uygulamalara dokunulmaz.",
+                    text = "1. Erişilebilirlik İzni Açık Rıza Beyanı:\nUygulama yalnızca hedef platformlarda (Instagram, TikTok, YouTube) kısa video ekranlarının veya yorum pencerelerinin açıldığını tespit etmek için Android AccessibilityService API'sini kullanarak arayüz kimliklerini anlık kontrol eder. Özel mesajlar (DM), klavye, banka uygulamaları ve diğer uygulamalara dokunulmaz.",
                     fontSize = 11.5.sp,
                     color = TextPrimary,
                     lineHeight = 16.sp

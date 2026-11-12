@@ -24,7 +24,7 @@
         <service
             android:name=".service.ScrollBlockAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:isAccessibilityTool="true"
+            android:isAccessibilityTool="false"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />

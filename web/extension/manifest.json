@@ -1,10 +1,11 @@
 {
   "manifest_version": 3,
   "name": "ShortBan — Kısa Video & Yorum Kalkanı",
-  "version": "4.4.0",
-  "description": "Short + Ban: YouTube Shorts, Instagram Reels, TikTok kısa video akışlarını ve toksik yorumları engeller (YouTube Music'e dokunmaz).",
+  "version": "4.5.0",
+  "description": "Short + Ban: YouTube Shorts, Instagram Reels, TikTok kısa video akışlarını ve toksik yorumları engeller; diğer uygulamalara dokunulmaz.",
   "icons": {
     "16": "icon16.png",
+    "32": "icon48.png",
     "48": "icon48.png",
     "128": "icon128.png"
   },
@@ -30,6 +31,7 @@
     "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "icon16.png",
+      "32": "icon48.png",
       "48": "icon48.png",
       "128": "icon128.png"
     }

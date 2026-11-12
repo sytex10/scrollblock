@@ -11,14 +11,23 @@ android {
         applicationId = "com.scrollblock.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 35
-        versionName = "4.4"
+        versionCode = 36
+        versionName = "4.5"
     }
 
     sourceSets {
         getByName("main") {
-            java.directories.addAll(listOf("../insta", "../tiktok", "../yt"))
-            kotlin.directories.addAll(listOf("../insta", "../tiktok", "../yt"))
+            val modularDirs = listOf(
+                "../insta",
+                "../tiktok",
+                "../yt",
+                "../android12/insta",
+                "../android12/tiktok",
+                "../android12/yt",
+                "../android12/core"
+            )
+            java.directories.addAll(modularDirs)
+            kotlin.directories.addAll(modularDirs)
         }
     }
 

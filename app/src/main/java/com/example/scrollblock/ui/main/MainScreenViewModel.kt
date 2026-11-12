@@ -31,6 +31,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
     val isInstagramCommentsBlocked: StateFlow<Boolean> = preferences.isInstagramCommentsBlocked
     val isTikTokCommentsBlocked: StateFlow<Boolean> = preferences.isTikTokCommentsBlocked
     val isYouTubeCommentsBlocked: StateFlow<Boolean> = preferences.isYouTubeCommentsBlocked
+    val isHideShortEntriesEnabled: StateFlow<Boolean> = preferences.isHideShortEntriesEnabled
 
     // İstatistikler
     val totalBlockedCount: StateFlow<Int> = preferences.totalBlockedCount
@@ -108,6 +109,10 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
 
     fun setYouTubeCommentsBlocked(blocked: Boolean) {
         preferences.setYouTubeCommentsBlocked(blocked)
+    }
+
+    fun setHideShortEntriesEnabled(enabled: Boolean) {
+        preferences.setHideShortEntriesEnabled(enabled)
     }
 
     fun resetStatistics() {

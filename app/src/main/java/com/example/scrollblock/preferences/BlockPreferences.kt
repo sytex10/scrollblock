@@ -36,6 +36,9 @@ class BlockPreferences(context: Context) {
     private val _isYouTubeCommentsBlocked = MutableStateFlow(isYouTubeCommentsBlockedSync())
     val isYouTubeCommentsBlocked: StateFlow<Boolean> = _isYouTubeCommentsBlocked.asStateFlow()
 
+    private val _isHideShortEntriesEnabled = MutableStateFlow(isHideShortEntriesEnabledSync())
+    val isHideShortEntriesEnabled: StateFlow<Boolean> = _isHideShortEntriesEnabled.asStateFlow()
+
     private val _totalBlockedCount = MutableStateFlow(getTotalBlockedCountSync())
     val totalBlockedCount: StateFlow<Int> = _totalBlockedCount.asStateFlow()
 
@@ -88,6 +91,9 @@ class BlockPreferences(context: Context) {
     fun isYouTubeCommentsBlockedSync(): Boolean =
         prefs.getBoolean(KEY_YOUTUBE_COMMENTS_BLOCKED, false)
 
+    fun isHideShortEntriesEnabledSync(): Boolean =
+        prefs.getBoolean(KEY_HIDE_SHORT_ENTRIES, true)
+
     fun getTotalBlockedCountSync(): Int =
         prefs.getInt(KEY_TOTAL_BLOCKED_COUNT, 0)
 
@@ -135,6 +141,11 @@ class BlockPreferences(context: Context) {
     fun setYouTubeCommentsBlocked(blocked: Boolean) {
         prefs.edit().putBoolean(KEY_YOUTUBE_COMMENTS_BLOCKED, blocked).apply()
         _isYouTubeCommentsBlocked.value = blocked
+    }
+
+    fun setHideShortEntriesEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_HIDE_SHORT_ENTRIES, enabled).apply()
+        _isHideShortEntriesEnabled.value = enabled
     }
 
     // --- Mola / Cooldown Yönetimi ---
@@ -289,6 +300,7 @@ class BlockPreferences(context: Context) {
         private const val KEY_INSTAGRAM_COMMENTS_BLOCKED = "pref_instagram_comments_blocked"
         private const val KEY_TIKTOK_COMMENTS_BLOCKED = "pref_tiktok_comments_blocked"
         private const val KEY_YOUTUBE_COMMENTS_BLOCKED = "pref_youtube_comments_blocked"
+        private const val KEY_HIDE_SHORT_ENTRIES = "pref_hide_short_entries"
         private const val KEY_TOTAL_BLOCKED_COUNT = "pref_total_blocked_count"
         private const val KEY_LAST_BLOCKED_PLATFORM = "pref_last_blocked_platform"
         private const val KEY_LAST_BLOCKED_TIMESTAMP = "pref_last_blocked_timestamp"

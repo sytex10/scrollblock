@@ -4,9 +4,27 @@
  * ve diskteki dosyalar güncellendiğinde eklentiyi otomatik olarak yeniden yükler (chrome.runtime.reload).
  */
 
-const CURRENT_EXTENSION_VERSION = chrome.runtime.getManifest().version || "4.4.0";
+const CURRENT_EXTENSION_VERSION = chrome.runtime.getManifest().version || "4.5.0";
 const VERSION_JSON_URL = "https://raw.githubusercontent.com/sytex10/scrollblock/main/version.json";
 let initialDiskManifestVersion = CURRENT_EXTENSION_VERSION;
+
+function syncActionBranding() {
+  try {
+    if (chrome.action) {
+      chrome.action.setTitle({ title: "ShortBan Kontrol Paneli" });
+      chrome.action.setIcon({
+        path: {
+          "16": "icon16.png",
+          "32": "icon48.png",
+          "48": "icon48.png",
+          "128": "icon128.png"
+        }
+      });
+    }
+  } catch (_) {}
+}
+
+syncActionBranding();
 
 const DEFAULT_STATE = {
   isInstagramEnabled: true,
@@ -68,6 +86,7 @@ function checkRemoteAndDiskUpdate() {
 }
 
 chrome.runtime.onInstalled.addListener(() => {
+  syncActionBranding();
   chrome.storage.local.get(null, (current) => {
     const merged = { ...DEFAULT_STATE, ...current, extensionVersion: CURRENT_EXTENSION_VERSION };
     if (!merged.breakLastDateKey) {
@@ -81,6 +100,7 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.runtime.onStartup.addListener(() => {
+  syncActionBranding();
   chrome.alarms.create("scrollblock_break_check", { periodInMinutes: 0.25 });
   chrome.alarms.create("shortban_update_check", { periodInMinutes: 1 });
   checkRemoteAndDiskUpdate();

@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.scrollblock.android12.core.Android12PermissionGuide
 import com.example.scrollblock.theme.AccentPrimary
 import com.example.scrollblock.theme.AccentSignal
 import com.example.scrollblock.theme.AccentSignalSoft
@@ -83,7 +84,9 @@ data class OnboardingPageData(
 enum class OnboardingActionType {
     NONE,
     OPEN_APP_DETAILS,
-    OPEN_ACCESSIBILITY
+    OPEN_ACCESSIBILITY,
+    ANDROID13_RESTRICTED_FLOW,
+    ANDROID12_DIRECT_FLOW
 }
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -94,18 +97,20 @@ fun OnboardingScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val isAndroid12OrBelow = remember { Android12PermissionGuide.isAndroid12OrBelow() }
+    val totalStepsLabel = if (isAndroid12OrBelow) "04" else "05"
 
-    val pages = remember {
-        listOf(
+    val pages = remember(isAndroid12OrBelow) {
+        val basePages = listOf(
             OnboardingPageData(
-                stepLabel = "ADIM 01 / 05 · NASIL ÇALIŞIR?",
+                stepLabel = "ADIM 01 / $totalStepsLabel · NASIL ÇALIŞIR?",
                 title = "Kısa Videoları ve Yorumları Akıllıca Engelle",
                 subtitle = "ShortBan uygulamaları tamamen kapatmaz; yalnızca sonsuz kısa video akışlarını ve toksik yorumları yakalayıp sizi güvenli sekmeye yönlendirir:",
                 items = listOf(
                     OnboardingHighlightItem(
                         tag = "IG",
                         title = "Instagram Reels -> Ana Sayfa",
-                        body = "Alt bardaki Reels sekmesine bastığınızda uygulamadan atmaz; sizi doğrudan Ana Sayfa akışına döndürür. Hikayeler, gönderiler, profil ve DM mesajlaşması tamamen serbesttir."
+                        body = "Alt bardaki Reels sekmesini gizler, tıklansa bile uygulamadan atmaz; sizi doğrudan Ana Sayfa akışına döndürür. Hikayeler, gönderiler, profil ve DM mesajlaşması tamamen serbesttir."
                     ),
                     OnboardingHighlightItem(
                         tag = "TT",
@@ -115,43 +120,43 @@ fun OnboardingScreen(
                     OnboardingHighlightItem(
                         tag = "YT",
                         title = "YouTube Shorts -> Normal Video",
-                        body = "Yalnızca tam ekran dikey Shorts oynatıcısını kapatır. Normal uzun YouTube videolarını, YouTube Music'i ve aboneliklerinizi kesintisiz kullanabilirsiniz."
+                        body = "Shorts girişini gizler ve tam ekran dikey Shorts oynatıcısını kapatır. Normal uzun YouTube videolarını ve aboneliklerinizi kesintisiz kullanabilirsiniz."
                     )
                 ),
                 footerNote = "Art arda hızlıca (spam) tıklasanız bile anti-spam koruması devreye girer ve kısa video akışının açılmasına izin vermez."
             ),
             OnboardingPageData(
-                stepLabel = "ADIM 02 / 05 · ÖZELLİKLER",
-                title = "Yorum Kalkanı, DM İzni, Mola ve PIN",
+                stepLabel = "ADIM 02 / $totalStepsLabel · ÖZELLİKLER",
+                title = "Arayüz Koruması, Yorum Kalkanı, Mola ve PIN",
                 subtitle = "Günlük kullanımınızı kısıtlamadan iradenizi korumanız için tasarlanan özel araçlar:",
                 items = listOf(
                     OnboardingHighlightItem(
-                        tag = "DM",
-                        title = "DM'den Gelen İlk Videoya İzin Ver",
-                        body = "Bu ayarı açtığınızda arkadaşınızın Instagram veya TikTok DM'den gönderdiği ilk videoyu izleyebilirsiniz. Ancak parmağınızla 2. videoya kaydırdığınız salisede oynatıcı kapanır ve sohbete dönersiniz."
+                        tag = "GİZLE",
+                        title = "Kısa Video Girişlerini Gizle (Yeni)",
+                        body = "Instagram Reels, YouTube Shorts ve TikTok kısa video giriş butonlarını uygulamanın o anki Koyu/Açık tema rengiyle maskeler ve yanlışlıkla dokunmanızı engeller."
                     ),
                     OnboardingHighlightItem(
-                        tag = "MOLA",
-                        title = "Ayarlanabilir Mola & Günlük Sınır",
-                        body = "İhtiyacınız olduğunda 5, 10, 15 veya 30 dakikalık geçici mola başlatabilirsiniz. Günlük mola sayısını sınırlandırabilirsiniz. Süre bitince koruma kendiliğinden başlar."
+                        tag = "DM",
+                        title = "DM'den Gelen İlk Videoya İzin Ver",
+                        body = "Arkadaşınızın Instagram veya TikTok DM'den gönderdiği ilk videoyu izleyebilirsiniz. Ancak parmağınızla 2. videoya kaydırdığınız salisede oynatıcı kapanır ve sohbete dönersiniz."
                     ),
                     OnboardingHighlightItem(
                         tag = "PIN",
-                        title = "4 Haneli Güvenlik / Ebeveyn PIN Kilidi",
-                        body = "Kendinizi veya çocuğunuzu korumak için 4 haneli şifre belirleyin. PIN aktifken koruma kapatılamaz, mola başlatılamaz ve ayarlar değiştirilemez."
+                        title = "Ayarlanabilir Mola & 4 Haneli PIN Kilidi",
+                        body = "İhtiyacınız olduğunda geçici mola başlatabilir, kendinizi veya çocuğunuzu korumak için ayarları 4 haneli şifre ile kilitleyebilirsiniz."
                     )
                 ),
-                footerNote = "Tüm bu kuralları ana ekrandan tek dokunuşla dilediğiniz gibi özelleştirebilirsiniz."
+                footerNote = "Tüm bu kuralları ana ekrandan tek dokunuşla dilediğiniz gibi açıp kapatabilirsiniz."
             ),
             OnboardingPageData(
-                stepLabel = "ADIM 03 / 05 · AÇIK RIZA VE GİZLİLİK",
+                stepLabel = "ADIM 03 / $totalStepsLabel · AÇIK RIZA VE GİZLİLİK",
                 title = "Açık Rıza ve Gizlilik Politikası Beyanı",
                 subtitle = "ShortBan'ı kullanmaya başlamadan önce Erişilebilirlik izni ve gizlilik ilkelerimiz:",
                 items = listOf(
                     OnboardingHighlightItem(
                         tag = "1",
                         title = "Erişilebilirlik İzni Açık Rıza Beyanı",
-                        body = "Uygulama yalnızca hedef platformlarda (Instagram, TikTok, YouTube) kısa video ekranlarının veya yorum pencerelerinin açıldığını tespit etmek için Android AccessibilityService API'sini kullanarak arayüz kimliklerini anlık kontrol eder. YouTube Music ve diğer uygulamalara dokunulmaz."
+                        body = "Uygulama yalnızca hedef platformlarda (Instagram, TikTok, YouTube) kısa video ekranlarının veya yorum pencerelerinin açıldığını tespit etmek için Android AccessibilityService API'sini kullanarak arayüz kimliklerini anlık kontrol eder. Özel mesajlar (DM), klavye, banka uygulamaları ve diğer uygulamalara dokunulmaz."
                     ),
                     OnboardingHighlightItem(
                         tag = "2",
@@ -165,58 +170,75 @@ fun OnboardingScreen(
                     )
                 ),
                 footerNote = "Sonraki adıma geçerek ve Erişilebilirlik Servisi'ni etkinleştirerek bu Açık Rıza ve Gizlilik Politikası Beyanı'nı okuduğunuzu ve kabul ettiğinizi onaylamış olursunuz."
-            ),
-            OnboardingPageData(
-                stepLabel = "ADIM 04 / 05 · KURULUM (1. AŞAMA)",
-                title = "Android 13+ Kısıtlı Ayar Kilidini Açma",
-                subtitle = "Android 13 ve üzeri cihazlarda APK ile kurulan uygulamalar için sistem güvenlik kilidi bulunur. Erişilebilirlik izni verebilmek için önce şu 3 adımı uygulayın:",
-                items = listOf(
-                    OnboardingHighlightItem(
-                        tag = "1",
-                        title = "Uygulama Bilgisi Ekranını Açın",
-                        body = "Aşağıdaki '1. Adım: Uygulama Bilgisi Ayarlarını Aç' butonuna dokunun."
-                    ),
-                    OnboardingHighlightItem(
-                        tag = "2",
-                        title = "Sağ Üstteki Üç Nokta (⋮) Menüsüne Dokunun",
-                        body = "Açılan sistem sayfasının sağ üst köşesinde bulunan üç nokta (⋮) simgesine basın."
-                    ),
-                    OnboardingHighlightItem(
-                        tag = "3",
-                        title = "'Kısıtlı Ayarlara İzin Ver' Seçeneğini Onaylayın",
-                        body = "Menüdeki 'Kısıtlı ayarlara izin ver' seçeneğine dokunun ve telefonunuzun ekran kilidiyle onaylayın."
-                    )
-                ),
-                footerNote = "Not: Uygulama Bilgisi ekranının sağ üst köşesinde üç nokta (⋮) simgesi yoksa telefonunuzda kısıtlı ayar kilidi yoktur; doğrudan bir sonraki adıma geçebilirsiniz.",
-                actionButtonText = "1. Adım: Uygulama Bilgisi Ayarlarını Aç",
-                actionType = OnboardingActionType.OPEN_APP_DETAILS
-            ),
-            OnboardingPageData(
-                stepLabel = "ADIM 05 / 05 · KURULUM (2. AŞAMA)",
-                title = "Erişilebilirlik Servisini Etkinleştirin",
-                subtitle = "Son olarak ShortBan'ın kısa video akışlarını ve yorum pencerelerini algılayabilmesi için Erişilebilirlik Servisi'ni açın:",
-                items = listOf(
-                    OnboardingHighlightItem(
-                        tag = "1",
-                        title = "Erişilebilirlik Ayarlarını Açın",
-                        body = "Aşağıdaki '2. Adım: Erişilebilirlik Ayarlarını Aç' butonuna dokunun ve Açık Rıza Beyanı'nı onaylayın."
-                    ),
-                    OnboardingHighlightItem(
-                        tag = "2",
-                        title = "ShortBan'ı Bulup Açık Konuma Getirin",
-                        body = "'İndirilen Uygulamalar' (veya Yüklü Servisler) menüsünden ShortBan'a girin ve servisi etkinleştirin."
-                    ),
-                    OnboardingHighlightItem(
-                        tag = "%100",
-                        title = "Tam Gizlilik ve Sıfır Veri Toplama",
-                        body = "ShortBan hiçbir kişisel verinizi, mesajınızı veya ekran görüntünüzü kaydetmez ve internete göndermez. Tüm tespit cihaz içinde anlık yapılır."
-                    )
-                ),
-                footerNote = "Servisi açtıktan sonra aşağıdaki 'Kurulumu Tamamla ve Başla' butonuna basarak ana ekrana geçebilirsiniz.",
-                actionButtonText = "2. Adım: Erişilebilirlik Ayarlarını Aç",
-                actionType = OnboardingActionType.OPEN_ACCESSIBILITY
             )
         )
+
+        if (isAndroid12OrBelow) {
+            basePages + listOf(
+                OnboardingPageData(
+                    stepLabel = "ADIM 04 / 04 · HIZLI KURULUM",
+                    title = "Erişilebilirlik Servisini Etkinleştirin",
+                    subtitle = "Cihazınızda (Android 12 ve altı) kısıtlı ayar kilidi bulunmadığı için doğrudan tek adımla korumayı başlatabilirsiniz:",
+                    items = emptyList(),
+                    footerNote = "Servisi açtıktan sonra aşağıdaki 'Kurulumu Tamamla ve Başla' butonuna basarak ana ekrana geçebilirsiniz.",
+                    actionButtonText = "Erişilebilirlik Ayarlarını Aç",
+                    actionType = OnboardingActionType.ANDROID12_DIRECT_FLOW
+                )
+            )
+        } else {
+            basePages + listOf(
+                OnboardingPageData(
+                    stepLabel = "ADIM 04 / 05 · KURULUM (1. AŞAMA)",
+                    title = "Android 13+ Kısıtlı Ayar Kilidini Açma",
+                    subtitle = "Uygulama Bilgisi ekranında sağ üstteki üç nokta (⋮) menüsünün görünmesi için şu sırayı eksiksiz uygulayın:",
+                    items = listOf(
+                        OnboardingHighlightItem(
+                            tag = "1",
+                            title = "Önce Erişilebilirlikte ShortBan'a Dokunun (Zorunlu)",
+                            body = "Aşağıdaki '1. Adım: Erişilebilirlikte ShortBan'a Dokun' butonuna basın, listeden ShortBan'ı seçip anahtara bir kez dokunun. Ekrana 'Kısıtlı Ayar' uyarısı çıkınca Tamam deyin. (Bu yapılmazsa üç nokta menüsü çıkmaz!)"
+                        ),
+                        OnboardingHighlightItem(
+                            tag = "2",
+                            title = "Uygulama Bilgisi > Sağ Üst Üç Nokta (⋮)",
+                            body = "Ardından aşağıdaki '2. Adım: Uygulama Bilgisi (⋮) Aç' butonuna basın ve sağ üst köşedeki üç nokta (⋮) simgesine dokunun."
+                        ),
+                        OnboardingHighlightItem(
+                            tag = "3",
+                            title = "'Kısıtlı Ayarlara İzin Ver' Seçeneğini Onaylayın",
+                            body = "Açılan menüdeki 'Kısıtlı ayarlara izin ver' seçeneğine dokunun ve telefonunuzun ekran kilidiyle onaylayın."
+                        )
+                    ),
+                    footerNote = "Önemli İpucu: Sağ üstte üç nokta (⋮) görünmüyorsa 1. adımdaki Erişilebilirlik menüsünde ShortBan'a henüz dokunmamışsınız demektir.",
+                    actionButtonText = "1. Adım: Erişilebilirlikte ShortBan'a Dokun",
+                    actionType = OnboardingActionType.ANDROID13_RESTRICTED_FLOW
+                ),
+                OnboardingPageData(
+                    stepLabel = "ADIM 05 / 05 · KURULUM (2. AŞAMA)",
+                    title = "Erişilebilirlik Servisini Etkinleştirin",
+                    subtitle = "Kısıtlı ayar kilidini açtığınıza göre artık ShortBan korumasını aktif edebilirsiniz:",
+                    items = listOf(
+                        OnboardingHighlightItem(
+                            tag = "1",
+                            title = "Erişilebilirlik Ayarlarını Tekrar Açın",
+                            body = "Aşağıdaki '3. Adım: Erişilebilirlik Ayarlarını Aç ve Aktif Et' butonuna dokunun."
+                        ),
+                        OnboardingHighlightItem(
+                            tag = "2",
+                            title = "ShortBan Anahtarını Açık Konuma Getirin",
+                            body = "'İndirilen Uygulamalar' (veya Yüklü Hizmetler) menüsünden ShortBan'a girin ve anahtarı açın."
+                        ),
+                        OnboardingHighlightItem(
+                            tag = "%100",
+                            title = "Tam Gizlilik ve Sıfır Veri Toplama",
+                            body = "ShortBan hiçbir kişisel verinizi, mesajınızı veya ekran görüntünüzü kaydetmez ve internete göndermez. Tüm tespit cihaz içinde anlık yapılır."
+                        )
+                    ),
+                    footerNote = "Servisi açtıktan sonra aşağıdaki 'Kurulumu Tamamla ve Başla' butonuna basarak ana ekrana geçebilirsiniz.",
+                    actionButtonText = "3. Adım: Erişilebilirlik Ayarlarını Aç ve Aktif Et",
+                    actionType = OnboardingActionType.OPEN_ACCESSIBILITY
+                )
+            )
+        }
     }
 
     var currentStep by remember { mutableIntStateOf(0) }
@@ -420,29 +442,73 @@ fun OnboardingScreen(
                         }
                     }
 
-                    // Varsa Doğrudan Sistem Ayarı Açma Butonu
-                    if (page.actionButtonText != null) {
-                        OutlinedButton(
-                            onClick = {
-                                when (page.actionType) {
-                                    OnboardingActionType.OPEN_APP_DETAILS ->
-                                        AccessibilityUtils.openAppDetailsSettings(context)
-                                    OnboardingActionType.OPEN_ACCESSIBILITY ->
-                                        showOnboardingDisclosureDialog = true
-                                    OnboardingActionType.NONE -> {}
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp),
-                            contentPadding = PaddingValues(vertical = 12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
-                        ) {
-                            Text(
-                                text = page.actionButtonText,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold
+                    // Varsa Doğrudan Sistem Ayarı Açma Bölümü
+                    when (page.actionType) {
+                        OnboardingActionType.ANDROID12_DIRECT_FLOW -> {
+                            Android12PermissionGuide.OnboardingStepsCard(
+                                isServiceEnabled = isServiceActive,
+                                onOpenAccessibility = { showOnboardingDisclosureDialog = true }
                             )
                         }
+                        OnboardingActionType.ANDROID13_RESTRICTED_FLOW -> {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = { showOnboardingDisclosureDialog = true },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(vertical = 12.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = AccentPrimary,
+                                        contentColor = NearBlack
+                                    )
+                                ) {
+                                    Text(
+                                        text = "1. Adım: Erişilebilirlikte ShortBan'a Dokun (Tetikle)",
+                                        fontSize = 12.5.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                OutlinedButton(
+                                    onClick = { AccessibilityUtils.openAppDetailsSettings(context) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(vertical = 12.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
+                                ) {
+                                    Text(
+                                        text = "2. Adım: Uygulama Bilgisi (⋮) > Kısıtlı Ayarlara İzin Ver",
+                                        fontSize = 12.5.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+                        OnboardingActionType.OPEN_APP_DETAILS,
+                        OnboardingActionType.OPEN_ACCESSIBILITY -> {
+                            if (page.actionButtonText != null) {
+                                OutlinedButton(
+                                    onClick = {
+                                        if (page.actionType == OnboardingActionType.OPEN_APP_DETAILS) {
+                                            AccessibilityUtils.openAppDetailsSettings(context)
+                                        } else {
+                                            showOnboardingDisclosureDialog = true
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(vertical = 12.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
+                                ) {
+                                    Text(
+                                        text = page.actionButtonText,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+                        OnboardingActionType.NONE -> {}
                     }
 
                     // Alt Bilgi Kutusu
@@ -576,7 +642,7 @@ fun OnboardingScreen(
                             lineHeight = 16.sp
                         )
                         Text(
-                            text = "• Yalnızca Cihaz İçi İşlem: Tüm tespit anlık olarak telefonunuzun içinde gerçekleşir; YouTube Music ve diğer uygulamalara dokunulmaz.",
+                            text = "• Yalnızca Cihaz İçi İşlem: Tüm tespit anlık olarak telefonunuzun içinde gerçekleşir; özel mesajlara (DM), klavyeye ve diğer uygulamalara dokunulmaz.",
                             fontSize = 11.5.sp,
                             color = TextPrimary,
                             lineHeight = 16.sp

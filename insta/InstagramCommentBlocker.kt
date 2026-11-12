@@ -58,23 +58,39 @@ class InstagramCommentBlocker {
                 rootNode,
                 "layout_comment_thread",
                 "comment_composer_parent",
-                "row_comment_textview_comment"
+                "row_comment_textview_comment",
+                "comments_list",
+                "comments_recycler_view",
+                "comment_composer_edittext"
             )
         ) {
             return true
         }
 
-        // 2. "Yorumlar" / "Comments" başlığı + yorum yazma alanı veya comment_composer
+        // 2. Açıklama metnine (caption) tıklanınca açılan genişletilmiş yorum sayfası / modalı:
+        // Başlıkta "Yorumlar", "Comments" varsa ve yorum yazma / emoji barı / gönderi sahibi yorumu varsa
         val hasHeader = hasCommentsHeaderTitle(rootNode)
-        if (hasHeader && NodeUtils.hasVisibleViewId(rootNode, "comment_composer")) {
-            return true
+        if (hasHeader) {
+            if (NodeUtils.hasVisibleViewId(rootNode, "comment_composer", "comment_edittext", "comment_textview")) {
+                return true
+            }
+            if (NodeUtils.hasVisibleTextInRegion(
+                    rootNode, 0.65f, 1.0f,
+                    "yorum ekle", "add a comment", "yorum yaz", "emoji ekle", "yanıtla", "reply"
+                )
+            ) {
+                return true
+            }
+            // Başlık "Yorumlar" ve ekranın alt yarısında yorum giriş alanı mevcutsa
+            val hasBottomReplyBar = NodeUtils.hasVisibleTextInRegion(
+                rootNode, 0.75f, 1.0f,
+                "..."
+            ) || NodeUtils.hasVisibleViewId(rootNode, "composer", "action_bar")
+            if (hasBottomReplyBar) {
+                return true
+            }
         }
-
-        val hasCommentInputHint = NodeUtils.hasVisibleTextInRegion(
-            rootNode, 0.72f, 1.0f,
-            "yorum ekle", "add a comment", "yorum yaz", "emoji ekle"
-        )
-        return hasHeader && hasCommentInputHint
+        return false
     }
 
     private fun hasCommentsHeaderTitle(rootNode: AccessibilityNodeInfo): Boolean {

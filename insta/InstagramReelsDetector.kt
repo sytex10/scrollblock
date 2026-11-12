@@ -98,18 +98,25 @@ class InstagramReelsDetector(
         }
 
         // ---- 2. KESİN GÜVENLİ EKRANLAR (Ana Sayfa, Profil, Hikaye, Paylaşım, DM Sohbet, Keşfet Izgarası) ----
-        if (NodeUtils.isNodeSelected(feedTab) || isHomeFeedScreen(rootNode)) {
-            activeSection = ActiveSection.HOME
-            awaitingOverlayExit = false
-            singleReelGuard.reset()
-            return DetectionResult.notDetected(platformName)
-        }
+        // DİKKAT: Ana Sayfadaki bir Reels videosuna dokunulduğunda tam ekran oynatıcı (clips_viewer) açılır.
+        // Bu yüzden eğer ekranda tam ekran Clips Viewer veya sağ kenar aksiyonları VARSA,
+        // feedTab seçili olsa bile güvenli ekran sayılmaz; engellemeye yönlendirilir.
+        val hasClipsViewerActive = isFullScreenClipsViewer(rootNode, event, bottomBarVisible = true)
 
-        if (NodeUtils.isNodeSelected(profileTab) || isOtherUserProfile(rootNode)) {
-            activeSection = ActiveSection.PROFILE
-            awaitingOverlayExit = false
-            singleReelGuard.reset()
-            return DetectionResult.notDetected(platformName)
+        if (!hasClipsViewerActive) {
+            if (NodeUtils.isNodeSelected(feedTab) || isHomeFeedScreen(rootNode)) {
+                activeSection = ActiveSection.HOME
+                awaitingOverlayExit = false
+                singleReelGuard.reset()
+                return DetectionResult.notDetected(platformName)
+            }
+
+            if (NodeUtils.isNodeSelected(profileTab) || isOtherUserProfile(rootNode)) {
+                activeSection = ActiveSection.PROFILE
+                awaitingOverlayExit = false
+                singleReelGuard.reset()
+                return DetectionResult.notDetected(platformName)
+            }
         }
 
         if (isStoryViewer(rootNode) || isShareSheet(rootNode)) {
