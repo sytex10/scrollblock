@@ -63,45 +63,33 @@
         <!-- 2. BİLGİSAYAR TARAYICI EKLENTİSİ KARTI -->
         <div class="dl-box pc-box">
           <div class="dl-top">
-            <span class="dl-badge neutral">CHROME · EDGE · BRAVE · OPERA</span>
-            <span id="pcVersionText" class="dl-ver">v1.0 · Güncel</span>
+            <span class="dl-badge neutral">CHROME WEB MAĞAZASI</span>
+            <span id="pcVersionText" class="dl-ver">v1.0 · Resmi Sürüm</span>
           </div>
           <h3 class="dl-title" style="display: flex; align-items: center; gap: 10px;">
             <img src="logo.jpg" alt="ShortBan" width="26" height="26" style="border-radius: 6px; object-fit: cover;" />
-            <span>ShortBan Bilgisayar Eklentisi</span>
+            <span>ShortBan Chrome Eklentisi</span>
           </h3>
           <p class="dl-desc">
-            Bilgisayardan girilen YouTube Shorts, Instagram Reels, TikTok akışlarını ve yorumları arka planda otomatik güncellenerek engeller.
+            YouTube Shorts, Instagram Reels ve TikTok akışlarını doğrudan masaüstü tarayıcınızda engelleyen resmi uzantı.
           </p>
           <div class="dl-actions">
             <a
-              id="oneClickPcInstallBtn"
-              href="downloads/ShortBan-PC-Kurulum.cmd"
-              download="ShortBan-PC-Kurulum.cmd"
-              class="btn-secondary"
+              id="chromeWebStoreBtn"
+              href="https://chromewebstore.google.com/"
+              target="_blank"
+              rel="noopener"
+              class="btn-primary"
+              style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; text-decoration: none;"
             >
-              Tek Tıkla Otomatik Kur (.CMD)
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="#FFFFFF" stroke-width="2"/>
+                <circle cx="12" cy="12" r="4" fill="#F21B2D"/>
+              </svg>
+              <span>Chrome'a Ekle — Ücretsiz</span>
             </a>
-            <a
-              href="downloads/ScrollBlock-PC-Extension.zip"
-              download="ScrollBlock-PC-Extension.zip"
-              class="btn-outline"
-            >
-              .ZIP İndir
-            </a>
-            <button id="toggleGuideBtn" class="btn-outline">Rehber</button>
           </div>
         </div>
-      </div>
-
-      <!-- PC EKLENTİ KURULUM REHBERİ (AÇILIR KUTU) -->
-      <div id="pcInstallGuide" class="guide-box" style="display: none;">
-        <h4>Bilgisayara 30 Saniyede Nasıl Kurulur?</h4>
-        <ol>
-          <li>Yukarıdaki <strong>Bilgisayar Eklentisini İndir (.ZIP)</strong> butonuna basıp dosyayı bir klasöre çıkartın.</li>
-          <li>Tarayıcınızın adres çubuğuna <code>chrome://extensions</code> (veya Edge için <code>edge://extensions</code>) yazıp sağ üstten <strong>Geliştirici Modu</strong>'nu açın.</li>
-          <li>Sol üstteki <strong>Paketlenmemiş öğe yükle (Load unpacked)</strong> butonuna tıklayıp çıkarttığınız klasörü seçin. Kurulduktan sonra arka planda otomatik güncellenir!</li>
-        </ol>
       </div>
     </section>
 
