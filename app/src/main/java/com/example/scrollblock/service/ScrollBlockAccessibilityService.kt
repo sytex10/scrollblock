@@ -77,25 +77,15 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
         val detector = detectors.firstOrNull { it.matchesPackage(packageName) }
 
         if (detector == null) {
-            // Kullanıcı hedef uygulamadan başka bir uygulamaya geçtiyse (örn. Ana Ekran, WhatsApp) maskeyi temizle
-            if (eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
-                !packageName.contains("systemui", ignoreCase = true) &&
-                !packageName.contains("inputmethod", ignoreCase = true) &&
-                !packageName.contains("keyboard", ignoreCase = true)
-            ) {
-                overlayManager?.clearAllOverlays()
-            }
             return
         }
 
         // Mola / Cooldown kontrolü
         if (preferences.isBreakActiveSync()) {
-            overlayManager?.clearAllOverlays()
             return
         }
 
-        if (!detector.isEnabled() && !preferences.isHideShortEntriesEnabledSync()) {
-            overlayManager?.clearAllOverlays()
+        if (!detector.isEnabled()) {
             return
         }
 
@@ -114,23 +104,10 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
         ) return
         lastEvalTime = now
 
-        val rootNode = rootInActiveWindow ?: run {
-            overlayManager?.clearAllOverlays()
-            return
-        }
+        val rootNode = rootInActiveWindow ?: return
 
         try {
-            // 1. Kısa Video Girişlerini Gizle (Arayüz Koruma Sistemi — Overlay)
-            overlayManager?.updateForWindow(
-                rootNode = rootNode,
-                packageName = packageName,
-                isEnabled = preferences.isHideShortEntriesEnabledSync(),
-                blockInstagram = preferences.isInstagramEnabledSync(),
-                blockYoutube = preferences.isYouTubeEnabledSync(),
-                blockTiktok = preferences.isTikTokEnabledSync()
-            )
-
-            // 2. Mevcut Akış ve Yorum Engelleme Motoru
+            // Akış ve Yorum Engelleme Motoru (Tıklanınca Anında Engelleme)
             if (!detector.isEnabled()) return
 
             val result = detector.detectShortFeed(rootNode, event)

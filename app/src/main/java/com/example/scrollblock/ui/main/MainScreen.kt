@@ -105,7 +105,6 @@ fun MainScreen(
     val isInstagramCommentsBlocked by viewModel.isInstagramCommentsBlocked.collectAsStateWithLifecycle()
     val isTikTokCommentsBlocked by viewModel.isTikTokCommentsBlocked.collectAsStateWithLifecycle()
     val isYouTubeCommentsBlocked by viewModel.isYouTubeCommentsBlocked.collectAsStateWithLifecycle()
-    val isHideShortEntriesEnabled by viewModel.isHideShortEntriesEnabled.collectAsStateWithLifecycle()
 
     val totalBlockedCount by viewModel.totalBlockedCount.collectAsStateWithLifecycle()
     val lastBlockedPlatform by viewModel.lastBlockedPlatform.collectAsStateWithLifecycle()
@@ -396,16 +395,6 @@ fun MainScreen(
                         }
                     } else {
                         viewModel.setYouTubeCommentsBlocked(true)
-                    }
-                },
-                isHideShortEntriesEnabled = isHideShortEntriesEnabled,
-                onHideShortEntriesToggle = { enabled ->
-                    if (!enabled) {
-                        executeProtectedAction(subtitle = "Kısa video girişlerini gizleme korumasını kapatmak için PIN girin.") {
-                            viewModel.setHideShortEntriesEnabled(false)
-                        }
-                    } else {
-                        viewModel.setHideShortEntriesEnabled(true)
                     }
                 }
             )
@@ -1091,9 +1080,7 @@ private fun PlatformsGroupCard(
     isYouTubeEnabled: Boolean,
     onYouTubeToggle: (Boolean) -> Unit,
     isYouTubeCommentsBlocked: Boolean,
-    onYouTubeCommentsToggle: (Boolean) -> Unit,
-    isHideShortEntriesEnabled: Boolean,
-    onHideShortEntriesToggle: (Boolean) -> Unit
+    onYouTubeCommentsToggle: (Boolean) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -1102,16 +1089,6 @@ private fun PlatformsGroupCard(
             .background(CardBackground)
             .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
     ) {
-        // 0. Arayüz Koruma Sistemi — Kısa Video Girişlerini Gizle (Bağımsız Anahtar)
-        PlatformToggleRow(
-            title = "Kısa Video Girişlerini Gizle",
-            subtitle = "Instagram Reels, YouTube Shorts ve TikTok kısa video giriş butonlarını tema rengiyle gizler ve dokunmayı engeller",
-            checked = isHideShortEntriesEnabled,
-            onCheckedChange = onHideShortEntriesToggle
-        )
-
-        HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
-
         // 1. Instagram
         PlatformToggleRow(
             title = "Instagram",
