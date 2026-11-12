@@ -1,6 +1,6 @@
 {
-  "versionCode": 37,
-  "versionName": "4.6",
-  "changelog": "• Instagram Ana Sayfa Reels Açılış Kilidi: Ana sayfadaki Reels gönderilerine dokunulduğunda tam ekran oynatıcının açılması engellendi, anında ana akışa dönülür.\n• Açıklama Yorum Kalkanı: Açıklamaya dokunarak yorumların açılması engellendi.\n• Arayüz Koruma İyileştirmesi: Alt bar overlay hizalama ve konum hassasiyeti artırıldı.\n• YouTube Uzun Video Yorum Koruması: Normal video yorumları serbest, Shorts yorumları engelli.",
+  "versionCode": 38,
+  "versionName": "1.0",
+  "changelog": "• ShortBan Resmi v1.0 Sürümü\n• Kusursuz Hızlı Engelleme: Reels ve Shorts sekmesine veya gönderisine dokunulduğunda anında ana akışa geri döner.\n• Instagram Ana Sayfa & Akış Reels Kilidi: Ana sayfadan Reels açılması tamamen engellendi.\n• Açıklama Yorum Kalkanı: Gönderi açıklamasına dokunarak yorumların açılması engellendi.\n• YouTube Uzun Video Yorum Koruması: Normal video yorumları serbest, Shorts yorumları engelli.",
   "apkUrl": "https://raw.githubusercontent.com/sytex10/scrollblock/main/release/ScrollBlock-release.apk"
 }

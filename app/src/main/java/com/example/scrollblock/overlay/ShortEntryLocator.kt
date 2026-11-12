@@ -421,26 +421,14 @@ object ShortEntryLocator {
     }
 
     private fun resolveInstagramThemeColor(context: Context): Int {
-        return if (isSystemNightMode(context)) {
-            Color.parseColor("#121212") // Instagram resmi Koyu Mod alt bar zemin rengi
-        } else {
-            Color.parseColor("#FFFFFF") // Instagram Açık Mod alt bar zemin rengi
-        }
+        return Color.TRANSPARENT // Görünmez Şeffaf Dokunma Kalkanı (Tema uyumsuzluğu yok, dokunmayı yutar)
     }
 
     private fun resolveYouTubeThemeColor(context: Context): Int {
-        return if (isSystemNightMode(context)) {
-            Color.parseColor("#0F0F0F") // YouTube resmi Koyu Mod alt bar rengi
-        } else {
-            Color.parseColor("#FFFFFF") // YouTube Açık Mod alt bar rengi
-        }
+        return Color.TRANSPARENT // Görünmez Şeffaf Dokunma Kalkanı (Tema uyumsuzluğu yok, dokunmayı yutar)
     }
 
     private fun resolveTikTokThemeColor(context: Context): Int {
-        return if (isSystemNightMode(context)) {
-            Color.parseColor("#000000") // TikTok Koyu Mod
-        } else {
-            Color.parseColor("#FFFFFF")
-        }
+        return Color.TRANSPARENT // Görünmez Şeffaf Dokunma Kalkanı (Tema uyumsuzluğu yok, dokunmayı yutar)
     }
 }

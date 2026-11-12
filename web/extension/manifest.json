@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ShortBan — Kısa Video & Yorum Kalkanı",
-  "version": "4.5.0",
+  "version": "1.0.0",
   "description": "YouTube Shorts, Instagram Reels, TikTok kısa video akışlarını ve toksik yorum pencerelerini engelleyerek odaklanmanızı korur.",
   "icons": {
     "16": "icon16.png",

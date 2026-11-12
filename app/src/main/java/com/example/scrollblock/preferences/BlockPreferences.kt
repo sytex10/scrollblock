@@ -92,7 +92,7 @@ class BlockPreferences(context: Context) {
         prefs.getBoolean(KEY_YOUTUBE_COMMENTS_BLOCKED, false)
 
     fun isHideShortEntriesEnabledSync(): Boolean =
-        prefs.getBoolean(KEY_HIDE_SHORT_ENTRIES, true)
+        prefs.getBoolean(KEY_HIDE_SHORT_ENTRIES, false)
 
     fun getTotalBlockedCountSync(): Int =
         prefs.getInt(KEY_TOTAL_BLOCKED_COUNT, 0)
