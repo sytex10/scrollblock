@@ -143,7 +143,8 @@ class InstagramReelsDetector(
 
         // Eğer kullanıcı Ana Sayfa veya Profil sekmesinde gezinirken alt bar gizlendiyse
         // (ör. Ana Sayfa akışında aşağı doğru kaydırırken) ASLA engelleme yapma!
-        if (activeSection == ActiveSection.HOME || activeSection == ActiveSection.PROFILE) {
+        // ANCAK tam ekran Clips Viewer açılmışsa bu kalkanı atla!
+        if (!hasClipsViewerActive && (activeSection == ActiveSection.HOME || activeSection == ActiveSection.PROFILE)) {
             val hasDmQuickReplyOnScreen = NodeUtils.hasVisibleTextInRegion(
                 rootNode, 0.82f, 1f,
                 "mesaj gönder", "mesaj yaz", "send a message", "message..."
@@ -269,13 +270,16 @@ class InstagramReelsDetector(
         val hasVisibleClipsPager = NodeUtils.hasVisibleViewId(
             rootNode,
             "clips_viewer_view_pager",
-            "clips_viewer_fragment"
+            "clips_viewer_fragment",
+            "reel_viewer_view_pager",
+            "clips_video_container",
+            "clips_swipe_refresh_layout"
         )
         if (hasVisibleClipsPager) return true
 
         val className = event?.className?.toString() ?: ""
-        if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
-            className.contains("ClipsViewer", ignoreCase = true)
+        if (className.contains("ClipsViewer", ignoreCase = true) ||
+            className.contains("ReelViewer", ignoreCase = true)
         ) {
             return true
         }

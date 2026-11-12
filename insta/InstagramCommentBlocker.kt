@@ -117,7 +117,7 @@ class InstagramCommentBlocker {
                 rect.exactCenterX() in (w * 0.25f)..(w * 0.75f) &&
                 rect.exactCenterY() in (h * 0.02f)..(h * 0.62f)
         }
-    }
+    } 
 
     fun reset() {
         awaitingCommentSheetClose = false
