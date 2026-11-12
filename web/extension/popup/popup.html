@@ -7,99 +7,147 @@
 </head>
 <body>
   <div class="container">
+    <!-- ÜST BAŞLIK & MARKA -->
     <header class="topbar">
-      <div class="brand" style="display:flex;align-items:center;gap:8px;">
-        <img src="../icon48.png" alt="ShortBan" width="24" height="24" style="border-radius:6px;" />
-        <span class="logo"><span style="color:#FFFFFF;font-weight:900;">SHORT</span><span style="color:#F21B2D;font-weight:900;">BAN</span></span>
-        <span class="version">v4.5</span>
+      <div class="brand">
+        <img src="../icon48.png" alt="ShortBan" class="brand-icon" width="28" height="28" />
+        <div class="brand-text">
+          <span class="logo"><span class="logo-short">SHORT</span><span class="logo-ban">BAN</span></span>
+          <span class="version-tag">v1.0</span>
+        </div>
       </div>
       <div id="statusPill" class="pill active">
         <span class="dot"></span>
-        <span id="statusText">Aktif</span>
+        <span id="statusText">Koruma Aktif</span>
       </div>
     </header>
 
+    <!-- CANLI ENGELLEME SAYACI -->
     <section class="card stats-card">
+      <div class="stats-glow"></div>
       <div class="stats-row">
         <div>
-          <p class="muted-label">Toplam Engellenen Akış</p>
+          <span class="muted-label">ENGEL LENEN AKIŞ</span>
           <h1 id="blockedCount" class="counter">0</h1>
         </div>
-        <button id="openWebDashboard" class="small-btn">Kontrol Paneli</button>
+        <button id="openWebDashboard" class="small-btn">Web Panel</button>
       </div>
-      <p id="lastBlockedInfo" class="muted-sub">Bilgisayar koruması devrede</p>
+      <div class="status-footer">
+        <span class="pulse-indicator"></span>
+        <p id="lastBlockedInfo" class="muted-sub">Masaüstü koruması devrede</p>
+      </div>
     </section>
 
+    <!-- KORUMA PLATFORMLARI -->
     <div class="section-title">KORUMA PLATFORMLARI</div>
     <section class="card list-card">
+      <!-- 1. INSTAGRAM -->
       <div class="toggle-row">
-        <div>
-          <div class="row-title">Instagram Reels</div>
+        <div class="row-info">
+          <div class="platform-header">
+            <span class="platform-badge ig-badge"></span>
+            <span class="row-title">Instagram Reels</span>
+          </div>
           <div class="row-sub">Reels ve Keşfet videolarını engeller</div>
         </div>
-        <input type="checkbox" id="toggleInstagram" class="switch" checked />
+        <label class="switch-toggle">
+          <input type="checkbox" id="toggleInstagram" checked />
+          <span class="slider"></span>
+        </label>
       </div>
       <div id="igDmSubRow" class="sub-row">
-        <div>
+        <div class="sub-info">
           <div class="sub-title">DM'den gelen ilk Reels'a izin ver</div>
-          <div class="sub-desc">Sohbetten açılan ilk videoya izin verir, 2. videoda kapatır</div>
+          <div class="sub-desc">Sohbetten açılan ilk video izlenir, 2. videoda kapatır</div>
         </div>
-        <input type="checkbox" id="toggleInstagramDm" class="switch" checked />
+        <label class="switch-toggle switch-small">
+          <input type="checkbox" id="toggleInstagramDm" checked />
+          <span class="slider"></span>
+        </label>
       </div>
       <div class="sub-row">
-        <div>
-          <div class="sub-title">Yorumları engelle (Yorum Kalkanı)</div>
-          <div class="sub-desc">Gönderi ve Reels yorumlarını otomatik gizler</div>
+        <div class="sub-info">
+          <div class="sub-title">Yorum Kalkanı</div>
+          <div class="sub-desc">Gönderi ve Reels yorum pencerelerini otomatik kapatır</div>
         </div>
-        <input type="checkbox" id="toggleInstagramComments" class="switch" />
+        <label class="switch-toggle switch-small">
+          <input type="checkbox" id="toggleInstagramComments" />
+          <span class="slider"></span>
+        </label>
       </div>
 
       <div class="divider"></div>
 
+      <!-- 2. TIKTOK -->
       <div class="toggle-row">
-        <div>
-          <div class="row-title">TikTok</div>
-          <div class="row-sub">Sizin İçin akışını Mesajlar'a yönlendirir</div>
+        <div class="row-info">
+          <div class="platform-header">
+            <span class="platform-badge tt-badge"></span>
+            <span class="row-title">TikTok</span>
+          </div>
+          <div class="row-sub">Sizin İçin & Arkadaşlar akışını engeller</div>
         </div>
-        <input type="checkbox" id="toggleTikTok" class="switch" checked />
+        <label class="switch-toggle">
+          <input type="checkbox" id="toggleTikTok" checked />
+          <span class="slider"></span>
+        </label>
       </div>
       <div id="ttDmSubRow" class="sub-row">
-        <div>
+        <div class="sub-info">
           <div class="sub-title">DM'den gelen ilk videoya izin ver</div>
-          <div class="sub-desc">Sohbetten açılan ilk video izlenir, kaydırınca kapatır</div>
+          <div class="sub-desc">Sohbetten açılan video bittiğinde kapatır</div>
         </div>
-        <input type="checkbox" id="toggleTikTokDm" class="switch" checked />
+        <label class="switch-toggle switch-small">
+          <input type="checkbox" id="toggleTikTokDm" checked />
+          <span class="slider"></span>
+        </label>
       </div>
       <div class="sub-row">
-        <div>
-          <div class="sub-title">Yorumları engelle (Yorum Kalkanı)</div>
-          <div class="sub-desc">TikTok video yorumlarını otomatik gizler</div>
+        <div class="sub-info">
+          <div class="sub-title">Yorum Kalkanı</div>
+          <div class="sub-desc">TikTok video yorumlarını otomatik kapatır</div>
         </div>
-        <input type="checkbox" id="toggleTikTokComments" class="switch" />
+        <label class="switch-toggle switch-small">
+          <input type="checkbox" id="toggleTikTokComments" />
+          <span class="slider"></span>
+        </label>
       </div>
 
       <div class="divider"></div>
 
+      <!-- 3. YOUTUBE SHORTS -->
       <div class="toggle-row">
-        <div>
-          <div class="row-title">YouTube Shorts</div>
-          <div class="row-sub">Shorts oynatıcısını kapatır, uzun videolar çalışır</div>
+        <div class="row-info">
+          <div class="platform-header">
+            <span class="platform-badge yt-badge"></span>
+            <span class="row-title">YouTube Shorts</span>
+          </div>
+          <div class="row-sub">Shorts akışını engeller, uzun videoları serbest bırakır</div>
         </div>
-        <input type="checkbox" id="toggleYouTube" class="switch" checked />
+        <label class="switch-toggle">
+          <input type="checkbox" id="toggleYouTube" checked />
+          <span class="slider"></span>
+        </label>
       </div>
       <div class="sub-row">
-        <div>
-          <div class="sub-title">Yorumları engelle (Yorum Kalkanı)</div>
-          <div class="sub-desc">YouTube yorumlar bölümünü otomatik gizler</div>
+        <div class="sub-info">
+          <div class="sub-title">Shorts Yorum Kalkanı</div>
+          <div class="sub-desc">Shorts yorum penceresini anında kapatır</div>
         </div>
-        <input type="checkbox" id="toggleYouTubeComments" class="switch" />
+        <label class="switch-toggle switch-small">
+          <input type="checkbox" id="toggleYouTubeComments" />
+          <span class="slider"></span>
+        </label>
       </div>
     </section>
 
+    <!-- MOLA MODU -->
     <div class="section-title">GEÇİCİ MOLA (COOLDOWN)</div>
     <section class="card break-card">
       <div id="breakInactiveView">
-        <button id="startBreakBtn" class="primary-btn">5 Dakika Mola Başlat</button>
+        <button id="startBreakBtn" class="primary-btn">
+          <span class="btn-text">5 Dakika Mola Başlat</span>
+        </button>
       </div>
       <div id="breakActiveView" style="display: none;">
         <div class="break-timer" id="breakTimerText">05:00</div>
@@ -110,4 +158,3 @@
   <script src="popup.js"></script>
 </body>
 </html>
-
