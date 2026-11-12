@@ -178,27 +178,31 @@ class InstagramReelsDetector(
                 !searchTabSelected &&
                 activeSection != ActiveSection.EXPLORE
 
-            // A) Keşfet'ten (Explore) açılan Reels videosu -> İlk video dahil oynatma, Keşfet ızgarasına döndür
+            // A) Keşfet, Ana Sayfa veya Akıştan açılan tam ekran Reels videosu
             if (!openedFromDm) {
                 singleReelGuard.reset()
-                // Alt bar görünürse GERİ basmak yerine Keşfet sekmesine tıkla (uygulamadan atma ihtimali %0)
-                if (bottomBarVisible) {
+
+                // SADECE Keşfet ızgarasından açılmışsa VE alt bar görünüyorsa Keşfet sekmesine bas
+                if (activeSection == ActiveSection.EXPLORE && searchTabSelected && bottomBarVisible) {
                     return DetectionResult.detected(
                         platform = platformName,
                         reason = "Instagram Keşfet Reel -> Keşfet ızgarasına dön",
                         preferTabSwitch = true,
-                        targetTabIds = listOf("search_tab", "feed_tab"),
-                        targetHomeTabKeywords = listOf("ara", "keşfet", "search", "explore", "ana sayfa", "home")
+                        targetTabIds = listOf("search_tab"),
+                        targetHomeTabKeywords = listOf("ara", "keşfet", "search", "explore")
                     )
                 }
-                // Alt bar gizliyse (tam ekran katman) yalnızca 1 kez GERİ bas
+
+                // Ana Sayfadaki veya akıştaki bir Reels gönderisine dokunulduğunda açılan tam ekran oynatıcı:
+                // Alt bar görünse dahi sekmeye tıklamak (zaten feed_tab seçili olduğu için) oynatıcıyı kapatmaz.
+                // Bu yüzden GERİ tuşu (GLOBAL_ACTION_BACK) basılarak tam ekran oynatıcı anında kapatılır ve ana akışa dönülür.
                 if (awaitingOverlayExit) {
                     return DetectionResult.notDetected(platformName)
                 }
                 awaitingOverlayExit = true
                 return DetectionResult.detected(
                     platform = platformName,
-                    reason = "Instagram Keşfet tam ekran Reel -> Geri",
+                    reason = "Instagram Ana Sayfa / Akış tam ekran Reel -> Geri ile akışa dön",
                     preferTabSwitch = false
                 )
             }
@@ -273,7 +277,18 @@ class InstagramReelsDetector(
             "clips_viewer_fragment",
             "reel_viewer_view_pager",
             "clips_video_container",
-            "clips_swipe_refresh_layout"
+            "clips_swipe_refresh_layout",
+            "clips_item_container",
+            "clips_video_view",
+            "clips_author_container",
+            "clips_ufi_container",
+            "clips_action_button_container",
+            "clips_media_interactivity_container",
+            "clips_layout",
+            "clips_viewer_container",
+            "feed_video_preview",
+            "ig_clip_viewer",
+            "viewer_media_view"
         )
         if (hasVisibleClipsPager) return true
 
@@ -285,6 +300,15 @@ class InstagramReelsDetector(
         }
 
         if (hasRightSideReelActions(rootNode)) return true
+
+        // Ekranın sağ/alt kısmında Reels veya Orijinal ses etiketi varsa
+        val hasReelsAudioOrLabel = NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0.70f, 1f,
+            "orijinal ses", "original audio", "sesi kullan", "use audio"
+        )
+        if (hasReelsAudioOrLabel && !bottomBarVisible) {
+            return true
+        }
 
         if (!bottomBarVisible && hasExactTopTitle(rootNode, "reels")) {
             return true
@@ -428,10 +452,10 @@ class InstagramReelsDetector(
         val cX = commentX ?: return false
         val cY = commentY ?: return false
 
-        val sameVerticalColumn = abs(lX - cX) <= w * 0.10f
-        val commentBelowLike = (cY - lY) in (h * 0.035f)..(h * 0.24f)
+        val sameVerticalColumn = abs(lX - cX) <= w * 0.12f
+        val commentBelowLike = (cY - lY) in (h * 0.035f)..(h * 0.28f)
 
-        return sameVerticalColumn && commentBelowLike && shareOrAudioFound
+        return sameVerticalColumn && commentBelowLike
     }
 
     private fun hasExactTopTitle(rootNode: AccessibilityNodeInfo, title: String): Boolean {

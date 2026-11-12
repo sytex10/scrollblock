@@ -61,34 +61,28 @@ class InstagramCommentBlocker {
                 "row_comment_textview_comment",
                 "comments_list",
                 "comments_recycler_view",
-                "comment_composer_edittext"
+                "comment_composer_edittext",
+                "comment_composer",
+                "bottom_sheet_container_view",
+                "clips_comments",
+                "row_comment"
             )
         ) {
             return true
         }
 
-        // 2. Açıklama metnine (caption) tıklanınca açılan genişletilmiş yorum sayfası / modalı:
-        // Başlıkta "Yorumlar", "Comments" varsa ve yorum yazma / emoji barı / gönderi sahibi yorumu varsa
-        val hasHeader = hasCommentsHeaderTitle(rootNode)
-        if (hasHeader) {
-            if (NodeUtils.hasVisibleViewId(rootNode, "comment_composer", "comment_edittext", "comment_textview")) {
-                return true
-            }
-            if (NodeUtils.hasVisibleTextInRegion(
-                    rootNode, 0.65f, 1.0f,
-                    "yorum ekle", "add a comment", "yorum yaz", "emoji ekle", "yanıtla", "reply"
-                )
-            ) {
-                return true
-            }
-            // Başlık "Yorumlar" ve ekranın alt yarısında yorum giriş alanı mevcutsa
-            val hasBottomReplyBar = NodeUtils.hasVisibleTextInRegion(
-                rootNode, 0.75f, 1.0f,
-                "..."
-            ) || NodeUtils.hasVisibleViewId(rootNode, "composer", "action_bar")
-            if (hasBottomReplyBar) {
-                return true
-            }
+        // 2. Açıklama metnine (caption) tıklanınca açılan yorum penceresi / başlığı
+        if (hasCommentsHeaderTitle(rootNode)) {
+            return true
+        }
+
+        // 3. Alt kısımdaki yorum ekleme çubuğu / hint metni
+        if (NodeUtils.hasVisibleTextInRegion(
+                rootNode, 0.70f, 1.0f,
+                "yorum ekle", "add a comment", "yorum yap", "ile yorum yap", "yorum yaz", "emoji ekle"
+            )
+        ) {
+            return true
         }
         return false
     }

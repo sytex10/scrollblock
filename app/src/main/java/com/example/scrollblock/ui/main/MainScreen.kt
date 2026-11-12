@@ -469,8 +469,10 @@ fun MainScreen(
                                     isSilentUpdateReady = true
                                 }
                             )
+                        } else if (info != null) {
+                            Toast.makeText(context, "Sürümünüz güncel (v$currentVersionName)", Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(context, "Sürüm güncel (v$currentVersionName)", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Sunucuya bağlanılamadı, internet bağlantınızı kontrol edin", Toast.LENGTH_SHORT).show()
                         }
                     }
                 },
