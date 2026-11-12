@@ -78,7 +78,8 @@ class YouTubeShortsDetector(
             "reel_player_view",
             "reel_modern_action_bar",
             "shorts_pivot_button",
-            "reel_sound_pivot_button"
+            "reel_sound_pivot_button",
+            "reel_comment"
         )
 
         if (hasNormalPlayerControls && !hasShortsContainer) {

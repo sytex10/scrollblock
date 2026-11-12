@@ -76,34 +76,43 @@ class TikTokDetector(
         val inboxTab = NodeUtils.findBottomNavTab(rootNode, emptyList(), inboxKeywords)
         val homeTab = NodeUtils.findBottomNavTab(rootNode, emptyList(), homeKeywords)
         val profileTab = NodeUtils.findBottomNavTab(rootNode, emptyList(), profileKeywords)
-        val friendsTab = NodeUtils.findBottomNavTab(rootNode, emptyList(), friendsKeywords)
+        val friendsTab = NodeUtils.findBottomNavTab(
+            rootNode,
+            listOf("friends_tab", "tab_friends", "now_tab"),
+            friendsKeywords
+        )
 
         val inboxSelected = NodeUtils.isNodeSelected(inboxTab)
         val profileSelected = NodeUtils.isNodeSelected(profileTab)
         val homeSelected = NodeUtils.isNodeSelected(homeTab)
+        val friendsSelected = NodeUtils.isNodeSelected(friendsTab)
         val bottomBarVisible = inboxTab != null || homeTab != null || profileTab != null || friendsTab != null
 
         val forYouVisibleAtTop = NodeUtils.hasVisibleTextInRegion(
             rootNode, 0f, 0.22f,
             "sizin için", "for you"
         )
+        val friendsVisibleAtTop = NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0f, 0.22f,
+            "arkadaşlar", "friends"
+        )
 
         // ---- 2. KESİN GÜVENLİ EKRANLAR (Gelen Kutusu & Kendi Profilimiz) ----
-        if ((inboxSelected || profileSelected) && !forYouVisibleAtTop) {
+        if ((inboxSelected || profileSelected) && !forYouVisibleAtTop && !friendsVisibleAtTop) {
             inDmChatContext = false
             singleVideoGuard.reset()
             return DetectionResult.notDetected(platformName)
         }
 
-        // ---- 3. ANA SAYFA VİDEO AKIŞI -> GELEN KUTUSUNA GEÇ ----
-        if (forYouVisibleAtTop || homeSelected) {
+        // ---- 3. VİDEO AKIŞI (ANA SAYFA / SİZİN İÇİN / ARKADAŞLAR) -> GELEN KUTUSUNA GEÇ ----
+        if (forYouVisibleAtTop || homeSelected || friendsSelected || (friendsVisibleAtTop && !inboxSelected && !profileSelected)) {
             inDmChatContext = false
             singleVideoGuard.reset()
             return DetectionResult.detected(
                 platform = platformName,
-                reason = "TikTok Ana Sayfa video akışı -> Gelen Kutusu",
+                reason = "TikTok Video Akışı (Ana Sayfa / Arkadaşlar) -> Gelen Kutusu",
                 preferTabSwitch = true,
-                targetHomeTabKeywords = inboxKeywords
+                targetHomeTabKeywords = listOf("gelen kutusu", "inbox", "profil", "profile")
             )
         }
 

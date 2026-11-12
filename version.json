@@ -1,6 +1,6 @@
 {
-  "versionCode": 39,
+  "versionCode": 40,
   "versionName": "1.0",
-  "changelog": "• ShortBan v1.0 Resmi Sürüm\n• Arayüz Temizliği: Kayan pencere/maske özelliği tamamen kaldırılarak arayüz sadeleştirildi.\n• Kusursuz Hızlı Engelleme: Reels ve Shorts sekmesine veya gönderisine dokunulduğunda anında ana akışa geri döner.\n• Instagram Ana Sayfa & Akış Reels Kilidi: Ana sayfadan Reels açılması tamamen engellendi.\n• Açıklama Yorum Kalkanı: Gönderi açıklamasına dokunarak yorumların açılması engellendi.\n• YouTube Uzun Video Yorum Koruması: Normal video yorumları serbest, Shorts yorumları engelli.",
+  "changelog": "• TikTok Arkadaşlar Akışı Kilidi: Arkadaşlar menüsündeki kısa video akışı engellendi ve gelen kutusuna yönlendirildi.\n• YouTube Shorts Yorum Engeli Düzeltmesi: Shorts üzerinde açılan yorum paneli anında kapatılırken normal uzun video yorumları serbest bırakıldı.\n• Web Dashboard & PC Eklentisi: Resmi v1.0 sürümüyle senkronize edildi.",
   "apkUrl": "https://raw.githubusercontent.com/sytex10/scrollblock/main/release/ScrollBlock-release.apk"
 }

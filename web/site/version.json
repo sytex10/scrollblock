@@ -1,6 +1,6 @@
 {
-  "versionCode": 36,
-  "versionName": "4.5",
-  "changelog": "• Kısa Video Girişlerini Gizle (Arayüz Koruma Sistemi): Instagram Reels, YouTube Shorts ve TikTok kısa video girişlerini uygulama tema rengiyle maskeler ve dokunmayı engeller.\n• Android 12 ve Altı İçin İzole Modül & Hızlı Kurulum: Kısıtlı ayar kilidi olmayan cihazlarda tek butonla kurulum.\n• Android 13+ Kısıtlı Ayarlar Kurulum Sırası Düzeltmesi.",
+  "versionCode": 40,
+  "versionName": "1.0",
+  "changelog": "• TikTok Arkadaşlar Akışı Kilidi: Arkadaşlar menüsündeki kısa video akışı engellendi ve gelen kutusuna yönlendirildi.\n• YouTube Shorts Yorum Engeli Düzeltmesi: Shorts üzerinde açılan yorum paneli anında kapatılırken normal uzun video yorumları serbest bırakıldı.\n• Web Dashboard & PC Eklentisi: Resmi v1.0 sürümüyle senkronize edildi.",
   "apkUrl": "https://raw.githubusercontent.com/sytex10/scrollblock/main/release/ScrollBlock-release.apk"
 }

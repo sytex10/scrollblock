@@ -49,13 +49,14 @@ class Android12TikTokDetector(
         }
 
         val homeTab = NodeUtils.findBottomNavTab(rootNode, emptyList(), listOf("ana sayfa", "home"))
-        if (NodeUtils.isNodeSelected(homeTab)) {
+        val friendsTab = NodeUtils.findBottomNavTab(rootNode, emptyList(), listOf("arkadaşlar", "friends"))
+        if (NodeUtils.isNodeSelected(homeTab) || NodeUtils.isNodeSelected(friendsTab)) {
             return DetectionResult.detected(
                 platform = platformName,
-                reason = "Android 12 TikTok Ana Sayfa sekmesi -> Gelen Kutusu",
+                reason = "Android 12 TikTok Video Akışı (Ana Sayfa / Arkadaşlar) -> Gelen Kutusu",
                 preferTabSwitch = true,
                 targetTabIds = emptyList(),
-                targetHomeTabKeywords = listOf("gelen kutusu", "inbox", "mesajlar", "messages")
+                targetHomeTabKeywords = listOf("gelen kutusu", "inbox", "mesajlar", "messages", "profil", "profile")
             )
         }
 
