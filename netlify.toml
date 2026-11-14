@@ -2,6 +2,21 @@
   publish = "web/site"
 
 [[redirects]]
+  from = "/destek"
+  to = "/destek.html"
+  status = 200
+
+[[redirects]]
+  from = "/support"
+  to = "/destek.html"
+  status = 200
+
+[[redirects]]
+  from = "/gizlilik"
+  to = "/privacy.html"
+  status = 200
+
+[[redirects]]
   from = "/privacy"
   to = "/privacy.html"
   status = 200

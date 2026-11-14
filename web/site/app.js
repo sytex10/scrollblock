@@ -203,10 +203,12 @@
   }
 
   // Olay Dinleyicileri
-  toggleGuideBtn.addEventListener("click", () => {
-    const visible = pcInstallGuide.style.display !== "none";
-    pcInstallGuide.style.display = visible ? "none" : "block";
-  });
+  if (toggleGuideBtn && pcInstallGuide) {
+    toggleGuideBtn.addEventListener("click", () => {
+      const visible = pcInstallGuide.style.display !== "none";
+      pcInstallGuide.style.display = visible ? "none" : "block";
+    });
+  }
 
   resetStatsBtn.addEventListener("click", () => {
     executeProtected("Sayacı Sıfırla", "İstatistikleri sıfırlamak için PIN girin.", () => {
@@ -425,6 +427,13 @@
   if (closeWebPrivacyModalBtn && webPrivacyModalBackdrop) {
     closeWebPrivacyModalBtn.addEventListener("click", () => {
       webPrivacyModalBackdrop.style.display = "none";
+    });
+  }
+  if (webPrivacyModalBackdrop) {
+    webPrivacyModalBackdrop.addEventListener("click", (e) => {
+      if (e.target === webPrivacyModalBackdrop) {
+        webPrivacyModalBackdrop.style.display = "none";
+      }
     });
   }
 
