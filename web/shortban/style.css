@@ -449,13 +449,14 @@ body {
 }
 
 .minimal-switch input:checked + .slider {
-  background-color: #f4f4f6;
-  border-color: #f4f4f6;
+  background-color: #F21B2D;
+  border-color: #F21B2D;
+  box-shadow: 0 0 10px rgba(242, 27, 45, 0.4);
 }
 
 .minimal-switch input:checked + .slider:before {
   transform: translateX(18px);
-  background-color: #0a0a0b;
+  background-color: #FFFFFF;
 }
 
 /* BUTONLAR */
@@ -562,5 +563,22 @@ body {
   font-size: 12px;
   color: #6e6e77;
   margin-top: 12px;
+}
+
+/* POWERED BY NETLIFY ROZETİNİ GİZLE */
+a[href*="netlify.com"],
+a[href*="netlify.app"][target="_blank"]:not(#androidDownloadLink),
+iframe[src*="netlify"],
+div[class*="netlify"],
+div[id*="netlify"],
+.netlify-identity-button,
+#netlify-badge {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
 }
 

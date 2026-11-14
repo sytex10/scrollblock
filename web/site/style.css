@@ -449,13 +449,14 @@ body {
 }
 
 .minimal-switch input:checked + .slider {
-  background-color: #f4f4f6;
-  border-color: #f4f4f6;
+  background-color: #F21B2D;
+  border-color: #F21B2D;
+  box-shadow: 0 0 10px rgba(242, 27, 45, 0.4);
 }
 
 .minimal-switch input:checked + .slider:before {
   transform: translateX(18px);
-  background-color: #0a0a0b;
+  background-color: #FFFFFF;
 }
 
 /* BUTONLAR */

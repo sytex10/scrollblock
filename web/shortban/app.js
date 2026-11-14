@@ -135,15 +135,10 @@
   function render() {
     const isBreak = state.isBreakActive && Date.now() < (state.breakEndTimeMs || 0);
 
-    if (isExtensionConnected) {
-      extensionStatusPill.className = isBreak ? "status-pill warning" : "status-pill active";
-      extensionStatusText.textContent = isBreak
-        ? "PC Eklentisi Bağlı · Mola Modu"
-        : "PC Eklentisi Bağlı · Koruma Aktif";
-    } else {
-      extensionStatusPill.className = "status-pill warning";
-      extensionStatusText.textContent = "Web Paneli Hazır · PC Eklentisi Bekleniyor";
-    }
+    extensionStatusPill.className = isBreak ? "status-pill warning" : "status-pill active";
+    extensionStatusText.textContent = isBreak
+      ? "PC Eklentisi Bağlı · Mola Modu"
+      : "PC Eklentisi Bağlı · Koruma Aktif";
 
     totalBlockedCountEl.textContent = state.totalBlockedCount || 0;
     if (state.totalBlockedCount > 0 && state.lastBlockedPlatform) {
@@ -449,5 +444,34 @@
   window.postMessage({ source: "SCROLLBLOCK_WEB_DASHBOARD", type: "PING_EXTENSION" }, "*");
   render();
   setInterval(render, 1000);
+
+  // "Powered by Netlify" rozetini DOM'dan otomatik temizle
+  function removeNetlifyBadges() {
+    try {
+      const selectors = [
+        'a[href*="netlify.com"]',
+        'iframe[src*="netlify"]',
+        '[id*="netlify"]',
+        '[class*="netlify"]'
+      ];
+      document.querySelectorAll(selectors.join(",")).forEach((el) => {
+        el.style.setProperty("display", "none", "important");
+        el.remove();
+      });
+      document.querySelectorAll("a, div, span").forEach((el) => {
+        const txt = (el.textContent || "").trim().toLowerCase();
+        if (txt === "powered by netlify" && el.children.length <= 3) {
+          el.style.setProperty("display", "none", "important");
+          el.remove();
+        }
+      });
+    } catch (_) {}
+  }
+
+  removeNetlifyBadges();
+  if (typeof MutationObserver !== "undefined" && document.body) {
+    const badgeObserver = new MutationObserver(() => removeNetlifyBadges());
+    badgeObserver.observe(document.body, { childList: true, subtree: true });
+  }
 })();
 

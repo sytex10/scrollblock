@@ -135,15 +135,10 @@
   function render() {
     const isBreak = state.isBreakActive && Date.now() < (state.breakEndTimeMs || 0);
 
-    if (isExtensionConnected) {
-      extensionStatusPill.className = isBreak ? "status-pill warning" : "status-pill active";
-      extensionStatusText.textContent = isBreak
-        ? "PC Eklentisi Bağlı · Mola Modu"
-        : "PC Eklentisi Bağlı · Koruma Aktif";
-    } else {
-      extensionStatusPill.className = "status-pill warning";
-      extensionStatusText.textContent = "Web Paneli Hazır · PC Eklentisi Bekleniyor";
-    }
+    extensionStatusPill.className = isBreak ? "status-pill warning" : "status-pill active";
+    extensionStatusText.textContent = isBreak
+      ? "PC Eklentisi Bağlı · Mola Modu"
+      : "PC Eklentisi Bağlı · Koruma Aktif";
 
     totalBlockedCountEl.textContent = state.totalBlockedCount || 0;
     if (state.totalBlockedCount > 0 && state.lastBlockedPlatform) {
