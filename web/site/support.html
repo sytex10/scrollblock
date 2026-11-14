@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShortBan — Destek & İletişim Merkezi</title>
+  <link rel="icon" type="image/jpeg" href="logo.jpg" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .support-container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 28px 18px 64px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .support-card {
+      background: #121215;
+      border: 1px solid #222228;
+      border-radius: 18px;
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .support-card h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #f4f4f6;
+      letter-spacing: -0.5px;
+    }
+    .support-card h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f4f4f6;
+      margin-top: 6px;
+    }
+    .support-card p {
+      font-size: 13.5px;
+      color: #b4b4be;
+      line-height: 1.6;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .form-group label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e4e4e7;
+    }
+    .form-input, .form-select, .form-textarea {
+      background: #18181c;
+      border: 1px solid #2a2a32;
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: #f4f4f6;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: #F21B2D;
+      box-shadow: 0 0 0 2px rgba(242, 27, 45, 0.2);
+    }
+    .form-textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+    .btn-submit {
+      background: #F21B2D;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      padding: 13px 20px;
+      font-size: 14.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-submit:hover {
+      background: #dc1425;
+    }
+    .btn-submit:active {
+      transform: scale(0.98);
+    }
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .alert-success {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 14px;
+      display: none;
+      line-height: 1.5;
+    }
+    .alert-error {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #f87171;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 14px;
+      display: none;
+      line-height: 1.5;
+    }
+    .faq-item {
+      background: #17171c;
+      border: 1px solid #26262e;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .faq-q {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .faq-a {
+      font-size: 13px;
+      color: #a1a1aa;
+      line-height: 1.55;
+    }
+  </style>
+</head>
+<body>
+  <div class="support-container">
+    <header class="topbar">
+      <div class="brand-group">
+        <img src="logo.jpg" alt="ShortBan Logo" class="brand-icon" width="38" height="38" style="border-radius: 9px; object-fit: cover;" />
+        <span class="brand-logo"><span style="color: #ffffff;">SHORT</span><span style="color: #F21B2D;">BAN</span></span>
+        <span class="version-tag">Destek & Yardım Merkezi</span>
+      </div>
+      <a href="index.html" class="btn-outline" style="text-decoration: none;">← Kontrol Paneline Dön</a>
+    </header>
+
+    <!-- DESTEK FORMU KARTI -->
+    <section class="support-card">
+      <span class="eyebrow" style="color: #F21B2D;">İLETİŞİM FORMU</span>
+      <h1>Bizimle İletişime Geçin</h1>
+      <p>
+        ShortBan Chrome Eklentisi veya Android uygulaması hakkında sorularınız, karşılaştığınız hatalar veya yeni özellik önerileriniz için aşağıdaki formu doldurabilirsiniz. Mesajınız doğrudan geliştirici ekibimize iletilecektir.
+      </p>
+
+      <div id="successBox" class="alert-success">
+        <strong>✓ Mesajınız Başarıyla İletildi!</strong><br />
+        Geri bildiriminiz için teşekkür ederiz. Destek talebiniz incelendikten sonra en kısa sürede belirttiğiniz e-posta adresine yanıt verilecektir.
+      </div>
+
+      <div id="errorBox" class="alert-error">
+        <strong>Hata:</strong> Mesaj gönderilirken bir sorun oluştu. Lütfen doğrudan <a href="mailto:ipekmuhammetemin@gmail.com" style="color: #ffffff; text-decoration: underline;">ipekmuhammetemin@gmail.com</a> adresine e-posta gönderiniz.
+      </div>
+
+      <form id="contactForm" style="display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
+          <div class="form-group">
+            <label for="nameInput">Adınız Soyadınız *</label>
+            <input type="text" id="nameInput" name="name" class="form-input" placeholder="Adınız Soyadınız" required />
+          </div>
+          <div class="form-group">
+            <label for="emailInput">E-posta Adresiniz *</label>
+            <input type="email" id="emailInput" name="email" class="form-input" placeholder="ornek@gmail.com" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="subjectSelect">Konu *</label>
+          <select id="subjectSelect" name="topic" class="form-select" required>
+            <option value="Chrome Eklentisi Destek">Chrome Eklentisi Hakkında</option>
+            <option value="Android APK Destek">Android Uygulaması Hakkında</option>
+            <option value="Hata Bildirimi (Bug Report)">Hata Bildirimi (Bug)</option>
+            <option value="Öneri / Yeni Özellik">Öneri / Yeni Özellik Talebi</option>
+            <option value="Diğer">Diğer</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="messageInput">Mesajınız *</label>
+          <textarea id="messageInput" name="message" class="form-textarea" placeholder="Lütfen sorununuzu, kullandığınız tarayıcıyı veya önerinizi detaylıca açıklayınız..." required></textarea>
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn-submit">
+          <span id="btnText">Mesajı Gönder</span>
+        </button>
+      </form>
+    </section>
+
+    <!-- SIKÇA SORULAN SORULAR & DİREKT E-POSTA -->
+    <section class="support-card">
+      <span class="eyebrow" style="color: #a1a1aa;">HIZLI YARDIM & SSS</span>
+      <h2>Sıkça Sorulan Sorular</h2>
+      
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 4px;">
+        <div class="faq-item">
+          <span class="faq-q">ShortBan tamamen ücretsiz mi?</span>
+          <span class="faq-a">Evet, ShortBan'ın hem Chrome Eklentisi hem de Android uygulaması tamamen ücretsizdir. Hiçbir gizli abonelik veya reklam barındırmaz.</span>
+        </div>
+        <div class="faq-item">
+          <span class="faq-q">Kısa videolar engellenmiyor, ne yapmalıyım?</span>
+          <span class="faq-a">Öncelikle eklenti açılır penceresinden ilgili platform (Instagram, YouTube Shorts veya TikTok) anahtarının açık olduğundan ve geçici mola (cooldown) modunda olmadığınızdan emin olun. Sayfayı yenilemeniz yeterli olacaktır.</span>
+        </div>
+        <div class="faq-item">
+          <span class="faq-q">Kişisel verilerim veya şifrelerim kaydediliyor mu?</span>
+          <span class="faq-a">Kesinlikle hayır. ShortBan sıfır veri toplama ilkesiyle çalışır; hesap bilgilerinize, şifrelerinize veya izleme geçmişinize asla erişmez ve bunları kaydetmez.</span>
+        </div>
+      </div>
+
+      <div style="margin-top: 10px; padding: 14px 16px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; font-size: 13px; color: #a1a1aa;">
+        ✉️ Doğrudan e-posta ile ulaşmak isterseniz: <a href="mailto:ipekmuhammetemin@gmail.com" style="color: #F21B2D; font-weight: 600; text-decoration: none;">ipekmuhammetemin@gmail.com</a>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const form = document.getElementById('contactForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const successBox = document.getElementById('successBox');
+    const errorBox = document.getElementById('errorBox');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      successBox.style.display = 'none';
+      errorBox.style.display = 'none';
+
+      const name = document.getElementById('nameInput').value.trim();
+      const email = document.getElementById('emailInput').value.trim();
+      const topic = document.getElementById('subjectSelect').value;
+      const message = document.getElementById('messageInput').value.trim();
+
+      if (!name || !email || !message) {
+        return;
+      }
+
+      submitBtn.disabled = true;
+      btnText.textContent = 'Gönderiliyor...';
+
+      try {
+        const response = await fetch('https://formsubmit.co/ajax/ipekmuhammetemin@gmail.com', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            _subject: `ShortBan Destek: ${topic} (${name})`,
+            Ad_Soyad: name,
+            Eposta: email,
+            Konu: topic,
+            Mesaj: message
+          })
+        });
+
+        if (response.ok) {
+          form.reset();
+          form.style.display = 'none';
+          successBox.style.display = 'block';
+        } else {
+          throw new Error('Yanıt alınamadı');
+        }
+      } catch (err) {
+        console.error('Destek iletim hatası:', err);
+        // Fallback: normal formsubmit submit
+        errorBox.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        btnText.textContent = 'Mesajı Gönder';
+      }
+    });
+  </script>
+</body>
+</html>
