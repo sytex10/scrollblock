@@ -9,8 +9,9 @@ import java.util.Calendar
 
 class BlockPreferences(context: Context) {
 
+    private val appContext: Context = context.applicationContext
     private val prefs: SharedPreferences =
-        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     private val _isYouTubeEnabled = MutableStateFlow(isYouTubeEnabledSync())
     val isYouTubeEnabled: StateFlow<Boolean> = _isYouTubeEnabled.asStateFlow()
@@ -67,6 +68,31 @@ class BlockPreferences(context: Context) {
     private val _hasCompletedOnboarding = MutableStateFlow(hasCompletedOnboardingSync())
     val hasCompletedOnboarding: StateFlow<Boolean> = _hasCompletedOnboarding.asStateFlow()
 
+    private val _isProtectionPaused = MutableStateFlow(isProtectionPausedSync())
+    val isProtectionPaused: StateFlow<Boolean> = _isProtectionPaused.asStateFlow()
+
+    fun isProtectionPausedSync(): Boolean =
+        prefs.getBoolean(KEY_PROTECTION_PAUSED, false)
+
+    fun setProtectionPaused(paused: Boolean) {
+        prefs.edit().putBoolean(KEY_PROTECTION_PAUSED, paused).apply()
+        _isProtectionPaused.value = paused
+        notifyTileStateChanged()
+    }
+
+    fun isProtectionActiveSync(now: Long = System.currentTimeMillis()): Boolean {
+        if (isProtectionPausedSync()) return false
+        if (isBreakActiveSync(now)) return false
+        return isYouTubeEnabledSync() || isInstagramEnabledSync() || isTikTokEnabledSync()
+    }
+
+    private fun notifyTileStateChanged() {
+        try {
+            com.example.scrollblock.service.ShortBanTileService.syncTile(appContext)
+        } catch (_: Exception) {
+        }
+    }
+
     fun isYouTubeEnabledSync(): Boolean =
         prefs.getBoolean(KEY_YOUTUBE_ENABLED, true)
 
@@ -106,16 +132,19 @@ class BlockPreferences(context: Context) {
     fun setYouTubeEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_YOUTUBE_ENABLED, enabled).apply()
         _isYouTubeEnabled.value = enabled
+        notifyTileStateChanged()
     }
 
     fun setInstagramEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_INSTAGRAM_ENABLED, enabled).apply()
         _isInstagramEnabled.value = enabled
+        notifyTileStateChanged()
     }
 
     fun setTikTokEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_TIKTOK_ENABLED, enabled).apply()
         _isTikTokEnabled.value = enabled
+        notifyTileStateChanged()
     }
 
     fun setInstagramDmReelsAllowed(allowed: Boolean) {
@@ -230,6 +259,7 @@ class BlockPreferences(context: Context) {
         _breakEndsAt.value = newState.endsAt
         _isBreakActive.value = true
         _breakUsedToday.value = newState.usedToday
+        notifyTileStateChanged()
         return true
     }
 
@@ -245,6 +275,7 @@ class BlockPreferences(context: Context) {
 
         _breakEndsAt.value = 0L
         _isBreakActive.value = false
+        notifyTileStateChanged()
     }
 
     fun refreshBreakState(now: Long = System.currentTimeMillis()) {
@@ -305,6 +336,7 @@ class BlockPreferences(context: Context) {
         private const val KEY_LAST_BLOCKED_PLATFORM = "pref_last_blocked_platform"
         private const val KEY_LAST_BLOCKED_TIMESTAMP = "pref_last_blocked_timestamp"
 
+        private const val KEY_PROTECTION_PAUSED = "pref_protection_paused"
         private const val KEY_BREAK_ENDS_AT = "pref_break_ends_at"
         private const val KEY_BREAK_STARTED_AT = "pref_break_started_at"
         private const val KEY_BREAK_DURATION_MINUTES = "pref_break_duration_minutes"

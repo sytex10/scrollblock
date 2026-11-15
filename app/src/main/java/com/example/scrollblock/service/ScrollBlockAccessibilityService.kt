@@ -43,15 +43,24 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
 
         private val _isServiceRunning = MutableStateFlow(false)
         val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
+
+        var currentService: ScrollBlockAccessibilityService? = null
+            private set
+
+        fun clearOverlays() {
+            currentService?.overlayManager?.clearAllOverlays()
+        }
     }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        currentService = this
         _isServiceRunning.value = true
         // Güncelleme kurulduğunda servis yeniden bağlanır; kurulum tamamlandıysa indirilen geçici APK'yı otomatik temizle
         UpdateManager.cleanupInstalledApks(applicationContext, forceAll = false)
         preferences = BlockPreferences.getInstance(applicationContext)
         overlayManager = ShortEntryOverlayManager(this)
+        ShortBanTileService.syncTile(applicationContext)
 
         detectors = if (Android12ServiceRouter.isAndroid12OrBelow()) {
             Log.i(TAG, "Initializing isolated Android 12 and below (SDK <= 32) detector modules")
@@ -77,15 +86,18 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
         val detector = detectors.firstOrNull { it.matchesPackage(packageName) }
 
         if (detector == null) {
+            overlayManager?.clearAllOverlays()
             return
         }
 
-        // Mola / Cooldown kontrolü
-        if (preferences.isBreakActiveSync()) {
+        // Mola / Cooldown veya Hızlı Ayarlar Duraklatma kontrolü
+        if (preferences.isProtectionPausedSync() || preferences.isBreakActiveSync()) {
+            overlayManager?.clearAllOverlays()
             return
         }
 
         if (!detector.isEnabled()) {
+            overlayManager?.clearAllOverlays()
             return
         }
 
@@ -105,6 +117,20 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
         lastEvalTime = now
 
         val rootNode = rootInActiveWindow ?: return
+
+        // Arayüz Koruma Sistemi: Kısa video giriş sekmelerini maskele
+        if (preferences.isHideShortEntriesEnabledSync()) {
+            overlayManager?.updateForWindow(
+                rootNode = rootNode,
+                packageName = packageName,
+                isEnabled = true,
+                blockInstagram = preferences.isInstagramEnabledSync(),
+                blockYoutube = preferences.isYouTubeEnabledSync(),
+                blockTiktok = preferences.isTikTokEnabledSync()
+            )
+        } else {
+            overlayManager?.clearAllOverlays()
+        }
 
         try {
             // Akış ve Yorum Engelleme Motoru (Tıklanınca Anında Engelleme)
@@ -158,7 +184,11 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         overlayManager?.clearAllOverlays()
         super.onDestroy()
+        if (currentService == this) {
+            currentService = null
+        }
         _isServiceRunning.value = false
+        ShortBanTileService.syncTile(applicationContext)
         Log.i(TAG, "ScrollBlock Accessibility Service destroyed")
     }
 }

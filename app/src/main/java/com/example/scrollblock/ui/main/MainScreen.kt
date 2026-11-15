@@ -84,7 +84,6 @@ import com.example.scrollblock.theme.NearBlack
 import com.example.scrollblock.theme.TextMuted
 import com.example.scrollblock.theme.TextPrimary
 import com.example.scrollblock.theme.TextSecondary
-import com.example.scrollblock.updater.UpdateManager
 import com.example.scrollblock.util.AccessibilityUtils
 import kotlinx.coroutines.launch
 
@@ -131,11 +130,6 @@ fun MainScreen(
 
     val scrollState = rememberScrollState()
 
-    var remoteUpdateInfo by remember { mutableStateOf<UpdateManager.RemoteVersionInfo?>(null) }
-    var isCheckingUpdate by remember { mutableStateOf(false) }
-    var isSilentUpdateReady by remember { mutableStateOf(false) }
-    var isSilentDownloading by remember { mutableStateOf(false) }
-
     val currentVersionCode = remember {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -145,15 +139,15 @@ fun MainScreen(
                 context.packageManager.getPackageInfo(context.packageName, 0).versionCode
             }
         } catch (_: Exception) {
-            18
+            40
         }
     }
 
     val currentVersionName = remember {
         try {
-            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "2.7"
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0"
         } catch (_: Exception) {
-            "2.7"
+            "1.0"
         }
     }
 
@@ -176,12 +170,7 @@ fun MainScreen(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                coroutineScope.launch {
-                    val info = UpdateManager.checkRemoteVersion()
-                    if (info != null && info.versionCode > currentVersionCode) {
-                        remoteUpdateInfo = info
-                    }
-                }
+                viewModel.refreshServiceStatus()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -214,39 +203,6 @@ fun MainScreen(
                     }
                 }
             )
-
-            // 1.5 Arka Planda Sessiz İndirilen Güncelleme Hazır Bildirimi (Ekranı Kilitlemez)
-            if (isSilentUpdateReady && remoteUpdateInfo != null) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(ActiveGreenContainer)
-                        .border(1.dp, ActiveGreen.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                        .clickable { UpdateManager.openSystemDownloads(context) }
-                        .padding(horizontal = 14.dp, vertical = 11.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Yeni sürüm (v${remoteUpdateInfo!!.versionName}) arka planda indirildi",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = ActiveGreenText,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = "Kur",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = NearBlack,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(ActiveGreen)
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
-            }
 
             // 2. Erişilebilirlik Uyarısı (Servis kapalıysa görünür)
             if (!isServiceActive) {
@@ -440,32 +396,8 @@ fun MainScreen(
                     pendingOpenAccessibilityAfterDisclosure = false
                     showPrivacyDialog = true
                 },
-                onCheckUpdate = {
-                    isCheckingUpdate = true
-                    coroutineScope.launch {
-                        val info = UpdateManager.checkRemoteVersion()
-                        isCheckingUpdate = false
-                        if (info != null && info.versionCode > currentVersionCode) {
-                            remoteUpdateInfo = info
-                            Toast.makeText(context, "Yeni sürüm (v${info.versionName}) indiriliyor...", Toast.LENGTH_SHORT).show()
-                            UpdateManager.downloadAndInstall(
-                                context = context,
-                                urlString = info.apkUrl,
-                                targetVersionCode = info.versionCode,
-                                autoOpenDownloads = true,
-                                onDownloadCompleted = {
-                                    isSilentDownloading = false
-                                    isSilentUpdateReady = true
-                                }
-                            )
-                        } else if (info != null) {
-                            Toast.makeText(context, "Sürümünüz güncel (v$currentVersionName)", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, "Sunucuya bağlanılamadı, internet bağlantınızı kontrol edin", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                },
-                isCheckingUpdate = isCheckingUpdate
+                versionName = currentVersionName,
+                versionCode = currentVersionCode
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -529,28 +461,6 @@ fun MainScreen(
             )
         }
 
-        // Arka Planda Sessiz Otomatik Güncelleme İndirici (Kullanıcıyı Rahatsız Eden Modal Yok)
-        if (remoteUpdateInfo != null && remoteUpdateInfo!!.versionCode > currentVersionCode) {
-            val info = remoteUpdateInfo!!
-            LaunchedEffect(info.versionCode) {
-                if (!isSilentDownloading && !isSilentUpdateReady) {
-                    isSilentDownloading = true
-                    UpdateManager.downloadAndInstall(
-                        context = context,
-                        urlString = info.apkUrl,
-                        targetVersionCode = info.versionCode,
-                        autoOpenDownloads = false,
-                        onDownloadCompleted = {
-                            isSilentDownloading = false
-                            isSilentUpdateReady = true
-                        },
-                        onError = {
-                            isSilentDownloading = false
-                        }
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -1255,8 +1165,8 @@ private fun SystemSecurityCard(
     onOpenAccessibilitySettings: () -> Unit,
     onReopenOnboarding: () -> Unit,
     onOpenPrivacyPolicy: () -> Unit,
-    onCheckUpdate: () -> Unit,
-    isCheckingUpdate: Boolean
+    versionName: String,
+    versionCode: Int
 ) {
     Column(
         modifier = Modifier
@@ -1442,46 +1352,33 @@ private fun SystemSecurityCard(
 
         HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
 
-        // 4. Uygulama Güncellemesi (Tam genişlikte tek buton - uygulama içinde indirir)
-        Column(
+        // 4. Sürüm Bilgisi (Google Play uyumlu statik gösterim)
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 18.dp, vertical = 15.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = "Uygulama Güncellemesi",
+                    text = "Sürüm",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = TextPrimary
                 )
                 Text(
-                    text = "Yeni sürümü uygulama içinde denetleyin ve indirin",
+                    text = "ShortBan Mobil",
                     fontSize = 12.sp,
                     color = TextSecondary
                 )
             }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(CardBackgroundElevated)
-                    .border(1.dp, HairlineDivider, RoundedCornerShape(8.dp))
-                    .clickable(enabled = !isCheckingUpdate) { onCheckUpdate() }
-                    .padding(vertical = 9.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = if (isCheckingUpdate) "Denetleniyor..." else "Güncellemeyi Kontrol Et",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = TextPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            Text(
+                text = "v$versionName (Build $versionCode)",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = TextSecondary
+            )
         }
     }
 }
