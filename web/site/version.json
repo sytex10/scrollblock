@@ -1,6 +1,6 @@
 {
-  "versionCode": 99,
-  "versionName": "1.0",
-  "changelog": "• ShortBan v1.0 Final: Hızlı Ayarlar (TileService) eklendi, stabilite sağlandı.",
+  "versionCode": 36,
+  "versionName": "4.5.0",
+  "changelog": "• ShortBan v1.0 Final: Paket kimliği com.shortban.app olarak güncellendi.\n• Sıfır gecikmeli Instagram Reels ve Keşfet koruması.\n• Hızlı Ayarlar (Tile) basılı tutunca uygulamayı açma desteği.",
   "apkUrl": "https://raw.githubusercontent.com/sytex10/scrollblock/main/release/ScrollBlock-release.apk"
 }
