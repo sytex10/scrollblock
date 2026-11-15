@@ -139,7 +139,7 @@ fun MainScreen(
                 context.packageManager.getPackageInfo(context.packageName, 0).versionCode
             }
         } catch (_: Exception) {
-            40
+            41
         }
     }
 
