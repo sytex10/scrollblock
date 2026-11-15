@@ -4,7 +4,7 @@
  * ve diskteki dosyalar güncellendiğinde eklentiyi otomatik olarak yeniden yükler (chrome.runtime.reload).
  */
 
-const CURRENT_EXTENSION_VERSION = chrome.runtime.getManifest().version || "4.5.0";
+const CURRENT_EXTENSION_VERSION = chrome.runtime.getManifest().version || "1.0.0";
 const VERSION_JSON_URL = "https://raw.githubusercontent.com/sytex10/scrollblock/main/version.json";
 let initialDiskManifestVersion = CURRENT_EXTENSION_VERSION;
 

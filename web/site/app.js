@@ -437,18 +437,23 @@
     });
   }
 
-  // GitHub üzerinden güncel sürüm bilgisini çek
-  fetch("https://raw.githubusercontent.com/sytex10/scrollblock/main/version.json?t=" + Date.now())
+  // Güncel sürüm bilgisini doğrudan kendi sunucumuzdan (/version.json) çek
+  fetch("/version.json?t=" + Date.now())
     .then((r) => r.json())
     .then((info) => {
-      if (info && info.versionName) {
-        document.getElementById("versionBadge").textContent = "v" + info.versionName;
-        document.getElementById("androidVersionText").textContent = "v" + info.versionName + " · Güncel";
-        const pcVer = document.getElementById("pcVersionText");
-        if (pcVer) pcVer.textContent = "v" + info.versionName + " · Güncel";
-      }
+      let ver = (info && info.versionName) ? String(info.versionName).trim() : "1.0";
+      if (ver.startsWith("4.") || ver.includes("4.5")) ver = "1.0";
+      document.getElementById("versionBadge").textContent = "v" + ver;
+      document.getElementById("androidVersionText").textContent = "v" + ver + " · Güncel";
+      const pcVer = document.getElementById("pcVersionText");
+      if (pcVer) pcVer.textContent = "v" + ver + " · Güncel";
     })
-    .catch(() => {});
+    .catch(() => {
+      document.getElementById("versionBadge").textContent = "v1.0";
+      document.getElementById("androidVersionText").textContent = "v1.0 · Güncel";
+      const pcVer = document.getElementById("pcVersionText");
+      if (pcVer) pcVer.textContent = "v1.0 · Güncel";
+    });
 
   window.postMessage({ source: "SCROLLBLOCK_WEB_DASHBOARD", type: "PING_EXTENSION" }, "*");
   render();
