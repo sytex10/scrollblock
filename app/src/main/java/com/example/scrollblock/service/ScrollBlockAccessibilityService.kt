@@ -39,7 +39,9 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
     companion object {
         private const val TAG = "ScrollBlockService"
         private const val DEBOUNCE_INTERVAL_MS = 650L
+        private const val INSTAGRAM_BLOCK_COOLDOWN_MS = 350L
         private const val EVAL_THROTTLE_MS = 200L
+        private const val INSTAGRAM_CONTENT_THROTTLE_MS = 50L
 
         private val _isServiceRunning = MutableStateFlow(false)
         val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
@@ -103,17 +105,27 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
 
         if (eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
             eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
-            eventType != AccessibilityEvent.TYPE_VIEW_SCROLLED
+            eventType != AccessibilityEvent.TYPE_VIEW_SCROLLED &&
+            eventType != AccessibilityEvent.TYPE_VIEW_CLICKED
         ) return
+
+        val isInstagram = packageName.contains("instagram", ignoreCase = true)
+        val debounceInterval = if (isInstagram) INSTAGRAM_BLOCK_COOLDOWN_MS else DEBOUNCE_INTERVAL_MS
+        val contentThrottle = if (isInstagram) INSTAGRAM_CONTENT_THROTTLE_MS else EVAL_THROTTLE_MS
 
         val now = SystemClock.uptimeMillis()
-        if (now - lastActionTime < DEBOUNCE_INTERVAL_MS) return
+        if (now - lastActionTime < debounceInterval) return
 
-        // Yalnızca yüksek sıklıkta gelen içerik olaylarını seyrekleştir;
-        // Pencere değişimi ve kaydırma olaylarını anında değerlendir.
-        if (eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
-            now - lastEvalTime < EVAL_THROTTLE_MS
-        ) return
+        // TYPE_WINDOW_STATE_CHANGED ve TYPE_VIEW_CLICKED olaylarında hiç throttle (bekleme) uygulama;
+        // anında dedektörü çalıştır. TYPE_WINDOW_CONTENT_CHANGED olaylarında throttle uygula.
+        val shouldBypassThrottle = eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ||
+            eventType == AccessibilityEvent.TYPE_VIEW_CLICKED
+
+        if (!shouldBypassThrottle) {
+            if (eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
+                now - lastEvalTime < contentThrottle
+            ) return
+        }
         lastEvalTime = now
 
         val rootNode = rootInActiveWindow ?: return

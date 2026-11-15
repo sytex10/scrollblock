@@ -125,6 +125,15 @@ class InstagramReelsDetector(
                 singleReelGuard.reset()
                 return DetectionResult.notDetected(platformName)
             }
+
+            if (NodeUtils.isNodeSelected(searchTab)) {
+                activeSection = ActiveSection.EXPLORE
+                if (isExploreGridOrSearchScreen(rootNode)) {
+                    awaitingOverlayExit = false
+                    singleReelGuard.reset()
+                    return DetectionResult.notDetected(platformName)
+                }
+            }
         }
 
         if (isStoryViewer(rootNode) || isShareSheet(rootNode)) {
@@ -140,14 +149,6 @@ class InstagramReelsDetector(
         }
 
         val searchTabSelected = NodeUtils.isNodeSelected(searchTab)
-        if (searchTabSelected) {
-            activeSection = ActiveSection.EXPLORE
-            if (isExploreGridOrSearchScreen(rootNode)) {
-                awaitingOverlayExit = false
-                singleReelGuard.reset()
-                return DetectionResult.notDetected(platformName)
-            }
-        }
 
         // Eğer kullanıcı Ana Sayfa veya Profil sekmesinde gezinirken alt bar gizlendiyse
         // (ör. Ana Sayfa akışında aşağı doğru kaydırırken) ASLA engelleme yapma!
@@ -184,33 +185,28 @@ class InstagramReelsDetector(
 
             val openedFromDm = (activeSection == ActiveSection.DM || hasDmQuickReply) &&
                 !searchTabSelected &&
-                activeSection != ActiveSection.EXPLORE
+                activeSection != ActiveSection.EXPLORE &&
+                activeSection != ActiveSection.HOME
 
-            // A) Keşfet, Ana Sayfa veya Akıştan açılan tam ekran Reels videosu
+            // A) Keşfet (Senaryo C) veya Ana Sayfa / Akıştan (Senaryo B) açılan tam ekran Reels videosu
             if (!openedFromDm) {
                 singleReelGuard.reset()
 
-                // SADECE Keşfet ızgarasından açılmışsa VE alt bar görünüyorsa Keşfet sekmesine bas
-                if (activeSection == ActiveSection.EXPLORE && searchTabSelected && bottomBarVisible) {
-                    return DetectionResult.detected(
-                        platform = platformName,
-                        reason = "Instagram Keşfet Reel -> Keşfet ızgarasına dön",
-                        preferTabSwitch = true,
-                        targetTabIds = listOf("search_tab"),
-                        targetHomeTabKeywords = listOf("ara", "keşfet", "search", "explore")
-                    )
-                }
-
-                // Ana Sayfadaki veya akıştaki bir Reels gönderisine dokunulduğunda açılan tam ekran oynatıcı:
-                // Alt bar görünse dahi sekmeye tıklamak (zaten feed_tab seçili olduğu için) oynatıcıyı kapatmaz.
-                // Bu yüzden GERİ tuşu (GLOBAL_ACTION_BACK) basılarak tam ekran oynatıcı anında kapatılır ve ana akışa dönülür.
+                // Ana Sayfa (Senaryo B) ve Keşfet (Senaryo C) üzerinden açılan tam ekran Reels:
+                // clips_viewer_view_pager veya reel_viewer_recycler_view tespit edildiği an
+                // beklemeden derhal GLOBAL_ACTION_BACK tetiklenerek tam ekran Reels oynatıcı kapatılır;
+                // kullanıcı Ana Sayfa akışına veya Keşfet ızgarasına kaldığı yere döner.
                 if (awaitingOverlayExit) {
                     return DetectionResult.notDetected(platformName)
                 }
                 awaitingOverlayExit = true
                 return DetectionResult.detected(
                     platform = platformName,
-                    reason = "Instagram Ana Sayfa / Akış tam ekran Reel -> Geri ile akışa dön",
+                    reason = if (activeSection == ActiveSection.EXPLORE || searchTabSelected) {
+                        "Instagram Keşfet Reel -> Geri ile Keşfet ızgarasına dön"
+                    } else {
+                        "Instagram Ana Sayfa / Akış tam ekran Reel -> Geri ile akışa dön"
+                    },
                     preferTabSwitch = false
                 )
             }
@@ -277,14 +273,15 @@ class InstagramReelsDetector(
         event: AccessibilityEvent?,
         bottomBarVisible: Boolean
     ): Boolean {
-        // Kesin güvenli ekranlar: İçerik üretme (kamera/Reels ekle), Notlar/Müzik arama, Keşfet ızgarası
-        if (isCreationOrCameraScreen(rootNode) || isNotesOrMusicScreen(rootNode) || isExploreGridOrSearchScreen(rootNode)) {
+        // Kesin güvenli ekranlar: İçerik üretme (kamera/Reels ekle), Notlar/Müzik arama
+        if (isCreationOrCameraScreen(rootNode) || isNotesOrMusicScreen(rootNode)) {
             return false
         }
 
         val hasVisibleClipsPager = NodeUtils.hasVisibleViewId(
             rootNode,
             "clips_viewer_view_pager",
+            "reel_viewer_recycler_view",
             "clips_viewer_fragment",
             "reel_viewer_view_pager",
             "clips_swipe_refresh_layout",
@@ -432,6 +429,14 @@ class InstagramReelsDetector(
 
     private fun isExploreGridOrSearchScreen(rootNode: AccessibilityNodeInfo): Boolean {
         if (hasRightSideReelActions(rootNode)) return false
+        if (NodeUtils.hasVisibleViewId(
+                rootNode,
+                "clips_viewer_view_pager",
+                "reel_viewer_recycler_view",
+                "clips_viewer_fragment",
+                "reel_viewer_view_pager"
+            )
+        ) return false
 
         if (NodeUtils.hasVisibleViewId(
                 rootNode,

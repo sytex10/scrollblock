@@ -5,7 +5,7 @@ package com.example.scrollblock.detector.instagram
  * TikTok veya YouTube Shorts kodlarından tamamen bağımsızdır.
  */
 class InstagramSingleReelGuard(
-    private val graceMs: Long = 1200L,
+    private val graceMs: Long = 300L,
     private val goneResetMs: Long = 1400L
 ) {
     enum class Verdict { ALLOW, BLOCK }

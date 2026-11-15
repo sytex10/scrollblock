@@ -8,11 +8,11 @@ android {
     namespace = "com.example.scrollblock"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.scrollblock.app"
+        applicationId = "com.shortban.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 46
-        versionName = "1.0"
+        versionCode = 36
+        versionName = "4.5.0"
     }
 
     sourceSets {

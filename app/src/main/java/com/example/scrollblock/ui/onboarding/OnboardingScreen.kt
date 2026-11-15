@@ -208,7 +208,7 @@ fun OnboardingScreen(
                             body = "Açılan menüdeki 'Kısıtlı ayarlara izin ver' seçeneğine dokunun ve telefonunuzun ekran kilidiyle onaylayın."
                         )
                     ),
-                    footerNote = "Önemli İpucu: Sağ üstte üç nokta (⋮) görünmüyorsa 1. adımdaki Erişilebilirlik menüsünde ShortBan'a henüz dokunmamışsınız demektir.",
+                    footerNote = "Önemli İpucu: Sağ üstte üç nokta (⋮) görünmüyorsa 1. adımdaki Erişilebilirlik menüsünde ShortBan'a henüz dokunmamışsınız demektir.\n\nNot: Uygulamayı Google Play üzerinden indirdiğinizde bu uyarı çıkmaz. APK ile kurulum yapıyorsanız Play Store > Profil > Play Protect > Ayarlar üzerinden taramayı geçici olarak kapatıp kurulumu tamamlayın.",
                     actionButtonText = "1. Adım: Erişilebilirlikte ShortBan'a Dokun",
                     actionType = OnboardingActionType.ANDROID13_RESTRICTED_FLOW
                 ),

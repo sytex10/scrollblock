@@ -647,7 +647,8 @@ private fun PermissionSetupBanner(
         Text(
             text = "1. Önce '1. Erişilebilirlik' butonuna basıp listeden ShortBan'a bir kez dokunun ('Kısıtlı Ayar' uyarısı çıkmalı; aksi halde üç nokta görünmez).\n" +
                 "2. Ardından '2. Uygulama Bilgisi' ekranında sağ üstteki (⋮) menüsünden 'Kısıtlı ayarlara izin ver' deyin.\n" +
-                "3. Tekrar Erişilebilirlik menüsüne dönüp ShortBan anahtarını açın.",
+                "3. Tekrar Erişilebilirlik menüsüne dönüp ShortBan anahtarını açın.\n\n" +
+                "Not: Uygulamayı Google Play üzerinden indirdiğinizde bu uyarı çıkmaz. APK ile kurulum yapıyorsanız Play Store > Profil > Play Protect > Ayarlar üzerinden taramayı geçici olarak kapatıp kurulumu tamamlayın.",
             fontSize = 12.sp,
             color = TextSecondary,
             lineHeight = 17.sp

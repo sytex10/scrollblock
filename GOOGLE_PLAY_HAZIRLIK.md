@@ -1,6 +1,6 @@
 # ShortBan — Google Play Console Yükleme ve Onay Rehberi
 
-Google Play Console üzerinden **ShortBan** (`com.scrollblock.app`) uygulamasını yayınlarken sorulacak tüm formlar, açıklamalar, gizlilik politikası bağlantıları ve görsel dosyaları aşağıda kopyala-yapıştır yapmaya hazır şekilde hazırlanmıştır.
+Google Play Console üzerinden **ShortBan** (`com.shortban.app`) uygulamasını yayınlarken sorulacak tüm formlar, açıklamalar, gizlilik politikası bağlantıları ve görsel dosyaları aşağıda kopyala-yapıştır yapmaya hazır şekilde hazırlanmıştır.
 
 ---
 

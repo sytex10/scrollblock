@@ -31,7 +31,7 @@ Google Play, `AccessibilityService` kullanan uygulamaları çok sıkı inceler. 
 ---
 
 ## 3. Paket Adı (`applicationId`), App Bundle (`.aab`) ve R8 Küçültme
-- [ ] **`applicationId` Kontrolü:** Şu an `com.scrollblock.app` kullanılıyor. Play Store'da benzersiz olduğundan emin olunmalı.
+- [x] **`applicationId` Kontrolü:** `com.shortban.app` olarak güncellendi ve benzersiz hale getirildi.
 - [ ] **Android App Bundle (`.aab`) Üretimi:** Play Store artık `.apk` değil, `./gradlew bundleRelease` ile üretilen `.aab` dosyasını kabul ediyor.
 - [ ] **R8 / ProGuard Aktifleştirme (`isMinifyEnabled = true`, `isShrinkResources = true`):** Uygulama boyutunu küçültmek ve Play Store'un sembol dosyası (`mapping.txt`) beklentisini karşılamak için Release derlemesinde R8 açılmalı.
 
