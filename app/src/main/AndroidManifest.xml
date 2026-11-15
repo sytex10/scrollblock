@@ -36,8 +36,8 @@
 
         <service
             android:name=".service.ShortBanTileService"
-            android:icon="@drawable/ic_tile_shortban"
-            android:label="ShortBan"
+            android:icon="@drawable/ic_shortban_logo"
+            android:label="@string/app_name"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:exported="true">
             <intent-filter>
