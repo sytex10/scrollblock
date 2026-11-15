@@ -100,7 +100,7 @@ class ShortBanTileService : TileService() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 tile.subtitle = "Servis Kapalı"
             }
-            tile.icon = Icon.createWithResource(this, R.drawable.ic_shortban_logo)
+            tile.icon = Icon.createWithResource(this, R.drawable.ic_tile_shortban_logo)
             tile.updateTile()
             return
         }
@@ -121,7 +121,7 @@ class ShortBanTileService : TileService() {
             }
         }
 
-        tile.icon = Icon.createWithResource(this, R.drawable.ic_shortban_logo)
+        tile.icon = Icon.createWithResource(this, R.drawable.ic_tile_shortban_logo)
         tile.updateTile()
     }
 
