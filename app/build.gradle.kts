@@ -11,7 +11,7 @@ android {
         applicationId = "com.scrollblock.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 44
+        versionCode = 46
         versionName = "1.0"
     }
 

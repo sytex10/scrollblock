@@ -75,6 +75,14 @@ class InstagramReelsDetector(
             return DetectionResult.notDetected(platformName)
         }
 
+        // ---- KESİN GÜVENLİ: İÇERİK ÜRETME, KAMERA, REELS OLUŞTURMA, NOTLAR & MÜZİK EKRANLARI ----
+        // Kullanıcı Reels eklerken, kamera açarken veya Notlara müzik koyarken ASLA engelleme yapılmaz.
+        if (isCreationOrCameraScreen(rootNode) || isNotesOrMusicScreen(rootNode)) {
+            awaitingOverlayExit = false
+            singleReelGuard.reset()
+            return DetectionResult.notDetected(platformName)
+        }
+
         val now = SystemClock.uptimeMillis()
 
         // ---- 1. ALT BAR SEKMELERİ ----
@@ -269,23 +277,18 @@ class InstagramReelsDetector(
         event: AccessibilityEvent?,
         bottomBarVisible: Boolean
     ): Boolean {
-        if (isExploreGridOrSearchScreen(rootNode)) return false
+        // Kesin güvenli ekranlar: İçerik üretme (kamera/Reels ekle), Notlar/Müzik arama, Keşfet ızgarası
+        if (isCreationOrCameraScreen(rootNode) || isNotesOrMusicScreen(rootNode) || isExploreGridOrSearchScreen(rootNode)) {
+            return false
+        }
 
         val hasVisibleClipsPager = NodeUtils.hasVisibleViewId(
             rootNode,
             "clips_viewer_view_pager",
             "clips_viewer_fragment",
             "reel_viewer_view_pager",
-            "clips_video_container",
             "clips_swipe_refresh_layout",
-            "clips_item_container",
-            "clips_video_view",
-            "clips_author_container",
             "clips_ufi_container",
-            "clips_action_button_container",
-            "clips_media_interactivity_container",
-            "clips_layout",
-            "clips_viewer_container",
             "feed_video_preview",
             "ig_clip_viewer",
             "viewer_media_view"
@@ -299,18 +302,116 @@ class InstagramReelsDetector(
             return true
         }
 
+        // Sağ kenar Reels aksiyonları (Beğen, Yorum, Paylaş sütunu) varsa kesin Reels izleme ekranıdır
         if (hasRightSideReelActions(rootNode)) return true
 
-        // Ekranın sağ/alt kısmında Reels veya Orijinal ses etiketi varsa
-        val hasReelsAudioOrLabel = NodeUtils.hasVisibleTextInRegion(
-            rootNode, 0.70f, 1f,
-            "orijinal ses", "original audio", "sesi kullan", "use audio"
-        )
-        if (hasReelsAudioOrLabel && !bottomBarVisible) {
+        return false
+    }
+
+    /**
+     * Kamera, Reels Oluşturma ("Reels Ekle"), Hikaye veya Gönderi Hazırlama Ekranı Kalkanı.
+     * Kullanıcı yeni bir Reel veya içerik üretirken ASLA engellenmez.
+     */
+    private fun isCreationOrCameraScreen(rootNode: AccessibilityNodeInfo): Boolean {
+        // 1. Kamera, Reels oluşturma ve medya seçici view ID'leri
+        if (NodeUtils.hasVisibleViewId(
+                rootNode,
+                "quick_capture_fragment",
+                "quick_capture_container",
+                "camera_view",
+                "cam_view",
+                "capture_controls",
+                "camera_shutter_button",
+                "media_picker",
+                "gallery_grid",
+                "gallery_folder_menu",
+                "clips_creation",
+                "clips_editor",
+                "creation_main",
+                "filter_view",
+                "publish_screen",
+                "caption_edit_text",
+                "draft_saved",
+                "video_trim_view",
+                "clips_trim_layout",
+                "post_capture_controls",
+                "creation_secondary_actions",
+                "direct_story_viewer"
+            )
+        ) {
             return true
         }
 
-        if (!bottomBarVisible && hasExactTopTitle(rootNode, "reels")) {
+        // 2. Kamera ve Reels oluşturma metinleri
+        if (NodeUtils.hasVisibleTextInRegion(
+                rootNode, 0f, 1f,
+                "reels oluştur", "reel oluştur", "create reel", "yeni reels", "yeni gönderi",
+                "deklanşör", "taslak olarak kaydet", "taslaklar", "açıklama yaz",
+                "kişileri etiketle", "zamanlayıcı", "metin ekle", "klip düzenle"
+            )
+        ) {
+            return true
+        }
+
+        // 3. Kamera alt mod seçici barı (GÖNDERİ, HİKAYE, REELS, CANLI)
+        val hasCameraModeSelector = NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0.75f, 1f,
+            "canlı", "live"
+        ) && (
+            NodeUtils.hasVisibleTextInRegion(rootNode, 0.75f, 1f, "hikaye", "story") ||
+            NodeUtils.hasVisibleTextInRegion(rootNode, 0.75f, 1f, "gönderi", "post")
+        )
+        if (hasCameraModeSelector) {
+            return true
+        }
+
+        // 4. Sağ/sol üstteki "İleri", "Paylaş", "Kapat" butonları
+        val hasCreationActionBar = NodeUtils.hasVisibleTextInRegion(
+            rootNode, 0f, 0.16f,
+            "yeni reels", "yeni gönderi", "taslaklar"
+        )
+        if (hasCreationActionBar) {
+            return true
+        }
+
+        return false
+    }
+
+    /**
+     * Instagram Notlar veya Müzik Seçme Ekranı Kalkanı.
+     * Notlara müzik koyarken veya şarkı ararken ASLA engellenmez.
+     */
+    private fun isNotesOrMusicScreen(rootNode: AccessibilityNodeInfo): Boolean {
+        // 1. Notlar veya Müzik Arama view ID'leri
+        if (NodeUtils.hasVisibleViewId(
+                rootNode,
+                "music_search",
+                "music_browse",
+                "audio_page",
+                "music_player",
+                "notes_composer",
+                "notes_bubble",
+                "note_text",
+                "audio_search",
+                "music_row_container",
+                "track_list",
+                "audio_list",
+                "search_music_box"
+            )
+        ) {
+            return true
+        }
+
+        // 2. Not oluşturma veya Müzik arama metinleri
+        if (NodeUtils.hasVisibleTextInRegion(
+                rootNode, 0f, 1f,
+                "müzik ara", "search music", "şarkı ara", "search songs",
+                "not bırak", "leave a note", "notunu paylaş", "share a note",
+                "düşüncelerini paylaş", "share what's on your mind", "notlar",
+                "önizlemeyi çal", "play preview", "önizlemeyi durdur", "stop preview",
+                "ses parçaları", "şarkılar"
+            )
+        ) {
             return true
         }
 

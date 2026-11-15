@@ -41,19 +41,48 @@ class InstagramCommentBlocker {
     }
 
     fun isCommentsSheetOpen(rootNode: AccessibilityNodeInfo): Boolean {
-        // Hikaye veya DM ekranındaysak yorum penceresi değildir
+        // Hikaye, DM, İçerik Üretme (Kamera/Reels Ekle) veya Müzik/Notlar ekranındaysak yorum penceresi değildir
         if (NodeUtils.hasVisibleViewId(
                 rootNode,
                 "reel_viewer_media_container",
                 "story_viewer",
                 "row_thread_composer",
-                "direct_thread"
+                "direct_thread",
+                "quick_capture_fragment",
+                "quick_capture_container",
+                "camera_view",
+                "cam_view",
+                "capture_controls",
+                "camera_shutter_button",
+                "media_picker",
+                "gallery_grid",
+                "clips_creation",
+                "clips_editor",
+                "creation_main",
+                "music_search",
+                "music_browse",
+                "audio_page",
+                "notes_composer",
+                "notes_bubble",
+                "note_text",
+                "audio_search"
             )
         ) {
             return false
         }
 
-        // 1. Açık yorum listesi / yorum penceresi view ID'leri
+        // Müzik seçimi, notlar veya kamera/oluşturma metinleri varsa yorum penceresi değildir
+        if (NodeUtils.hasVisibleTextInRegion(
+                rootNode, 0f, 1f,
+                "müzik ara", "search music", "şarkı ara", "search songs", "not bırak",
+                "düşüncelerini paylaş", "notunu paylaş", "taslak", "taslaklar", "deklanşör",
+                "reels oluştur", "yeni reels", "yeni gönderi"
+            )
+        ) {
+            return false
+        }
+
+        // 1. Açık yorum listesi / yorum penceresi view ID'leri (ASLA genel bottom_sheet_container_view konulmaz!)
         if (NodeUtils.hasVisibleViewId(
                 rootNode,
                 "layout_comment_thread",
@@ -63,7 +92,6 @@ class InstagramCommentBlocker {
                 "comments_recycler_view",
                 "comment_composer_edittext",
                 "comment_composer",
-                "bottom_sheet_container_view",
                 "clips_comments",
                 "row_comment"
             )

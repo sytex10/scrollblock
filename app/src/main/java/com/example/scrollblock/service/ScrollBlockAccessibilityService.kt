@@ -118,19 +118,8 @@ class ScrollBlockAccessibilityService : AccessibilityService() {
 
         val rootNode = rootInActiveWindow ?: return
 
-        // Arayüz Koruma Sistemi: Kısa video giriş sekmelerini maskele
-        if (preferences.isHideShortEntriesEnabledSync()) {
-            overlayManager?.updateForWindow(
-                rootNode = rootNode,
-                packageName = packageName,
-                isEnabled = true,
-                blockInstagram = preferences.isInstagramEnabledSync(),
-                blockYoutube = preferences.isYouTubeEnabledSync(),
-                blockTiktok = preferences.isTikTokEnabledSync()
-            )
-        } else {
-            overlayManager?.clearAllOverlays()
-        }
+        // Ekranın alt kısmının dokunmatik kullanımını engellememek için overlay katmanı temiz tutulur
+        overlayManager?.clearAllOverlays()
 
         try {
             // Akış ve Yorum Engelleme Motoru (Tıklanınca Anında Engelleme)
