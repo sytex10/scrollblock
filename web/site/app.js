@@ -142,9 +142,7 @@
 
     if (!isExtensionConnected) {
       extensionStatusPill.className = "status-pill inactive";
-      extensionStatusText.textContent = extensionCheckCount < 3
-        ? "PC Eklentisi Kontrol Ediliyor..."
-        : "PC Eklentisi Bağlı Değil";
+      extensionStatusText.textContent = "PC Eklentisi Bağlı Değil";
       extensionStatusPill.title = "ShortBan Chrome Eklentisi Kurulu Değil (İndirmek için tıklayın)";
     } else {
       const isBreak = state.isBreakActive && Date.now() < (state.breakEndTimeMs || 0);
