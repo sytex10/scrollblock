@@ -6,9 +6,20 @@
 (function () {
   "use strict";
 
+  try {
+    if (document.documentElement) {
+      document.documentElement.setAttribute("data-scrollblock-extension", "installed");
+    }
+  } catch (_) {}
+
   function broadcastStateToPage() {
     chrome.runtime.sendMessage({ type: "GET_STATE" }, (res) => {
       if (res && res.ok) {
+        try {
+          if (document.documentElement) {
+            document.documentElement.setAttribute("data-scrollblock-extension", "installed");
+          }
+        } catch (_) {}
         window.postMessage(
           {
             source: "SCROLLBLOCK_EXTENSION",

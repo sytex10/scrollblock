@@ -33,6 +33,7 @@
 
   let state = loadLocalState();
   let isExtensionConnected = false;
+  let extensionCheckCount = 0;
   let pendingProtectedAction = null;
   let isSettingNewPin = false;
 
@@ -133,12 +134,26 @@
   }
 
   function render() {
-    const isBreak = state.isBreakActive && Date.now() < (state.breakEndTimeMs || 0);
+    if (!isExtensionConnected) {
+      if (document.documentElement.getAttribute("data-scrollblock-extension") === "installed") {
+        isExtensionConnected = true;
+      }
+    }
 
-    extensionStatusPill.className = isBreak ? "status-pill warning" : "status-pill active";
-    extensionStatusText.textContent = isBreak
-      ? "PC Eklentisi Bağlı · Mola Modu"
-      : "PC Eklentisi Bağlı · Koruma Aktif";
+    if (!isExtensionConnected) {
+      extensionStatusPill.className = "status-pill inactive";
+      extensionStatusText.textContent = extensionCheckCount < 3
+        ? "PC Eklentisi Kontrol Ediliyor..."
+        : "PC Eklentisi Bağlı Değil";
+      extensionStatusPill.title = "ShortBan Chrome Eklentisi Kurulu Değil (İndirmek için tıklayın)";
+    } else {
+      const isBreak = state.isBreakActive && Date.now() < (state.breakEndTimeMs || 0);
+      extensionStatusPill.className = isBreak ? "status-pill warning" : "status-pill active";
+      extensionStatusText.textContent = isBreak
+        ? "PC Eklentisi Bağlı · Mola Modu"
+        : "PC Eklentisi Bağlı · Koruma Aktif";
+      extensionStatusPill.title = "ShortBan PC Eklentisi Aktif ve Canlı Senkronize";
+    }
 
     totalBlockedCountEl.textContent = state.totalBlockedCount || 0;
     if (state.totalBlockedCount > 0 && state.lastBlockedPlatform) {
@@ -455,9 +470,39 @@
       if (pcVer) pcVer.textContent = "v1.0 · Güncel";
     });
 
-  window.postMessage({ source: "SCROLLBLOCK_WEB_DASHBOARD", type: "PING_EXTENSION" }, "*");
+  if (extensionStatusPill) {
+    extensionStatusPill.addEventListener("click", () => {
+      if (!isExtensionConnected) {
+        const pcCard = document.querySelector(".pc-box");
+        if (pcCard) {
+          pcCard.scrollIntoView({ behavior: "smooth", block: "center" });
+        } else {
+          window.open("https://chromewebstore.google.com/detail/gnhjdbccjejkmmeicidlfgbpelkmnffm", "_blank");
+        }
+      }
+    });
+  }
+
+  function pingExtension() {
+    extensionCheckCount++;
+    if (document.documentElement.getAttribute("data-scrollblock-extension") === "installed") {
+      isExtensionConnected = true;
+    }
+    window.postMessage({ source: "SCROLLBLOCK_WEB_DASHBOARD", type: "PING_EXTENSION" }, "*");
+  }
+
+  pingExtension();
+  setTimeout(pingExtension, 350);
+  setTimeout(pingExtension, 800);
+  setTimeout(pingExtension, 1500);
+
   render();
-  setInterval(render, 1000);
+  setInterval(() => {
+    if (!isExtensionConnected) {
+      pingExtension();
+    }
+    render();
+  }, 1000);
 
   // "Powered by Netlify" rozetini DOM'dan otomatik temizle
   function removeNetlifyBadges() {

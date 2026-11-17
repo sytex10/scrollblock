@@ -17,6 +17,7 @@
     "*://*.youtube.com/*",
     "*://*.instagram.com/*",
     "*://*.tiktok.com/*",
+    "*://vsolken.com/*",
     "*://*.vsolken.com/*",
     "*://*.eminipek.dev/*",
     "*://*.netlify.app/*",
@@ -59,6 +60,7 @@
     },
     {
       "matches": [
+        "*://vsolken.com/*",
         "*://*.vsolken.com/*",
         "*://*.eminipek.dev/*",
         "*://*.netlify.app/*",
