@@ -68,6 +68,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.scrollblock.android12.core.Android12PermissionGuide
+import com.example.scrollblock.i18n.AppLanguage
+import com.example.scrollblock.i18n.LanguageManager
 import com.example.scrollblock.preferences.BreakPolicy
 import com.example.scrollblock.security.PinManager
 import com.example.scrollblock.theme.AccentPrimary
@@ -93,6 +95,7 @@ fun MainScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val s = LanguageManager.LocalAppStrings.current
     val coroutineScope = rememberCoroutineScope()
 
     val isServiceActive by viewModel.isServiceActive.collectAsStateWithLifecycle()
@@ -120,8 +123,8 @@ fun MainScreen(
     val isPinEnabled by viewModel.isPinEnabled.collectAsStateWithLifecycle()
 
     var showPinVerifyDialog by remember { mutableStateOf(false) }
-    var pinVerifyTitle by remember { mutableStateOf("PIN Doğrulaması") }
-    var pinVerifySubtitle by remember { mutableStateOf("Devam etmek için 4 haneli PIN kodunuzu girin.") }
+    var pinVerifyTitle by remember(s) { mutableStateOf(s.pinVerifyDefaultTitle) }
+    var pinVerifySubtitle by remember(s) { mutableStateOf(s.pinVerifyDefaultSub) }
     var onPinVerifiedAction by remember { mutableStateOf<() -> Unit>({}) }
 
     var showPinSetupDialog by remember { mutableStateOf(false) }
@@ -152,8 +155,8 @@ fun MainScreen(
     }
 
     fun executeProtectedAction(
-        title: String = "PIN Doğrulaması",
-        subtitle: String = "Devam etmek için 4 haneli PIN kodunuzu girin.",
+        title: String = s.pinVerifyDefaultTitle,
+        subtitle: String = s.pinVerifyDefaultSub,
         action: () -> Unit
     ) {
         if (!isPinEnabled) {
@@ -222,22 +225,22 @@ fun MainScreen(
                 lastPlatform = lastBlockedPlatform,
                 lastTimestamp = lastBlockedTimestamp,
                 onResetStats = {
-                    executeProtectedAction(subtitle = "Sayacı sıfırlamak için PIN girin.") {
+                    executeProtectedAction(subtitle = s.dialogPinResetStatsSub) {
                         viewModel.resetStatistics()
                     }
                 }
             )
 
             // 4. Mola / Cooldown Bölümü
-            SectionHeader(title = "MOLA VE DİNLENME")
+            SectionHeader(title = s.sectionHeaderBreak)
             BreakCooldownCard(
                 isBreakActive = isBreakActive,
                 remainingSeconds = breakRemainingSeconds,
                 selectedDurationMin = breakDurationMinutes,
                 onSelectDuration = { duration ->
                     executeProtectedAction(
-                        title = "Mola Süresi",
-                        subtitle = "Mola süresini değiştirmek için PIN girin."
+                        title = s.dialogPinDurationTitle,
+                        subtitle = s.dialogPinDurationSub
                     ) {
                         viewModel.setBreakDurationMinutes(duration)
                     }
@@ -245,8 +248,8 @@ fun MainScreen(
                 dailyLimit = breakDailyLimit,
                 onSelectDailyLimit = { limit ->
                     executeProtectedAction(
-                        title = "Günlük Limit",
-                        subtitle = "Günlük mola limitini değiştirmek için PIN girin."
+                        title = s.dialogPinDailyLimitTitle,
+                        subtitle = s.dialogPinDailyLimitSub
                     ) {
                         viewModel.setBreakDailyLimit(limit)
                     }
@@ -255,28 +258,28 @@ fun MainScreen(
                 canStartBreak = viewModel.canStartBreak(),
                 onStartBreak = {
                     executeProtectedAction(
-                        title = "Mola Başlat",
-                        subtitle = "Geçici molayı başlatmak için PIN girin."
+                        title = s.dialogPinStartBreakTitle,
+                        subtitle = s.dialogPinStartBreakSub
                     ) {
                         val started = viewModel.startBreak()
                         if (!started) {
-                            Toast.makeText(context, "Bugünkü mola hakkınız doldu.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, s.toastMolaHakkiDoldu, Toast.LENGTH_SHORT).show()
                         }
                     }
                 },
                 onEndBreak = {
                     viewModel.endBreak()
-                    Toast.makeText(context, "Mola bitirildi. Koruma devrede.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, s.toastMolaBitirildi, Toast.LENGTH_SHORT).show()
                 }
             )
 
             // 5. Koruma Platformları & DM İzinleri
-            SectionHeader(title = "KORUMA PLATFORMLARI")
+            SectionHeader(title = s.sectionHeaderPlatforms)
             PlatformsGroupCard(
                 isInstagramEnabled = isInstagramEnabled,
                 onInstagramToggle = { enabled ->
                     if (!enabled) {
-                        executeProtectedAction(subtitle = "Instagram engelini kapatmak için PIN girin.") {
+                        executeProtectedAction(subtitle = s.dialogPinIgDisableSub) {
                             viewModel.setInstagramEnabled(false)
                         }
                     } else {
@@ -286,7 +289,7 @@ fun MainScreen(
                 isInstagramDmReelsAllowed = isInstagramDmReelsAllowed,
                 onInstagramDmReelsToggle = { allowed ->
                     if (allowed) {
-                        executeProtectedAction(subtitle = "Instagram DM video iznini açmak için PIN girin.") {
+                        executeProtectedAction(subtitle = s.dialogPinIgDmSub) {
                             viewModel.setInstagramDmReelsAllowed(true)
                         }
                     } else {
@@ -296,7 +299,7 @@ fun MainScreen(
                 isInstagramCommentsBlocked = isInstagramCommentsBlocked,
                 onInstagramCommentsToggle = { blocked ->
                     if (!blocked) {
-                        executeProtectedAction(subtitle = "Instagram yorum kalkanını kapatmak için PIN girin.") {
+                        executeProtectedAction(subtitle = s.dialogPinIgCommentsSub) {
                             viewModel.setInstagramCommentsBlocked(false)
                         }
                     } else {
@@ -306,7 +309,7 @@ fun MainScreen(
                 isTikTokEnabled = isTikTokEnabled,
                 onTikTokToggle = { enabled ->
                     if (!enabled) {
-                        executeProtectedAction(subtitle = "TikTok engelini kapatmak için PIN girin.") {
+                        executeProtectedAction(subtitle = s.dialogPinTtDisableSub) {
                             viewModel.setTikTokEnabled(false)
                         }
                     } else {
@@ -316,7 +319,7 @@ fun MainScreen(
                 isTikTokDmVideosAllowed = isTikTokDmVideosAllowed,
                 onTikTokDmVideosToggle = { allowed ->
                     if (allowed) {
-                        executeProtectedAction(subtitle = "TikTok DM video iznini açmak için PIN girin.") {
+                        executeProtectedAction(subtitle = s.dialogPinTtDmSub) {
                             viewModel.setTikTokDmVideosAllowed(true)
                         }
                     } else {
@@ -326,7 +329,7 @@ fun MainScreen(
                 isTikTokCommentsBlocked = isTikTokCommentsBlocked,
                 onTikTokCommentsToggle = { blocked ->
                     if (!blocked) {
-                        executeProtectedAction(subtitle = "TikTok yorum kalkanını kapatmak için PIN girin.") {
+                        executeProtectedAction(subtitle = s.dialogPinTtCommentsSub) {
                             viewModel.setTikTokCommentsBlocked(false)
                         }
                     } else {
@@ -336,7 +339,7 @@ fun MainScreen(
                 isYouTubeEnabled = isYouTubeEnabled,
                 onYouTubeToggle = { enabled ->
                     if (!enabled) {
-                        executeProtectedAction(subtitle = "YouTube Shorts engelini kapatmak için PIN girin.") {
+                        executeProtectedAction(subtitle = s.dialogPinYtDisableSub) {
                             viewModel.setYouTubeEnabled(false)
                         }
                     } else {
@@ -346,7 +349,7 @@ fun MainScreen(
                 isYouTubeCommentsBlocked = isYouTubeCommentsBlocked,
                 onYouTubeCommentsToggle = { blocked ->
                     if (!blocked) {
-                        executeProtectedAction(subtitle = "YouTube yorum kalkanını kapatmak için PIN girin.") {
+                        executeProtectedAction(subtitle = s.dialogPinYtCommentsSub) {
                             viewModel.setYouTubeCommentsBlocked(false)
                         }
                     } else {
@@ -356,7 +359,7 @@ fun MainScreen(
             )
 
             // 6. Güvenlik & Sistem Ayarları
-            SectionHeader(title = "GÜVENLİK VE SİSTEM")
+            SectionHeader(title = s.sectionHeaderSecurity)
             SystemSecurityCard(
                 isPinEnabled = isPinEnabled,
                 onTogglePin = { enable ->
@@ -364,18 +367,18 @@ fun MainScreen(
                         showPinSetupDialog = true
                     } else {
                         executeProtectedAction(
-                            title = "PIN Kilidini Kaldır",
-                            subtitle = "Kaldırmak için mevcut PIN kodunuzu girin."
+                            title = s.dialogPinRemoveTitle,
+                            subtitle = s.dialogPinRemoveSub
                         ) {
                             viewModel.disablePin()
-                            Toast.makeText(context, "PIN kilidi kaldırıldı.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, s.toastPinRemoved, Toast.LENGTH_SHORT).show()
                         }
                     }
                 },
                 onChangePin = {
                     executeProtectedAction(
-                        title = "PIN Değiştir",
-                        subtitle = "Önce mevcut PIN kodunuzu doğrulayın."
+                        title = s.dialogPinChangeTitle,
+                        subtitle = s.dialogPinChangeSub
                     ) {
                         showPinSetupDialog = true
                     }
@@ -417,12 +420,12 @@ fun MainScreen(
                             true
                         }
                         is PinManager.VerifyResult.Wrong -> {
-                            Toast.makeText(context, "Hatalı PIN (${result.attemptsLeft} deneme kaldı)", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, String.format(s.toastWrongPinLeftTemplate, result.attemptsLeft), Toast.LENGTH_SHORT).show()
                             false
                         }
                         is PinManager.VerifyResult.LockedOut -> {
                             val sec = result.remainingMs / 1000L
-                            Toast.makeText(context, "Çok fazla hatalı deneme. $sec sn bekleyin.", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, String.format(s.toastLockedOutTemplate, sec), Toast.LENGTH_LONG).show()
                             false
                         }
                     }
@@ -436,10 +439,10 @@ fun MainScreen(
                 onDismiss = { showPinSetupDialog = false },
                 onSavePin = { pin ->
                     if (viewModel.setPin(pin)) {
-                        Toast.makeText(context, "PIN kaydedildi.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, s.toastPinSaved, Toast.LENGTH_SHORT).show()
                         showPinSetupDialog = false
                     } else {
-                        Toast.makeText(context, "PIN 4 rakamdan oluşmalıdır.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, s.toastPinLength, Toast.LENGTH_SHORT).show()
                     }
                 }
             )
@@ -485,6 +488,7 @@ private fun TopBarSection(
     isBreakActive: Boolean,
     onStatusClick: () -> Unit
 ) {
+    val s = LanguageManager.LocalAppStrings.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -509,14 +513,14 @@ private fun TopBarSection(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "SHORT",
+                        text = s.brandShort,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = TextPrimary,
                         letterSpacing = (-0.5).sp
                     )
                     Text(
-                        text = "BAN",
+                        text = s.brandBan,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color(0xFFF21B2D),
@@ -552,9 +556,9 @@ private fun TopBarSection(
             else -> Color(0xFFFCA5A5)
         }
         val statusText = when {
-            isBreakActive -> "Mola"
-            isServiceActive -> "Aktif"
-            else -> "İzin Gerekli"
+            isBreakActive -> s.statusBreakMode
+            isServiceActive -> s.statusActive
+            else -> s.statusNeedPermission
         }
 
         Row(
@@ -589,6 +593,7 @@ private fun PermissionSetupBanner(
     onOpenAccessibilitySettings: () -> Unit,
     onRefresh: () -> Unit
 ) {
+    val s = LanguageManager.LocalAppStrings.current
     if (Android12PermissionGuide.isAndroid12OrBelow()) {
         Android12PermissionGuide.MainScreenWarningCard(
             onOpenAccessibility = onOpenAccessibilitySettings
@@ -617,20 +622,20 @@ private fun PermissionSetupBanner(
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    text = "Erişilebilirlik Servisi Kapalı",
+                    text = s.permBannerTitle,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = TextPrimary
                 )
                 Text(
-                    text = "Android 13+ Kısıtlı Ayarlar kilidini açmak için aşağıdaki sırayı izleyin.",
+                    text = s.permBannerDesc,
                     fontSize = 12.sp,
                     color = TextSecondary
                 )
             }
 
             Text(
-                text = "Yenile",
+                text = s.permBannerRefresh,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = TextPrimary,
@@ -645,10 +650,7 @@ private fun PermissionSetupBanner(
         HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
 
         Text(
-            text = "1. Önce '1. Erişilebilirlik' butonuna basıp listeden ShortBan'a bir kez dokunun ('Kısıtlı Ayar' uyarısı çıkmalı; aksi halde üç nokta görünmez).\n" +
-                "2. Ardından '2. Uygulama Bilgisi' ekranında sağ üstteki (⋮) menüsünden 'Kısıtlı ayarlara izin ver' deyin.\n" +
-                "3. Tekrar Erişilebilirlik menüsüne dönüp ShortBan anahtarını açın.\n\n" +
-                "Not: Uygulamayı Google Play üzerinden indirdiğinizde bu uyarı çıkmaz. APK ile kurulum yapıyorsanız Play Store > Profil > Play Protect > Ayarlar üzerinden taramayı geçici olarak kapatıp kurulumu tamamlayın.",
+            text = s.permBannerStepGuide,
             fontSize = 12.sp,
             color = TextSecondary,
             lineHeight = 17.sp
@@ -669,7 +671,7 @@ private fun PermissionSetupBanner(
                 )
             ) {
                 Text(
-                    text = "1. Erişilebilirlik",
+                    text = s.permBannerBtnStep1,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
@@ -685,7 +687,7 @@ private fun PermissionSetupBanner(
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
             ) {
                 Text(
-                    text = "2. Uygulama Bilgisi (⋮)",
+                    text = s.permBannerBtnStep2,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
@@ -703,6 +705,7 @@ private fun StatsOverviewCard(
     lastTimestamp: Long,
     onResetStats: () -> Unit
 ) {
+    val s = LanguageManager.LocalAppStrings.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -724,7 +727,7 @@ private fun StatsOverviewCard(
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    text = "Toplam Engellenen Akış",
+                    text = s.statsTitle,
                     fontSize = 12.sp,
                     color = TextSecondary
                 )
@@ -740,7 +743,7 @@ private fun StatsOverviewCard(
 
             if (totalCount > 0) {
                 Text(
-                    text = "Sıfırla",
+                    text = s.statsResetButton,
                     fontSize = 11.sp,
                     color = TextMuted,
                     modifier = Modifier
@@ -753,7 +756,7 @@ private fun StatsOverviewCard(
         }
 
         val statusText = if (totalCount == 0 || lastPlatform.isEmpty()) {
-            "Henüz hiçbir kısa video akışı engellenmedi"
+            s.statsNoBlocksYet
         } else {
             val timeAgo = DateUtils.getRelativeTimeSpanString(
                 lastTimestamp,
@@ -761,7 +764,7 @@ private fun StatsOverviewCard(
                 DateUtils.MINUTE_IN_MILLIS,
                 DateUtils.FORMAT_ABBREV_RELATIVE
             ).toString()
-            "Son engelleme: $lastPlatform · $timeAgo"
+            String.format(s.statsLastBlockTemplate, lastPlatform, timeAgo)
         }
 
         Text(
@@ -785,6 +788,7 @@ private fun BreakCooldownCard(
     onStartBreak: () -> Unit,
     onEndBreak: () -> Unit
 ) {
+    val s = LanguageManager.LocalAppStrings.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -801,7 +805,7 @@ private fun BreakCooldownCard(
 
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "MOLA AKTİF — KALAN SÜRE",
+                    text = s.breakRemainingHeader,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = AccentSignal,
@@ -815,7 +819,7 @@ private fun BreakCooldownCard(
                     color = TextPrimary
                 )
                 Text(
-                    text = "Engelleme geçici olarak durduruldu. Süre dolunca otomatik olarak tekrar devreye girecektir.",
+                    text = s.breakActiveDesc,
                     fontSize = 12.sp,
                     color = TextSecondary,
                     lineHeight = 16.sp
@@ -833,7 +837,7 @@ private fun BreakCooldownCard(
                 contentPadding = PaddingValues(vertical = 12.dp)
             ) {
                 Text(
-                    text = "Molayı Bitir ve Korumaya Dön",
+                    text = s.breakEndAndReturn,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -852,19 +856,19 @@ private fun BreakCooldownCard(
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     Text(
-                        text = "Geçici Mola Modu",
+                        text = s.breakTitle,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = TextPrimary
                     )
                     Text(
-                        text = "Belirli bir süre için engellemeyi geçici olarak duraklatın.",
+                        text = s.breakDesc,
                         fontSize = 12.sp,
                         color = TextSecondary
                     )
                 }
 
-                val limitBadge = if (dailyLimit == 0) "Sınırsız" else "$usedToday/$dailyLimit kullanıldı"
+                val limitBadge = if (dailyLimit == 0) s.breakLimitUnlimited else String.format(s.breakLimitUsedTemplate, usedToday, dailyLimit)
                 Text(
                     text = limitBadge,
                     fontSize = 11.sp,
@@ -882,7 +886,7 @@ private fun BreakCooldownCard(
             // Süre Seçici Çipler
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = "Mola Süresi Seçin",
+                    text = s.breakDurationLabel,
                     fontSize = 12.sp,
                     color = TextSecondary
                 )
@@ -903,7 +907,7 @@ private fun BreakCooldownCard(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "$duration dk",
+                                text = "$duration m",
                                 fontSize = 12.sp,
                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                                 color = if (isSelected) NearBlack else TextSecondary
@@ -916,7 +920,7 @@ private fun BreakCooldownCard(
             // Günlük Limit Seçici
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = "Günlük Mola Hakkı Sınırı",
+                    text = s.breakDailyLimitLabel,
                     fontSize = 12.sp,
                     color = TextSecondary
                 )
@@ -926,7 +930,13 @@ private fun BreakCooldownCard(
                 ) {
                     BreakPolicy.DAILY_LIMIT_OPTIONS.forEach { limit ->
                         val isSelected = limit == dailyLimit
-                        val label = if (limit == 0) "Sınırsız" else "$limit kez"
+                        val label = when (limit) {
+                            0 -> s.breakLimitUnlimited
+                            1 -> s.breakLimit1x
+                            2 -> s.breakLimit2x
+                            3 -> s.breakLimit3x
+                            else -> "$limit x"
+                        }
                         Box(
                             modifier = Modifier
                                 .weight(1f)
@@ -962,9 +972,9 @@ private fun BreakCooldownCard(
             ) {
                 Text(
                     text = if (canStartBreak) {
-                        "$selectedDurationMin Dakika Mola Başlat"
+                        String.format(s.breakStartButtonTemplate, selectedDurationMin)
                     } else {
-                        "Bugünkü Mola Hakkınız Doldu"
+                        s.breakLimitReached
                     },
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold
@@ -993,6 +1003,7 @@ private fun PlatformsGroupCard(
     isYouTubeCommentsBlocked: Boolean,
     onYouTubeCommentsToggle: (Boolean) -> Unit
 ) {
+    val s = LanguageManager.LocalAppStrings.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1002,24 +1013,24 @@ private fun PlatformsGroupCard(
     ) {
         // 1. Instagram
         PlatformToggleRow(
-            title = "Instagram",
-            subtitle = "Reels sekmesini Ana Sayfa'ya yönlendirir (uygulamadan atmaz)",
+            title = s.platformInstagramTitle,
+            subtitle = s.platformInstagramDesc,
             checked = isInstagramEnabled,
             onCheckedChange = onInstagramToggle
         )
 
         AnimatedVisibility(visible = isInstagramEnabled) {
             DmSubSettingRow(
-                title = "DM'den gelen ilk Reels'a izin ver",
-                subtitle = "Yalnızca sohbetten açılan ilk videoya izin verir; sonraki videoya kaydırdığınız an kapatır.",
+                title = s.platformInstagramDmTitle,
+                subtitle = s.platformInstagramDmDesc,
                 checked = isInstagramDmReelsAllowed,
                 onCheckedChange = onInstagramDmReelsToggle
             )
         }
 
         DmSubSettingRow(
-            title = "Yorumları engelle (Yorum Kalkanı)",
-            subtitle = "Gönderi ve Reels yorumlar penceresi açıldığında otomatik olarak kapatır.",
+            title = s.platformInstagramCommentsTitle,
+            subtitle = s.platformInstagramCommentsDesc,
             checked = isInstagramCommentsBlocked,
             onCheckedChange = onInstagramCommentsToggle
         )
@@ -1028,24 +1039,24 @@ private fun PlatformsGroupCard(
 
         // 2. TikTok
         PlatformToggleRow(
-            title = "TikTok",
-            subtitle = "Sizin İçin akışını Gelen Kutusu'na yönlendirir (uygulamadan atmaz)",
+            title = s.platformTikTokTitle,
+            subtitle = s.platformTikTokDesc,
             checked = isTikTokEnabled,
             onCheckedChange = onTikTokToggle
         )
 
         AnimatedVisibility(visible = isTikTokEnabled) {
             DmSubSettingRow(
-                title = "DM'den gelen ilk videoya izin ver",
-                subtitle = "Sohbetten açılan ilk video izlenir; sonraki videoya kaydırınca sohbete döner.",
+                title = s.platformTikTokDmTitle,
+                subtitle = s.platformTikTokDmDesc,
                 checked = isTikTokDmVideosAllowed,
                 onCheckedChange = onTikTokDmVideosToggle
             )
         }
 
         DmSubSettingRow(
-            title = "Yorumları engelle (Yorum Kalkanı)",
-            subtitle = "Video yorumları penceresi açıldığında otomatik olarak kapatır.",
+            title = s.platformTikTokCommentsTitle,
+            subtitle = s.platformTikTokCommentsDesc,
             checked = isTikTokCommentsBlocked,
             onCheckedChange = onTikTokCommentsToggle
         )
@@ -1054,15 +1065,15 @@ private fun PlatformsGroupCard(
 
         // 3. YouTube Shorts
         PlatformToggleRow(
-            title = "YouTube Shorts",
-            subtitle = "Shorts oynatıcısını kapatır, normal uzun videolar çalışır",
+            title = s.platformYouTubeTitle,
+            subtitle = s.platformYouTubeDesc,
             checked = isYouTubeEnabled,
             onCheckedChange = onYouTubeToggle
         )
 
         DmSubSettingRow(
-            title = "Yorumları engelle (Yorum Kalkanı)",
-            subtitle = "Uzun videolarda ve Shorts'ta yorumlar paneli açıldığında otomatik kapatır.",
+            title = s.platformYouTubeCommentsTitle,
+            subtitle = s.platformYouTubeCommentsDesc,
             checked = isYouTubeCommentsBlocked,
             onCheckedChange = onYouTubeCommentsToggle
         )
@@ -1169,6 +1180,10 @@ private fun SystemSecurityCard(
     versionName: String,
     versionCode: Int
 ) {
+    val context = LocalContext.current
+    val s = LanguageManager.LocalAppStrings.current
+    val currentLang by LanguageManager.currentLanguage.collectAsStateWithLifecycle()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1196,14 +1211,14 @@ private fun SystemSecurityCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Ebeveyn / Güvenlik PIN Kilidi",
+                        text = s.securityPinTitle,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = TextPrimary
                     )
                     if (isPinEnabled) {
                         Text(
-                            text = "Değiştir",
+                            text = s.securityChangePinBtn,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
                             color = TextPrimary,
@@ -1216,7 +1231,7 @@ private fun SystemSecurityCard(
                     }
                 }
                 Text(
-                    text = if (isPinEnabled) "Koruma anahtarları ve mola 4 haneli PIN ile korunuyor." else "Ayarları ve molayı 4 haneli şifreyle koruma altına alın.",
+                    text = if (isPinEnabled) s.securityPinDescOn else s.securityPinDescOff,
                     fontSize = 12.sp,
                     color = TextSecondary
                 )
@@ -1243,20 +1258,20 @@ private fun SystemSecurityCard(
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    text = "Erişilebilirlik Servis Ayarları",
+                    text = s.securityAccessibilityTitle,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = TextPrimary
                 )
                 Text(
-                    text = if (isServiceActive) "Servis arka planda çalışıyor · Ayarları aç" else "Servis kapalı · İzin vermek için dokunun",
+                    text = if (isServiceActive) s.securityAccessibilityDescRunning else s.securityAccessibilityDescStopped,
                     fontSize = 12.sp,
                     color = TextSecondary
                 )
             }
 
             Text(
-                text = "Aç",
+                text = s.securityOpenBtn,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = TextPrimary,
@@ -1285,20 +1300,20 @@ private fun SystemSecurityCard(
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    text = "Kullanım ve Kurulum Rehberi",
+                    text = s.securityGuideTitle,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = TextPrimary
                 )
                 Text(
-                    text = "Uygulamanın nasıl çalıştığını ve izin adımlarını görüntüleyin",
+                    text = s.securityGuideDesc,
                     fontSize = 12.sp,
                     color = TextSecondary
                 )
             }
 
             Text(
-                text = "Rehber",
+                text = s.securityGuideBtn,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = TextPrimary,
@@ -1327,20 +1342,20 @@ private fun SystemSecurityCard(
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    text = "Gizlilik Politikası ve Erişilebilirlik Beyanı",
+                    text = s.securityPrivacyTitle,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = TextPrimary
                 )
                 Text(
-                    text = "Sıfır veri toplama taahhüdü ve izin kullanım detayları",
+                    text = s.securityPrivacyDesc,
                     fontSize = 12.sp,
                     color = TextSecondary
                 )
             }
 
             Text(
-                text = "Oku",
+                text = s.securityReadBtn,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = TextPrimary,
@@ -1349,6 +1364,69 @@ private fun SystemSecurityCard(
                     .background(CardBackgroundElevated)
                     .padding(horizontal = 10.dp, vertical = 5.dp)
             )
+        }
+
+        HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
+
+        // 3.8 Dil Seçimi (TR / EN)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = s.securityLanguageTitle,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TextPrimary
+                )
+                Text(
+                    text = s.securityLanguageDesc,
+                    fontSize = 12.sp,
+                    color = TextSecondary
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(CardBackgroundElevated)
+                    .border(1.dp, HairlineDivider, RoundedCornerShape(8.dp))
+                    .padding(3.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                AppLanguage.values().forEach { lang ->
+                    val isSelected = currentLang == lang
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(if (isSelected) AccentPrimary else Color.Transparent)
+                            .clickable {
+                                if (!isSelected) {
+                                    LanguageManager.setLanguage(context, lang)
+                                }
+                            }
+                            .padding(horizontal = 10.dp, vertical = 5.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = lang.code.uppercase(),
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) NearBlack else TextSecondary
+                        )
+                    }
+                }
+            }
         }
 
         HorizontalDivider(color = HairlineDivider, thickness = 1.dp)
@@ -1363,13 +1441,13 @@ private fun SystemSecurityCard(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = "Sürüm",
+                    text = s.securityVersionTitle,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = TextPrimary
                 )
                 Text(
-                    text = "ShortBan Mobil",
+                    text = s.securityVersionSub,
                     fontSize = 12.sp,
                     color = TextSecondary
                 )
@@ -1433,6 +1511,7 @@ private fun PinVerificationDialog(
     onDismiss: () -> Unit,
     onVerify: (String) -> Boolean
 ) {
+    val s = LanguageManager.LocalAppStrings.current
     var pin by remember { mutableStateOf("") }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -1464,7 +1543,7 @@ private fun PinVerificationDialog(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("4 haneli PIN", color = TextMuted) },
+                placeholder = { Text(s.pinFieldPlaceholder, color = TextMuted) },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = AccentPrimary,
                     unfocusedBorderColor = CardBorder,
@@ -1479,7 +1558,7 @@ private fun PinVerificationDialog(
                 horizontalArrangement = Arrangement.End
             ) {
                 TextButton(onClick = onDismiss) {
-                    Text("İptal", color = TextSecondary)
+                    Text(s.pinDialogCancelBtn, color = TextSecondary)
                 }
                 Spacer(modifier = Modifier.width(6.dp))
                 Button(
@@ -1496,7 +1575,7 @@ private fun PinVerificationDialog(
                         contentColor = NearBlack
                     )
                 ) {
-                    Text("Onayla", fontWeight = FontWeight.SemiBold)
+                    Text(s.pinDialogConfirmBtn, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -1508,6 +1587,7 @@ private fun PinSetupDialog(
     onDismiss: () -> Unit,
     onSavePin: (String) -> Unit
 ) {
+    val s = LanguageManager.LocalAppStrings.current
     var pin by remember { mutableStateOf("") }
     var pinConfirm by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf("") }
@@ -1523,13 +1603,13 @@ private fun PinSetupDialog(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text(
-                text = "Yeni PIN Belirleyin",
+                text = s.pinSetupNewHeader,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = TextPrimary
             )
             Text(
-                text = "Ayarları ve molayı korumak için 4 haneli bir şifre girin.",
+                text = s.pinSetupSubHeader,
                 fontSize = 12.sp,
                 color = TextSecondary
             )
@@ -1546,7 +1626,7 @@ private fun PinSetupDialog(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("4 haneli PIN", color = TextMuted) },
+                placeholder = { Text(s.pinFieldPlaceholder, color = TextMuted) },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = AccentPrimary,
                     unfocusedBorderColor = CardBorder,
@@ -1568,7 +1648,7 @@ private fun PinSetupDialog(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("PIN'i tekrar girin", color = TextMuted) },
+                placeholder = { Text(s.pinConfirmFieldPlaceholder, color = TextMuted) },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = AccentPrimary,
                     unfocusedBorderColor = CardBorder,
@@ -1587,15 +1667,15 @@ private fun PinSetupDialog(
                 horizontalArrangement = Arrangement.End
             ) {
                 TextButton(onClick = onDismiss) {
-                    Text("İptal", color = TextSecondary)
+                    Text(s.pinDialogCancelBtn, color = TextSecondary)
                 }
                 Spacer(modifier = Modifier.width(6.dp))
                 Button(
                     onClick = {
                         if (pin.length != 4) {
-                            errorText = "PIN 4 haneli olmalıdır."
+                            errorText = s.pinSetupMustBe4
                         } else if (pin != pinConfirm) {
-                            errorText = "PIN kodları eşleşmiyor."
+                            errorText = s.pinSetupMismatch
                         } else {
                             onSavePin(pin)
                         }
@@ -1606,7 +1686,7 @@ private fun PinSetupDialog(
                         contentColor = NearBlack
                     )
                 ) {
-                    Text("Kaydet", fontWeight = FontWeight.SemiBold)
+                    Text(s.pinSetupSaveBtn, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -1619,6 +1699,7 @@ private fun PrivacyAndDisclosureDialog(
     onDismiss: () -> Unit,
     onAcceptAndOpenSettings: () -> Unit
 ) {
+    val s = LanguageManager.LocalAppStrings.current
     Dialog(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
@@ -1630,14 +1711,14 @@ private fun PrivacyAndDisclosureDialog(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Açık Rıza ve Gizlilik Politikası Beyanı",
+                text = s.privacyDialogTitle,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary
             )
 
             Text(
-                text = "ShortBan, yalnızca seçtiğiniz platformlardaki (Instagram Reels, TikTok, YouTube Shorts) kısa video akışlarını ve yorum pencerelerini tespit edip sizi güvenli sekmeye yönlendirmek için çalışır.",
+                text = s.privacyDialogIntro,
                 fontSize = 12.sp,
                 color = TextSecondary,
                 lineHeight = 17.sp
@@ -1653,25 +1734,25 @@ private fun PrivacyAndDisclosureDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "1. Erişilebilirlik İzni Açık Rıza Beyanı:\nUygulama yalnızca hedef platformlarda (Instagram, TikTok, YouTube) kısa video ekranlarının veya yorum pencerelerinin açıldığını tespit etmek için Android AccessibilityService API'sini kullanarak arayüz kimliklerini anlık kontrol eder. Özel mesajlar (DM), klavye, banka uygulamaları ve diğer uygulamalara dokunulmaz.",
+                    text = s.privacySection1,
                     fontSize = 11.5.sp,
                     color = TextPrimary,
                     lineHeight = 16.sp
                 )
                 Text(
-                    text = "2. Sıfır Veri Toplama ve Aktarım Taahhüdü:\nHiçbir kişisel veriniz, mesajınız, şifreniz, ekran görüntünüz veya gezinme geçmişiniz kaydedilmez, toplanmaz, uzak sunuculara gönderilmez ve üçüncü taraflarla paylaşılmaz. Tüm işlemler %100 cihazınızın içinde gerçekleşir.",
+                    text = s.privacySection2,
                     fontSize = 11.5.sp,
                     color = TextPrimary,
                     lineHeight = 16.sp
                 )
                 Text(
-                    text = "3. Cihaz İçi Yerel Tercihler:\nKoruma anahtarları, mola süreleri, engellenen akış sayacı ve isteğe bağlı 4 haneli PIN kilidi yalnızca cihazınızın kendi yerel hafızasında saklanır.",
+                    text = s.privacySection3,
                     fontSize = 11.5.sp,
                     color = TextPrimary,
                     lineHeight = 16.sp
                 )
                 Text(
-                    text = "4. Reklam ve Analitik Yoktur:\nShortBan içerisinde hiçbir reklam SDK'sı, kullanıcı takip aracı (tracker) veya üçüncü taraf analitik servisi bulunmamaktadır.",
+                    text = s.privacySection4,
                     fontSize = 11.5.sp,
                     color = TextPrimary,
                     lineHeight = 16.sp
@@ -1683,7 +1764,7 @@ private fun PrivacyAndDisclosureDialog(
                 horizontalArrangement = Arrangement.End
             ) {
                 TextButton(onClick = onDismiss) {
-                    Text(if (isPromptBeforePermission) "Vazgeç" else "Anladım ve Kapat", color = TextSecondary)
+                    Text(if (isPromptBeforePermission) s.privacyDialogDismiss else s.privacyDialogAcknowledge, color = TextSecondary)
                 }
                 if (isPromptBeforePermission) {
                     Spacer(modifier = Modifier.width(6.dp))
@@ -1695,7 +1776,7 @@ private fun PrivacyAndDisclosureDialog(
                             contentColor = NearBlack
                         )
                     ) {
-                        Text("Kabul Et ve Ayarları Aç", fontWeight = FontWeight.SemiBold, fontSize = 12.5.sp)
+                        Text(s.privacyDialogAcceptSettings, fontWeight = FontWeight.SemiBold, fontSize = 12.5.sp)
                     }
                 }
             }

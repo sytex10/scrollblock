@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">ShortBan</string>
+    <string name="accessibility_service_description">ShortBan (Short + Ban — Block Short Videos &amp; Toxic Comments): Operates strictly on-device to instantly detect and redirect short video feeds (YouTube Shorts, Instagram Reels, TikTok) and toxic comment windows. No screen contents or personal data are ever recorded or transmitted.</string>
+</resources>

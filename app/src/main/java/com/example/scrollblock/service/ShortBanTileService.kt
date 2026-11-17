@@ -11,6 +11,7 @@ import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import androidx.annotation.RequiresApi
 import com.example.scrollblock.R
+import com.example.scrollblock.i18n.LanguageManager
 import com.example.scrollblock.preferences.BlockPreferences
 import com.example.scrollblock.util.AccessibilityUtils
 
@@ -61,14 +62,16 @@ class ShortBanTileService : TileService() {
 
         val isCurrentlyActive = preferences.isProtectionActiveSync()
 
+        val strings = LanguageManager.getStrings(LanguageManager.getCurrentLanguageSync(applicationContext))
+
         if (isCurrentlyActive) {
             // Bildirim panelinden kapatınca: Korumayı duraklat ve aktif overlay'leri anında kaldır
             preferences.setProtectionPaused(true)
             ScrollBlockAccessibilityService.clearOverlays()
             tile.state = Tile.STATE_INACTIVE
-            tile.label = "ShortBan"
+            tile.label = strings.tileLabel
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                tile.subtitle = "Durduruldu"
+                tile.subtitle = strings.tileStatePaused
             }
         } else {
             // Bildirim panelinden açınca: Korumayı aktif et, mola varsa sonlandır
@@ -77,9 +80,9 @@ class ShortBanTileService : TileService() {
                 preferences.endBreak()
             }
             tile.state = Tile.STATE_ACTIVE
-            tile.label = "ShortBan"
+            tile.label = strings.tileLabel
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                tile.subtitle = "Koruma Açık"
+                tile.subtitle = strings.tileStateActive
             }
         }
 
@@ -89,6 +92,7 @@ class ShortBanTileService : TileService() {
     private fun updateTileState() {
         val tile = qsTile ?: return
         val preferences = BlockPreferences.getInstance(applicationContext)
+        val strings = LanguageManager.getStrings(LanguageManager.getCurrentLanguageSync(applicationContext))
 
         val isServiceRunning = AccessibilityUtils.isAccessibilityServiceEnabled(
             applicationContext
@@ -96,9 +100,9 @@ class ShortBanTileService : TileService() {
 
         if (!isServiceRunning) {
             tile.state = Tile.STATE_UNAVAILABLE
-            tile.label = "ShortBan"
+            tile.label = strings.tileLabel
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                tile.subtitle = "Servis Kapalı"
+                tile.subtitle = strings.tileStateServiceOff
             }
             tile.icon = Icon.createWithResource(this, R.drawable.ic_tile_shortban_logo)
             tile.updateTile()
@@ -109,15 +113,15 @@ class ShortBanTileService : TileService() {
 
         if (isProtectionActive) {
             tile.state = Tile.STATE_ACTIVE
-            tile.label = "ShortBan"
+            tile.label = strings.tileLabel
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                tile.subtitle = "Koruma Açık"
+                tile.subtitle = strings.tileStateActive
             }
         } else {
             tile.state = Tile.STATE_INACTIVE
-            tile.label = "ShortBan"
+            tile.label = strings.tileLabel
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                tile.subtitle = if (preferences.isBreakActiveSync()) "Mola Aktif" else "Durduruldu"
+                tile.subtitle = if (preferences.isBreakActiveSync()) strings.tileStateBreak else strings.tileStatePaused
             }
         }
 

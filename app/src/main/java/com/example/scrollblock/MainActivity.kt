@@ -10,10 +10,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.scrollblock.i18n.LanguageManager
 import com.example.scrollblock.theme.NearBlack
 import com.example.scrollblock.theme.ScrollBlockTheme
 import com.example.scrollblock.ui.main.MainScreen
@@ -27,6 +29,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        LanguageManager.init(applicationContext)
         // Kurulum tamamlandıktan sonra (currentVersion >= pendingVersion olduğunda) geçici APK'yı otomatik sil
         UpdateManager.cleanupInstalledApks(applicationContext, forceAll = false)
 
@@ -39,31 +42,36 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            ScrollBlockTheme {
-                val hasCompletedOnboarding by viewModel.hasCompletedOnboarding.collectAsStateWithLifecycle()
-                val isServiceActive by viewModel.isServiceActive.collectAsStateWithLifecycle()
+            val currentLang by LanguageManager.currentLanguage.collectAsStateWithLifecycle()
+            val strings = LanguageManager.getStrings(currentLang)
 
-                // Tüm ekranı (status bar ve navigation bar dahil) NearBlack (#0A0A0B) ile doldurur
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = NearBlack
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .safeDrawingPadding()
+            CompositionLocalProvider(LanguageManager.LocalAppStrings provides strings) {
+                ScrollBlockTheme {
+                    val hasCompletedOnboarding by viewModel.hasCompletedOnboarding.collectAsStateWithLifecycle()
+                    val isServiceActive by viewModel.isServiceActive.collectAsStateWithLifecycle()
+
+                    // Tüm ekranı (status bar ve navigation bar dahil) NearBlack (#0A0A0B) ile doldurur
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = NearBlack
                     ) {
-                        Crossfade(
-                            targetState = hasCompletedOnboarding,
-                            label = "screen_crossfade"
-                        ) { completed ->
-                            if (!completed) {
-                                OnboardingScreen(
-                                    isServiceActive = isServiceActive,
-                                    onComplete = { viewModel.completeOnboarding() }
-                                )
-                            } else {
-                                MainScreen(viewModel = viewModel)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .safeDrawingPadding()
+                        ) {
+                            Crossfade(
+                                targetState = hasCompletedOnboarding,
+                                label = "screen_crossfade"
+                            ) { completed ->
+                                if (!completed) {
+                                    OnboardingScreen(
+                                        isServiceActive = isServiceActive,
+                                        onComplete = { viewModel.completeOnboarding() }
+                                    )
+                                } else {
+                                    MainScreen(viewModel = viewModel)
+                                }
                             }
                         }
                     }
