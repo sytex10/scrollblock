@@ -13,14 +13,11 @@ object EnglishStrings : AppStrings {
 
     // Permission Setup Banner
     override val permBannerTitle = "Accessibility Service is Disabled"
-    override val permBannerDesc = "Follow these steps to unlock Android 13+ Restricted Settings."
+    override val permBannerDesc = "Enable the Accessibility service so ShortBan can block short videos."
     override val permBannerRefresh = "Refresh"
-    override val permBannerStepGuide = "1. First tap '1. Accessibility' below, find ShortBan, and flip the switch once (a 'Restricted Setting' system dialog must appear; otherwise the 3 dots won't show up).\n" +
-            "2. Next, on the '2. App Info' screen, tap the top-right menu (⋮) and choose 'Allow restricted settings'.\n" +
-            "3. Return to Accessibility and turn the ShortBan toggle ON.\n\n" +
-            "Note: This dialog will not appear when downloaded directly from Google Play Store."
-    override val permBannerBtnStep1 = "1. Accessibility"
-    override val permBannerBtnStep2 = "2. App Info (⋮)"
+    override val permBannerStepGuide = "Tap the button below to open Accessibility settings. Select ShortBan from the Installed Apps list and switch the toggle to ON."
+    override val permBannerBtnStep1 = "Open Accessibility Settings"
+    override val permBannerBtnStep2 = "App Info"
 
     // Stats Overview Card
     override val statsTitle = "Total Intercepted Feeds"
@@ -206,26 +203,26 @@ object EnglishStrings : AppStrings {
     override val onboardingStep3Item3Body = "Your protection toggles, cooldown limits, blocked counters, and PIN code remain stored strictly on your device. ShortBan contains zero advertising SDKs or third-party trackers."
     override val onboardingStep3Footer = "By proceeding and enabling the Accessibility Service, you acknowledge and agree to this Prominent Disclosure and Privacy Policy."
 
-    // Onboarding Step 4 (Android 12)
+    // Onboarding Step 4 (Direct Setup)
     override val onboardingStep4A12Label = "STEP 04 / 04 · QUICK SETUP"
     override val onboardingStep4A12Title = "Enable Accessibility Service"
-    override val onboardingStep4A12Subtitle = "Your device (Android 12 or below) doesn't require restricted settings bypass. You can activate protection in a single step:"
+    override val onboardingStep4A12Subtitle = "Enable the Accessibility service so ShortBan can automatically detect and block short videos:"
     override val onboardingStep4A12Button = "Open Accessibility Settings"
     override val onboardingStep4A12Footer = "After toggling the service on, tap 'Finish Setup & Start' below to enter the app."
 
-    // Onboarding Step 4 (Android 13+)
+    // Onboarding Step 4 (Android 13+ Guide)
     override val onboardingStep4A13Label = "STEP 04 / 05 · SETUP (PHASE 1)"
-    override val onboardingStep4A13Title = "Unlocking Android 13+ Restricted Settings"
-    override val onboardingStep4A13Subtitle = "To make the three-dot menu (⋮) appear in App Info, follow these exact steps:"
-    override val onboardingStep4A13Item1Title = "Tap ShortBan in Accessibility First (Required)"
-    override val onboardingStep4A13Item1Body = "Tap button 1 below, select ShortBan from the list, and flip the switch once. When the 'Restricted Setting' system prompt appears, tap OK. (This is required for Android to reveal the three-dot menu)."
-    override val onboardingStep4A13Item2Title = "App Info > Top-Right Three Dots (⋮)"
-    override val onboardingStep4A13Item2Body = "Tap button 2 below to open App Info, then tap the three dots (⋮) icon in the top-right corner."
-    override val onboardingStep4A13Item3Title = "Confirm 'Allow Restricted Settings'"
-    override val onboardingStep4A13Item3Body = "Tap 'Allow restricted settings' in the dropdown menu and verify with your phone's screen unlock."
+    override val onboardingStep4A13Title = "Accessibility Service Setup"
+    override val onboardingStep4A13Subtitle = "To complete permissions, follow these steps:"
+    override val onboardingStep4A13Item1Title = "Select ShortBan in Accessibility"
+    override val onboardingStep4A13Item1Body = "Tap button 1 below and select ShortBan from the list."
+    override val onboardingStep4A13Item2Title = "App Settings Menu"
+    override val onboardingStep4A13Item2Body = "Tap button 2 below to view application details."
+    override val onboardingStep4A13Item3Title = "Confirm Permissions"
+    override val onboardingStep4A13Item3Body = "Review and confirm settings on your device."
     override val onboardingStep4A13BtnStep1 = "Step 1: Tap ShortBan in Accessibility"
-    override val onboardingStep4A13BtnStep2 = "Step 2: App Info (⋮) > Allow Restricted Settings"
-    override val onboardingStep4A13Footer = "Pro Tip: If the three dots (⋮) are missing, you haven't tapped ShortBan in Accessibility yet.\n\nNote: This warning does not appear when downloaded directly from Google Play. For manual APK installs, temporarily disable scanning in Play Store > Profile > Play Protect > Settings."
+    override val onboardingStep4A13BtnStep2 = "Step 2: App Info"
+    override val onboardingStep4A13Footer = "Pro Tip: In the Accessibility menu, look under Installed Apps > ShortBan and turn the service ON."
 
     // Onboarding Step 5 (Android 13+)
     override val onboardingStep5A13Label = "STEP 05 / 05 · SETUP (PHASE 2)"

@@ -99,10 +99,9 @@ fun OnboardingScreen(
 ) {
     val context = LocalContext.current
     val s = LanguageManager.LocalAppStrings.current
-    val isAndroid12OrBelow = remember { Android12PermissionGuide.isAndroid12OrBelow() }
-    val totalStepsLabel = if (isAndroid12OrBelow) "04" else "05"
+    val totalStepsLabel = "04"
 
-    val pages = remember(isAndroid12OrBelow, s) {
+    val pages = remember(s) {
         val basePages = listOf(
             OnboardingPageData(
                 stepLabel = String.format(s.onboardingStep1LabelTemplate, totalStepsLabel),
@@ -175,72 +174,17 @@ fun OnboardingScreen(
             )
         )
 
-        if (isAndroid12OrBelow) {
-            basePages + listOf(
-                OnboardingPageData(
-                    stepLabel = s.onboardingStep4A12Label,
-                    title = s.onboardingStep4A12Title,
-                    subtitle = s.onboardingStep4A12Subtitle,
-                    items = emptyList(),
-                    footerNote = s.onboardingStep4A12Footer,
-                    actionButtonText = s.onboardingStep4A12Button,
-                    actionType = OnboardingActionType.ANDROID12_DIRECT_FLOW
-                )
+        basePages + listOf(
+            OnboardingPageData(
+                stepLabel = s.onboardingStep4A12Label,
+                title = s.onboardingStep4A12Title,
+                subtitle = s.onboardingStep4A12Subtitle,
+                items = emptyList(),
+                footerNote = s.onboardingStep4A12Footer,
+                actionButtonText = s.onboardingStep4A12Button,
+                actionType = OnboardingActionType.ANDROID12_DIRECT_FLOW
             )
-        } else {
-            basePages + listOf(
-                OnboardingPageData(
-                    stepLabel = s.onboardingStep4A13Label,
-                    title = s.onboardingStep4A13Title,
-                    subtitle = s.onboardingStep4A13Subtitle,
-                    items = listOf(
-                        OnboardingHighlightItem(
-                            tag = "1",
-                            title = s.onboardingStep4A13Item1Title,
-                            body = s.onboardingStep4A13Item1Body
-                        ),
-                        OnboardingHighlightItem(
-                            tag = "2",
-                            title = s.onboardingStep4A13Item2Title,
-                            body = s.onboardingStep4A13Item2Body
-                        ),
-                        OnboardingHighlightItem(
-                            tag = "3",
-                            title = s.onboardingStep4A13Item3Title,
-                            body = s.onboardingStep4A13Item3Body
-                        )
-                    ),
-                    footerNote = s.onboardingStep4A13Footer,
-                    actionButtonText = s.onboardingStep4A13BtnStep1,
-                    actionType = OnboardingActionType.ANDROID13_RESTRICTED_FLOW
-                ),
-                OnboardingPageData(
-                    stepLabel = s.onboardingStep5A13Label,
-                    title = s.onboardingStep5A13Title,
-                    subtitle = s.onboardingStep5A13Subtitle,
-                    items = listOf(
-                        OnboardingHighlightItem(
-                            tag = "1",
-                            title = s.onboardingStep5A13Item1Title,
-                            body = s.onboardingStep5A13Item1Body
-                        ),
-                        OnboardingHighlightItem(
-                            tag = "2",
-                            title = s.onboardingStep5A13Item2Title,
-                            body = s.onboardingStep5A13Item2Body
-                        ),
-                        OnboardingHighlightItem(
-                            tag = "%100",
-                            title = s.onboardingStep5A13Item3Title,
-                            body = s.onboardingStep5A13Item3Body
-                        )
-                    ),
-                    footerNote = s.onboardingStep5A13Footer,
-                    actionButtonText = s.onboardingStep5A13BtnStep3,
-                    actionType = OnboardingActionType.OPEN_ACCESSIBILITY
-                )
-            )
-        }
+        )
     }
 
     var currentStep by remember { mutableIntStateOf(0) }

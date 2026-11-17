@@ -594,12 +594,6 @@ private fun PermissionSetupBanner(
     onRefresh: () -> Unit
 ) {
     val s = LanguageManager.LocalAppStrings.current
-    if (Android12PermissionGuide.isAndroid12OrBelow()) {
-        Android12PermissionGuide.MainScreenWarningCard(
-            onOpenAccessibility = onOpenAccessibilitySettings
-        )
-        return
-    }
 
     Column(
         modifier = Modifier

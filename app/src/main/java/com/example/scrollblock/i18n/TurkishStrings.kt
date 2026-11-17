@@ -13,14 +13,11 @@ object TurkishStrings : AppStrings {
 
     // Permission Setup Banner
     override val permBannerTitle = "Erişilebilirlik Servisi Kapalı"
-    override val permBannerDesc = "Android 13+ Kısıtlı Ayarlar kilidini açmak için aşağıdaki sırayı izleyin."
+    override val permBannerDesc = "ShortBan'ın kısa videoları engelleyebilmesi için Erişilebilirlik iznini etkinleştirin."
     override val permBannerRefresh = "Yenile"
-    override val permBannerStepGuide = "1. Önce '1. Erişilebilirlik' butonuna basıp listeden ShortBan'a bir kez dokunun ('Kısıtlı Ayar' uyarısı çıkmalı; aksi halde üç nokta görünmez).\n" +
-            "2. Ardından '2. Uygulama Bilgisi' ekranında sağ üstteki (⋮) menüsünden 'Kısıtlı ayarlara izin ver' deyin.\n" +
-            "3. Tekrar Erişilebilirlik menüsüne dönüp ShortBan anahtarını açın.\n\n" +
-            "Not: Uygulamayı Google Play üzerinden indirdiğinizde bu uyarı çıkmaz. APK ile kurulum yapıyorsanız Play Store > Profil > Play Protect > Ayarlar üzerinden taramayı geçici olarak kapatıp kurulumu tamamlayın."
-    override val permBannerBtnStep1 = "1. Erişilebilirlik"
-    override val permBannerBtnStep2 = "2. Uygulama Bilgisi (⋮)"
+    override val permBannerStepGuide = "Aşağıdaki butona dokunarak Erişilebilirlik ayarlarına gidin. Yüklü Uygulamalar listesinden ShortBan'ı seçip anahtarı açık konuma getirin."
+    override val permBannerBtnStep1 = "Erişilebilirlik Ayarlarını Aç"
+    override val permBannerBtnStep2 = "Uygulama Bilgisi"
 
     // Stats Overview Card
     override val statsTitle = "Toplam Engellenen Akış"
@@ -206,26 +203,26 @@ object TurkishStrings : AppStrings {
     override val onboardingStep3Item3Body = "Koruma anahtarları, mola süreleri, engellenen akış sayacı ve 4 haneli PIN kilidi yalnızca cihazınızın kendi yerel hafızasında saklanır. Hiçbir reklam SDK'sı veya takip aracı (tracker) bulunmaz."
     override val onboardingStep3Footer = "Sonraki adıma geçerek ve Erişilebilirlik Servisi'ni etkinleştirerek bu Açık Rıza ve Gizlilik Politikası Beyanı'nı okuduğunuzu ve kabul ettiğinizi onaylamış olursunuz."
 
-    // Onboarding Step 4 (Android 12)
+    // Onboarding Step 4 (Doğrudan Kurulum)
     override val onboardingStep4A12Label = "ADIM 04 / 04 · HIZLI KURULUM"
     override val onboardingStep4A12Title = "Erişilebilirlik Servisini Etkinleştirin"
-    override val onboardingStep4A12Subtitle = "Cihazınızda (Android 12 ve altı) kısıtlı ayar kilidi bulunmadığı için doğrudan tek adımla korumayı başlatabilirsiniz:"
+    override val onboardingStep4A12Subtitle = "ShortBan'ın kısa videoları anında algılayıp engelleyebilmesi için Erişilebilirlik servisini etkinleştirin:"
     override val onboardingStep4A12Button = "Erişilebilirlik Ayarlarını Aç"
     override val onboardingStep4A12Footer = "Servisi açtıktan sonra aşağıdaki 'Kurulumu Tamamla ve Başla' butonuna basarak ana ekrana geçebilirsiniz."
 
-    // Onboarding Step 4 (Android 13+)
+    // Onboarding Step 4 (Android 13+ Kılavuzu)
     override val onboardingStep4A13Label = "ADIM 04 / 05 · KURULUM (1. AŞAMA)"
-    override val onboardingStep4A13Title = "Android 13+ Kısıtlı Ayar Kilidini Açma"
-    override val onboardingStep4A13Subtitle = "Uygulama Bilgisi ekranında sağ üstteki üç nokta (⋮) menüsünün görünmesi için şu sırayı eksiksiz uygulayın:"
-    override val onboardingStep4A13Item1Title = "Önce Erişilebilirlikte ShortBan'a Dokunun (Zorunlu)"
-    override val onboardingStep4A13Item1Body = "Aşağıdaki '1. Adım: Erişilebilirlikte ShortBan'a Dokun' butonuna basın, listeden ShortBan'ı seçip anahtara bir kez dokunun. Ekrana 'Kısıtlı Ayar' uyarısı çıkınca Tamam deyin. (Bu yapılmazsa üç nokta menüsü çıkmaz!)"
-    override val onboardingStep4A13Item2Title = "Uygulama Bilgisi > Sağ Üst Üç Nokta (⋮)"
-    override val onboardingStep4A13Item2Body = "Ardından aşağıdaki '2. Adım: Uygulama Bilgisi (⋮) Aç' butonuna basın ve sağ üst köşedeki üç nokta (⋮) simgesine dokunun."
-    override val onboardingStep4A13Item3Title = "'Kısıtlı Ayarlara İzin Ver' Seçeneğini Onaylayın"
-    override val onboardingStep4A13Item3Body = "Açılan menüdeki 'Kısıtlı ayarlara izin ver' seçeneğine dokunun ve telefonunuzun ekran kilidiyle onaylayın."
-    override val onboardingStep4A13BtnStep1 = "1. Adım: Erişilebilirlikte ShortBan'a Dokun (Tetikle)"
-    override val onboardingStep4A13BtnStep2 = "2. Adım: Uygulama Bilgisi (⋮) > Kısıtlı Ayarlara İzin Ver"
-    override val onboardingStep4A13Footer = "Önemli İpucu: Sağ üstte üç nokta (⋮) görünmüyorsa 1. adımdaki Erişilebilirlik menüsünde ShortBan'a henüz dokunmamışsınız demektir.\n\nNot: Uygulamayı Google Play üzerinden indirdiğinizde bu uyarı çıkmaz. APK ile kurulum yapıyorsanız Play Store > Profil > Play Protect > Ayarlar üzerinden taramayı geçici olarak kapatıp kurulumu tamamlayın."
+    override val onboardingStep4A13Title = "Erişilebilirlik Servisi Kurulumu"
+    override val onboardingStep4A13Subtitle = "Uygulama Bilgisi ekranında izinleri tamamlamak için şu sırayı uygulayın:"
+    override val onboardingStep4A13Item1Title = "Önce Erişilebilirlikte ShortBan'a Dokunun"
+    override val onboardingStep4A13Item1Body = "Aşağıdaki '1. Adım: Erişilebilirlikte ShortBan'a Dokun' butonuna basın ve ShortBan'ı seçin."
+    override val onboardingStep4A13Item2Title = "Uygulama Bilgisi Menüsü"
+    override val onboardingStep4A13Item2Body = "Ardından aşağıdaki '2. Adım: Uygulama Bilgisi Aç' butonuna basarak ayarları inceleyin."
+    override val onboardingStep4A13Item3Title = "İzinleri Onaylayın"
+    override val onboardingStep4A13Item3Body = "Açılan ekranda ayarları kontrol edip onaylayın."
+    override val onboardingStep4A13BtnStep1 = "1. Adım: Erişilebilirlikte ShortBan'a Dokun"
+    override val onboardingStep4A13BtnStep2 = "2. Adım: Uygulama Bilgisi Aç"
+    override val onboardingStep4A13Footer = "Önemli İpucu: Erişilebilirlik menüsünde Yüklü Uygulamalar > ShortBan yolunu izleyip servisi açın."
 
     // Onboarding Step 5 (Android 13+)
     override val onboardingStep5A13Label = "ADIM 05 / 05 · KURULUM (2. AŞAMA)"
