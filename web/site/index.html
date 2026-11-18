@@ -46,27 +46,35 @@
       </div>
 
       <div class="download-grid">
-        <!-- 1. ANDROID APK KARTI -->
+        <!-- 1. ANDROID GOOGLE PLAY KAPALI BETA KARTI -->
         <div class="dl-box android-box">
           <div class="dl-top">
-            <span class="dl-badge emerald">ANDROID UYGULAMASI</span>
-            <span id="androidVersionText" class="dl-ver">v1.0 · Güncel</span>
+            <span class="dl-badge amber">GOOGLE PLAY BETA</span>
+            <span id="androidVersionText" class="dl-ver">v1.0 · Erken Erişim</span>
           </div>
           <h3 class="dl-title" style="display: flex; align-items: center; gap: 10px;">
             <img src="logo.jpg" alt="ShortBan" width="26" height="26" style="border-radius: 6px; object-fit: cover;" />
-            <span>ShortBan Android APK</span>
+            <span>ShortBan Android (Google Play)</span>
           </h3>
           <p class="dl-desc">
-            Play Protect uyumlu, Sıfır Gecikmeli Engelleme, Yorum Kalkanı ve uygulama içi otomatik güncelleme destekli Android sürümü.
+            Instagram Reels, Shorts ve TikTok bağımlılığını sonlandıran resmi Android sürümü Google Play kapalı test aşamasında!
           </p>
-          <a
-            id="androidDownloadLink"
-            href="https://raw.githubusercontent.com/sytex10/scrollblock/main/release/ShortBan-release.apk"
-            download="ShortBan.apk"
-            class="btn-primary"
-          >
-            Android İçin İndir (.APK)
-          </a>
+          <div class="dl-actions">
+            <button
+              id="openBetaModalBtn"
+              type="button"
+              class="btn-primary"
+              style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; cursor: pointer;"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3.609 1.814L13.793 12 3.61 22.186a2.007 2.007 0 01-.61-1.428V3.242c0-.54.22-1.05.61-1.428z" fill="#00D2FF"/>
+                <path d="M17.186 8.607L13.793 12l3.393 3.393 3.843-2.18c1.096-.622 1.096-1.784 0-2.406l-3.843-2.2z" fill="#FFD200"/>
+                <path d="M3.609 1.814l10.184 10.186 3.393-3.393L6.85.807a2.64 2.64 0 00-3.241 1.007z" fill="#00E676"/>
+                <path d="M3.609 22.186l13.574-7.793-3.393-3.393L3.61 22.186c.925.926 2.457.777 3.24-.002z" fill="#FF3A44"/>
+              </svg>
+              <span>Test Kullanıcısı Ol (Erken Erişim)</span>
+            </button>
+          </div>
         </div>
 
         <!-- 2. BİLGİSAYAR TARAYICI EKLENTİSİ KARTI -->
@@ -343,6 +351,82 @@
         <div class="modal-actions">
           <a href="privacy.html" class="btn-outline" style="text-decoration: none;">Tam Sayfa Görünümü</a>
           <button id="closeWebPrivacyModalBtn" class="btn-primary">Anladım ve Kapat</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GOOGLE PLAY KAPALI BETA TESTİ BAŞVURU MODALI -->
+    <div id="betaModalBackdrop" class="modal-backdrop" style="display: none;">
+      <div class="modal-card" style="max-width: 440px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span class="dl-badge amber">GOOGLE PLAY BETA</span>
+          <button id="closeBetaModalX" type="button" style="background: none; border: none; color: #71717a; font-size: 22px; cursor: pointer; padding: 2px 6px; line-height: 1;">&times;</button>
+        </div>
+        <h3 class="card-title" style="font-size: 18px; margin-top: 6px;">Test Kullanıcısı Ol (Erken Erişim)</h3>
+        <p class="card-sub" style="color: #a1a1aa; line-height: 1.5; font-size: 13px;">
+          ShortBan Android sürümünü ilk deneyimleyenlerden olmak için Google Play (Gmail) e-posta adresinizi bırakın. Kapalı test davetiniz doğrudan iletilecektir.
+        </p>
+
+        <form id="betaTesterForm" style="display: flex; flex-direction: column; gap: 12px; margin-top: 6px;">
+          <div>
+            <label style="display: block; font-size: 11.5px; font-weight: 600; color: #a1a1aa; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">Ad Soyad (İsteğe Bağlı)</label>
+            <input
+              type="text"
+              id="testerName"
+              placeholder="Örn: Ahmet Yılmaz veya LinkedIn Kullanıcısı"
+              class="pin-input"
+              style="font-family: inherit; font-size: 13.5px;"
+            />
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 11.5px; font-weight: 600; color: #a1a1aa; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">Google Play E-Posta Adresiniz (Gmail) *</label>
+            <input
+              type="email"
+              id="testerEmail"
+              required
+              placeholder="ornek@gmail.com"
+              class="pin-input"
+              style="font-family: inherit; font-size: 13.5px;"
+            />
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 11.5px; font-weight: 600; color: #a1a1aa; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">Kullandığınız Telefon Modeli (İsteğe Bağlı)</label>
+            <input
+              type="text"
+              id="testerDevice"
+              placeholder="Örn: Samsung S23, Xiaomi 13, Pixel 7 vb."
+              class="pin-input"
+              style="font-family: inherit; font-size: 13.5px;"
+            />
+          </div>
+
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #fde68a; line-height: 1.45;">
+            🔒 <strong>Gizlilik Taahhüdü:</strong> E-postanız yalnızca Google Play Console kapalı test erişimi için kullanılacak, hiçbir üçüncü tarafla paylaşılmayacaktır.
+          </div>
+
+          <p id="betaFormError" class="error-text" style="display: none; color: #ef4444; font-size: 12px;"></p>
+
+          <div class="modal-actions" style="margin-top: 6px;">
+            <button type="button" id="closeBetaModalBtn" class="btn-outline">Vazgeç</button>
+            <button type="submit" id="submitBetaBtn" class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <span>Beta Testine Katıl</span>
+            </button>
+          </div>
+        </form>
+
+        <div id="betaSuccessBox" style="display: none; text-align: center; padding: 18px 8px; flex-direction: column; gap: 12px; align-items: center;">
+          <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; display: flex; align-items: center; justify-content: center; color: #10b981; font-size: 26px;">
+            ✓
+          </div>
+          <h4 style="color: #ffffff; font-size: 17px; margin: 0;">Başvurunuz Alındı!</h4>
+          <p style="color: #9e9ea8; font-size: 13px; line-height: 1.55; margin: 0;">
+            Teşekkürler! Google Play e-posta adresiniz test listesine eklenmek üzere kaydedildi. İnceleme tamamlandığında davet bağlantınız e-postanıza iletilecektir.
+          </p>
+          <button type="button" id="closeBetaSuccessBtn" class="btn-primary" style="margin-top: 8px; width: 100%;">
+            Tamamdır
+          </button>
         </div>
       </div>
     </div>

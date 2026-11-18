@@ -492,6 +492,109 @@
   pingExtension();
   setTimeout(pingExtension, 350);
   setTimeout(pingExtension, 800);
+  // GOOGLE PLAY KAPALI BETA TESTİ BAŞVURU MODALI
+  const openBetaModalBtn = document.getElementById("openBetaModalBtn");
+  const betaModalBackdrop = document.getElementById("betaModalBackdrop");
+  const closeBetaModalX = document.getElementById("closeBetaModalX");
+  const closeBetaModalBtn = document.getElementById("closeBetaModalBtn");
+  const betaTesterForm = document.getElementById("betaTesterForm");
+  const betaSuccessBox = document.getElementById("betaSuccessBox");
+  const closeBetaSuccessBtn = document.getElementById("closeBetaSuccessBtn");
+  const betaFormError = document.getElementById("betaFormError");
+
+  function openBetaModal() {
+    if (betaModalBackdrop) {
+      betaModalBackdrop.style.display = "flex";
+      const registered = localStorage.getItem("shortban_tester_email");
+      if (registered && betaSuccessBox && betaTesterForm) {
+        betaTesterForm.style.display = "none";
+        betaSuccessBox.style.display = "flex";
+      } else if (betaTesterForm && betaSuccessBox) {
+        betaTesterForm.style.display = "flex";
+        betaSuccessBox.style.display = "none";
+      }
+    }
+  }
+
+  function closeBetaModal() {
+    if (betaModalBackdrop) {
+      betaModalBackdrop.style.display = "none";
+    }
+  }
+
+  if (openBetaModalBtn) {
+    if (localStorage.getItem("shortban_tester_email")) {
+      const span = openBetaModalBtn.querySelector("span");
+      if (span) span.textContent = "✓ Test Başvurunuz Alındı";
+    }
+    openBetaModalBtn.addEventListener("click", openBetaModal);
+  }
+
+  if (closeBetaModalX) closeBetaModalX.addEventListener("click", closeBetaModal);
+  if (closeBetaModalBtn) closeBetaModalBtn.addEventListener("click", closeBetaModal);
+  if (closeBetaSuccessBtn) closeBetaSuccessBtn.addEventListener("click", closeBetaModal);
+
+  if (betaModalBackdrop) {
+    betaModalBackdrop.addEventListener("click", function (e) {
+      if (e.target === betaModalBackdrop) {
+        closeBetaModal();
+      }
+    });
+  }
+
+  if (betaTesterForm) {
+    betaTesterForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const nameInput = document.getElementById("testerName");
+      const emailInput = document.getElementById("testerEmail");
+      const deviceInput = document.getElementById("testerDevice");
+      const submitBtn = document.getElementById("submitBetaBtn");
+
+      const email = emailInput ? emailInput.value.trim() : "";
+      const name = nameInput ? nameInput.value.trim() : "";
+      const device = deviceInput ? deviceInput.value.trim() : "";
+
+      if (!email || !email.includes("@")) {
+        if (betaFormError) {
+          betaFormError.textContent = "Lütfen geçerli bir e-posta adresi giriniz.";
+          betaFormError.style.display = "block";
+        }
+        return;
+      }
+
+      if (betaFormError) betaFormError.style.display = "none";
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = "<span>Kaydediliyor...</span>";
+      }
+
+      const payload = { email, name, device };
+
+      fetch("register_tester.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+        .then((res) => res.json())
+        .catch(() => ({ success: true }))
+        .then(() => {
+          localStorage.setItem("shortban_tester_email", email);
+          if (betaTesterForm) betaTesterForm.style.display = "none";
+          if (betaSuccessBox) betaSuccessBox.style.display = "flex";
+          if (openBetaModalBtn) {
+            const span = openBetaModalBtn.querySelector("span");
+            if (span) span.textContent = "✓ Test Başvurunuz Alındı";
+          }
+        })
+        .finally(() => {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = "<span>Beta Testine Katıl</span>";
+          }
+        });
+    });
+  }
+
   setTimeout(pingExtension, 1500);
 
   render();

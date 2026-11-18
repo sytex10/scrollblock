@@ -216,6 +216,11 @@ body {
   color: #6ee7b7;
 }
 
+.dl-badge.amber {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
 .dl-badge.neutral {
   background: #23232b;
   color: #d4d4d8;
