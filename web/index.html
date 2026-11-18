@@ -493,41 +493,46 @@
             btn.innerHTML = "<span>Kaydediliyor...</span>";
           }
 
-          fetch("register_tester.php", {
+          // 1. Destek sayfasındaki gibi FormSubmit ile doğrudan Gmail'e mail at
+          var mailPromise = fetch("https://formsubmit.co/ajax/ipekmuhammetemin@gmail.com", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({
+              _subject: "🚀 Yeni ShortBan Test Kullanıcısı: " + email,
+              _captcha: "false",
+              Basvuran_Kisi: name || "LinkedIn / Web Kullanıcısı",
+              Google_Play_Gmail: email,
+              Cihaz_Modeli: device || "Belirtilmedi",
+              Tarih: new Date().toLocaleString("tr-TR")
+            })
+          }).catch(function (e) { return null; });
+
+          // 2. Aynı anda cPanel CSV dosyasına da kaydet
+          var localPromise = fetch("register_tester.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email: email, name: name, device: device })
-          })
-            .then(function (res) { return res.json(); })
-            .catch(function () { return { success: true }; })
-            .then(function (res) {
-              if (res && res.error) {
-                if (err) {
-                  err.textContent = res.error;
-                  err.style.display = "block";
-                }
-                if (btn) {
-                  btn.disabled = false;
-                  btn.innerHTML = "<span>Beta Testine Katıl</span>";
-                }
-                return;
-              }
-              localStorage.setItem("shortban_tester_email", email);
-              if (form) form.style.display = "none";
-              var succ = document.getElementById("betaSuccessBox");
-              if (succ) succ.style.display = "flex";
-              var openBtn = document.getElementById("openBetaModalBtn");
-              if (openBtn) {
-                var s = openBtn.querySelector("span");
-                if (s) s.textContent = "✓ Test Başvurunuz Alındı";
-              }
-            })
-            .finally(function () {
-              if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = "<span>Beta Testine Katıl</span>";
-              }
-            });
+          }).catch(function (e) { return null; });
+
+          Promise.all([mailPromise, localPromise]).then(function () {
+            localStorage.setItem("shortban_tester_email", email);
+            if (form) form.style.display = "none";
+            var succ = document.getElementById("betaSuccessBox");
+            if (succ) succ.style.display = "flex";
+            var openBtn = document.getElementById("openBetaModalBtn");
+            if (openBtn) {
+              var s = openBtn.querySelector("span");
+              if (s) s.textContent = "✓ Test Başvurunuz Alındı";
+            }
+          }).finally(function () {
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = "<span>Beta Testine Katıl</span>";
+            }
+          });
         });
       }
     });
