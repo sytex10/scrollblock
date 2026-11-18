@@ -25,10 +25,10 @@ $email = isset($data['email']) ? trim($data['email']) : '';
 $name = isset($data['name']) ? trim($data['name']) : '';
 $device = isset($data['device']) ? trim($data['device']) : '';
 
-// E-posta doğrulaması
-if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+// E-posta doğrulaması (Kesinlikle @gmail.com zorunlu)
+if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL) || !preg_match('/^[a-zA-Z0-9._%+-]+@gmail\.com$/i', $email)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Geçerli bir Google Play / Gmail adresi giriniz.']);
+    echo json_encode(['success' => false, 'error' => 'Lütfen geçerli bir @gmail.com adresi giriniz (Google Play testi yalnızca Gmail kabul eder).']);
     exit;
 }
 

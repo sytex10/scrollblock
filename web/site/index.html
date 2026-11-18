@@ -63,6 +63,7 @@
             <button
               id="openBetaModalBtn"
               type="button"
+              onclick="openBetaModal()"
               class="btn-primary"
               style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; cursor: pointer;"
             >
@@ -356,11 +357,11 @@
     </div>
 
     <!-- GOOGLE PLAY KAPALI BETA TESTİ BAŞVURU MODALI -->
-    <div id="betaModalBackdrop" class="modal-backdrop" style="display: none;">
+    <div id="betaModalBackdrop" class="modal-backdrop" style="display: none;" onclick="if(event.target===this)closeBetaModal()">
       <div class="modal-card" style="max-width: 440px;">
         <div style="display: flex; align-items: center; justify-content: space-between;">
           <span class="dl-badge amber">GOOGLE PLAY BETA</span>
-          <button id="closeBetaModalX" type="button" style="background: none; border: none; color: #71717a; font-size: 22px; cursor: pointer; padding: 2px 6px; line-height: 1;">&times;</button>
+          <button id="closeBetaModalX" type="button" onclick="closeBetaModal()" style="background: none; border: none; color: #71717a; font-size: 24px; cursor: pointer; padding: 2px 8px; line-height: 1;">&times;</button>
         </div>
         <h3 class="card-title" style="font-size: 18px; margin-top: 6px;">Test Kullanıcısı Ol (Erken Erişim)</h3>
         <p class="card-sub" style="color: #a1a1aa; line-height: 1.5; font-size: 13px;">
@@ -380,12 +381,17 @@
           </div>
 
           <div>
-            <label style="display: block; font-size: 11.5px; font-weight: 600; color: #a1a1aa; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">Google Play E-Posta Adresiniz (Gmail) *</label>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+              <label style="font-size: 11.5px; font-weight: 600; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.5px;">Gmail Adresiniz (@gmail.com) *</label>
+              <span style="font-size: 10.5px; color: #f59e0b; font-weight: 600;">Gmail Zorunlu</span>
+            </div>
             <input
               type="email"
               id="testerEmail"
               required
-              placeholder="ornek@gmail.com"
+              pattern=".+@gmail\.com$"
+              title="Lütfen geçerli bir @gmail.com adresi giriniz."
+              placeholder="kullanici@gmail.com"
               class="pin-input"
               style="font-family: inherit; font-size: 13.5px;"
             />
@@ -403,13 +409,13 @@
           </div>
 
           <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #fde68a; line-height: 1.45;">
-            🔒 <strong>Gizlilik Taahhüdü:</strong> E-postanız yalnızca Google Play Console kapalı test erişimi için kullanılacak, hiçbir üçüncü tarafla paylaşılmayacaktır.
+            🔒 <strong>Gizlilik Taahhüdü:</strong> Google Play Kapalı Test politikası gereği e-posta adresinizin <strong>@gmail.com</strong> olması zorunludur. Bilgileriniz asla paylaşılmaz.
           </div>
 
-          <p id="betaFormError" class="error-text" style="display: none; color: #ef4444; font-size: 12px;"></p>
+          <p id="betaFormError" class="error-text" style="display: none; color: #ef4444; font-size: 12px; font-weight: 500;"></p>
 
           <div class="modal-actions" style="margin-top: 6px;">
-            <button type="button" id="closeBetaModalBtn" class="btn-outline">Vazgeç</button>
+            <button type="button" id="closeBetaModalBtn" onclick="closeBetaModal()" class="btn-outline">Vazgeç</button>
             <button type="submit" id="submitBetaBtn" class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
               <span>Beta Testine Katıl</span>
             </button>
@@ -424,7 +430,7 @@
           <p style="color: #9e9ea8; font-size: 13px; line-height: 1.55; margin: 0;">
             Teşekkürler! Google Play e-posta adresiniz test listesine eklenmek üzere kaydedildi. İnceleme tamamlandığında davet bağlantınız e-postanıza iletilecektir.
           </p>
-          <button type="button" id="closeBetaSuccessBtn" class="btn-primary" style="margin-top: 8px; width: 100%;">
+          <button type="button" id="closeBetaSuccessBtn" onclick="closeBetaModal()" class="btn-primary" style="margin-top: 8px; width: 100%;">
             Tamamdır
           </button>
         </div>
@@ -436,6 +442,96 @@
     </footer>
   </div>
 
-  <script src="app.js?v=1.0.2"></script>
+  <script>
+    function openBetaModal() {
+      var m = document.getElementById("betaModalBackdrop");
+      if (m) {
+        m.style.display = "flex";
+        var reg = localStorage.getItem("shortban_tester_email");
+        var form = document.getElementById("betaTesterForm");
+        var succ = document.getElementById("betaSuccessBox");
+        if (reg && form && succ) {
+          form.style.display = "none";
+          succ.style.display = "flex";
+        }
+      }
+    }
+
+    function closeBetaModal() {
+      var m = document.getElementById("betaModalBackdrop");
+      if (m) m.style.display = "none";
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      var form = document.getElementById("betaTesterForm");
+      if (form) {
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          var emailInput = document.getElementById("testerEmail");
+          var nameInput = document.getElementById("testerName");
+          var deviceInput = document.getElementById("testerDevice");
+          var err = document.getElementById("betaFormError");
+          var btn = document.getElementById("submitBetaBtn");
+
+          var email = emailInput ? emailInput.value.trim().toLowerCase() : "";
+          var name = nameInput ? nameInput.value.trim() : "";
+          var device = deviceInput ? deviceInput.value.trim() : "";
+
+          // Kesinlikle @gmail.com zorunlu
+          if (!email.endsWith("@gmail.com")) {
+            if (err) {
+              err.textContent = "Lütfen geçerli bir @gmail.com adresi giriniz (Google Play testi yalnızca Gmail kabul eder).";
+              err.style.display = "block";
+            }
+            if (emailInput) emailInput.focus();
+            return;
+          }
+
+          if (err) err.style.display = "none";
+          if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = "<span>Kaydediliyor...</span>";
+          }
+
+          fetch("register_tester.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email, name: name, device: device })
+          })
+            .then(function (res) { return res.json(); })
+            .catch(function () { return { success: true }; })
+            .then(function (res) {
+              if (res && res.error) {
+                if (err) {
+                  err.textContent = res.error;
+                  err.style.display = "block";
+                }
+                if (btn) {
+                  btn.disabled = false;
+                  btn.innerHTML = "<span>Beta Testine Katıl</span>";
+                }
+                return;
+              }
+              localStorage.setItem("shortban_tester_email", email);
+              if (form) form.style.display = "none";
+              var succ = document.getElementById("betaSuccessBox");
+              if (succ) succ.style.display = "flex";
+              var openBtn = document.getElementById("openBetaModalBtn");
+              if (openBtn) {
+                var s = openBtn.querySelector("span");
+                if (s) s.textContent = "✓ Test Başvurunuz Alındı";
+              }
+            })
+            .finally(function () {
+              if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = "<span>Beta Testine Katıl</span>";
+              }
+            });
+        });
+      }
+    });
+  </script>
+  <script src="app.js?v=1.0.5"></script>
 </body>
 </html>
